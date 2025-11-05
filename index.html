@@ -1434,7 +1434,7 @@ function sendMove(from, to, promotion) {
         clearPendingMove();
         return;
     }
-    if (chessGame.isAiGame) {
+    if (chessGame && chessGame.isAiGame) {
         handleAIMove(from, to, promotion);
         return;
     }

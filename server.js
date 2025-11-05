@@ -220,6 +220,40 @@ app.post('/api/settings/:username', (req, res) => {
   return res.json({ success: true });
 });
 
+// ELO Rating API endpoints
+app.get('/api/elo/:username', (req, res) => {
+  const username = String(req.params.username || '').trim();
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  const eloData = getUserElo(username);
+  return res.json(eloData);
+});
+
+app.post('/api/elo/:username/update', (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const opponentElo = Number(req.body && req.body.opponentElo || 0);
+  const result = Number(req.body && req.body.result || 0);
+
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  if (opponentElo <= 0) {
+    return res.status(400).json({ error: 'opponentElo required and must be positive' });
+  }
+  if (![0, 0.5, 1].includes(result)) {
+    return res.status(400).json({ error: 'result must be 0 (loss), 0.5 (draw), or 1 (win)' });
+  }
+
+  const updateResult = updatePlayerElo(username, opponentElo, result);
+  return res.json({
+    success: true,
+    newElo: updateResult.newElo,
+    eloChange: updateResult.eloChange,
+    playerData: updateResult.playerData
+  });
+});
+
 // Stockfish WASM module is unreliable on server-side, using fallback algorithm instead
 let StockfishFactory = null;
 

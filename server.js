@@ -84,9 +84,64 @@ function saveUserSettings(username, settings) {
   return true;
 }
 
+// ELO Rating System
+const ELO_FILE = path.join(DATA_DIR, 'user-elo.json');
+const STARTING_ELO = 1200;
+const K_FACTOR = 32; // Standard K-factor for rating adjustments
+
+let userElos = {}; // username -> { elo: number, gamesPlayed: number, winRate: number }
+
+function loadUserElos() {
+  try {
+    if (fs.existsSync(ELO_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ELO_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        userElos = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistUserElos() {
+  try { fs.writeFile(ELO_FILE, JSON.stringify(userElos, null, 2), () => {}); } catch(_) {}
+}
+
+function getUserElo(username) {
+  if (!username) return null;
+  if (!userElos[username]) {
+    userElos[username] = { elo: STARTING_ELO, gamesPlayed: 0, wins: 0 };
+    persistUserElos();
+  }
+  return userElos[username];
+}
+
+function calculateExpectedScore(playerElo, opponentElo) {
+  return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+}
+
+function updatePlayerElo(username, opponentElo, result) {
+  // result: 1 for win, 0.5 for draw, 0 for loss
+  const playerData = getUserElo(username);
+  const expected = calculateExpectedScore(playerData.elo, opponentElo);
+  const eloChange = Math.round(K_FACTOR * (result - expected));
+
+  playerData.elo = Math.max(100, playerData.elo + eloChange);
+  playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
+
+  if (result === 1) {
+    playerData.wins = (playerData.wins || 0) + 1;
+  } else if (result === 0.5) {
+    playerData.draws = (playerData.draws || 0) + 1;
+  }
+
+  persistUserElos();
+  return { newElo: playerData.elo, eloChange, playerData };
+}
+
 loadMessages();
 loadKnownUsers();
 loadUserSettings();
+loadUserElos();
 
 // Server
 const app = express();

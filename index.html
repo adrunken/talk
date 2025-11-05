@@ -2600,6 +2600,20 @@ function ready() {
             try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
             startChessGame(data);
         }
+        else if (data['type'] === 'chess_move' && data['isAiMove']) {
+            if (chessGame && chessGame.id === data['game_id']) {
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.inCheck = !!data['check'];
+                chessGame.lastMove = { from: data['from'], to: data['to'] };
+                chessGame.moveHistory = chessGame.moveHistory || [];
+                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
+                chessGame.historyIndex = chessGame.moveHistory.length - 1;
+                renderBoard();
+                updateChessStatus();
+                clearPendingMove();
+            }
+        }
         else if (data['type'] === 'chess_move') {
             if (chessGame && chessGame.id === data['game_id']) {
                 chessGame.fen = data['fen'];
@@ -2660,20 +2674,6 @@ function ready() {
         }
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
-        }
-        else if (data['type'] === 'chess_move' && data['isAiMove']) {
-            if (chessGame && chessGame.id === data['game_id']) {
-                chessGame.fen = data['fen'];
-                chessGame.turn = data['turn'];
-                chessGame.inCheck = !!data['check'];
-                chessGame.lastMove = { from: data['from'], to: data['to'] };
-                chessGame.moveHistory = chessGame.moveHistory || [];
-                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
-                chessGame.historyIndex = chessGame.moveHistory.length - 1;
-                renderBoard();
-                updateChessStatus();
-                clearPendingMove();
-            }
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

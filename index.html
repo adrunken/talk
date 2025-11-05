@@ -754,6 +754,10 @@ html {
       <div class="chess-panel-header">
         <h4>Chess</h4>
       </div>
+      <div id="chess-elo-display" class="chess-elo-display" style="font-size:0.875rem;padding:0.5rem;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:0.5rem;text-align:center;display:none;">
+        <div style="color:var(--text-muted);font-size:0.75rem;margin-bottom:0.25rem;">Your Rating</div>
+        <div style="font-weight:600;color:var(--accent-primary);font-size:1rem;" id="chess-player-elo">1200</div>
+      </div>
       <div class="history-controls" style="display:flex;gap:0.5rem;align-items:center;">
         <button class="chess-button" id="chess-prev" title="Previous move"><i class="fas fa-chevron-left"></i></button>
         <button class="chess-button" id="chess-next" title="Next move"><i class="fas fa-chevron-right"></i></button>
@@ -762,9 +766,11 @@ html {
       <div class="chess-status" id="chess-status"></div>
       <div>White: <span id="chess-white"></span></div>
       <div>Black: <span id="chess-black"></span></div>
+      <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
         <button class="chess-button" id="chess-resign">Resign</button>
+        <button class="chess-button" id="chess-ai-game">Play AI</button>
         <button class="chess-button" id="chess-close">Close</button>
       </div>
     </div>

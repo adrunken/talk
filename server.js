@@ -284,9 +284,6 @@ app.post('/api/chess/game/end', (req, res) => {
   });
 });
 
-// Stockfish WASM module is unreliable on server-side, using fallback algorithm instead
-let StockfishFactory = null;
-
 function eloToDepth(elo) {
   const rating = Number(elo) || 600;
 
@@ -322,71 +319,60 @@ function eloToDepth(elo) {
 }
 
 class StockfishEngine extends EventEmitter {
-  constructor(enginePath) {
+  constructor() {
     super();
-    this.enginePath = enginePath;
-    this.process = null;
+    this.engine = null;
     this.ready = false;
-    this.queue = [];
     this.currentSearch = null;
+    this.messageHandlers = new Map();
   }
 
   async start() {
     return new Promise((resolve, reject) => {
       try {
-        console.log('[stockfish] Starting engine:', this.enginePath);
-        this.process = spawn(this.enginePath, [], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: 30000
-        });
+        console.log('[stockfish] Initializing Stockfish WASM engine...');
+
+        this.engine = Stockfish();
 
         let initialized = false;
-
-        this.process.stdout.on('data', (data) => {
-          const lines = data.toString().split('\n');
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-
-            console.log('[stockfish-out]', trimmed);
-
-            if (trimmed === 'uciok') {
-              this.ready = true;
-              if (!initialized) {
-                initialized = true;
-                resolve(this);
-              }
-            } else if (trimmed.startsWith('bestmove')) {
-              const parts = trimmed.split(' ');
-              const move = parts[1];
-              if (this.currentSearch) {
-                clearTimeout(this.currentSearch.timeout);
-                this.currentSearch.resolve(move);
-                this.currentSearch = null;
-              }
-            }
-          }
-        });
-
-        this.process.stderr.on('data', (data) => {
-          console.warn('[stockfish-err]', data.toString());
-        });
-
-        this.process.on('error', (err) => {
-          console.error('[stockfish] Process error:', err);
-          if (!initialized) reject(err);
-        });
-
-        // Send initialization command
-        this.process.stdin.write('uci\n');
-
-        // Timeout for initialization
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
           if (!initialized) {
             reject(new Error('Stockfish initialization timeout'));
           }
-        }, 5000);
+        }, 10000);
 
+        this.engine.onmessage = (event) => {
+          const message = event.data || event;
+          const line = typeof message === 'string' ? message : message.toString();
+
+          console.log('[stockfish-out]', line);
+
+          if (line === 'uciok') {
+            this.ready = true;
+            if (!initialized) {
+              initialized = true;
+              clearTimeout(timeout);
+              resolve(this);
+            }
+          } else if (line.startsWith('bestmove')) {
+            const parts = line.split(' ');
+            const move = parts[1];
+            if (this.currentSearch) {
+              clearTimeout(this.currentSearch.timeout);
+              this.currentSearch.resolve(move);
+              this.currentSearch = null;
+            }
+          }
+        };
+
+        this.engine.onerror = (error) => {
+          console.error('[stockfish] Error:', error);
+          if (!initialized) {
+            reject(error);
+          }
+        };
+
+        this.send('uci');
       } catch (err) {
         reject(err);
       }
@@ -394,9 +380,9 @@ class StockfishEngine extends EventEmitter {
   }
 
   send(command) {
-    if (this.process && this.process.stdin) {
+    if (this.engine) {
       console.log('[stockfish-in]', command);
-      this.process.stdin.write(command + '\n');
+      this.engine.postMessage(command);
     }
   }
 
@@ -434,8 +420,8 @@ class StockfishEngine extends EventEmitter {
   }
 
   stop() {
-    if (this.process) {
-      this.process.kill();
+    if (this.engine && typeof this.engine.terminate === 'function') {
+      this.engine.terminate();
     }
   }
 }

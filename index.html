@@ -2293,6 +2293,9 @@ function ready() {
         }
     });
 
+    $('#chess-ai-game').on('click', function(){
+        startAIGame();
+    });
 
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)

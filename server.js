@@ -254,6 +254,36 @@ app.post('/api/elo/:username/update', (req, res) => {
   });
 });
 
+app.post('/api/chess/game/end', (req, res) => {
+  const username = String(req.body && req.body.username || '').trim();
+  const result = String(req.body && req.body.result || '').trim();
+  const opponentElo = Number(req.body && req.body.opponentElo || 1600);
+
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  if (!['1-0', '0-1', '1/2-1/2'].includes(result)) {
+    return res.status(400).json({ error: 'result must be 1-0, 0-1, or 1/2-1/2' });
+  }
+
+  let playerResult;
+  if (result === '1-0') {
+    playerResult = 1;
+  } else if (result === '0-1') {
+    playerResult = 0;
+  } else {
+    playerResult = 0.5;
+  }
+
+  const updateResult = updatePlayerElo(username, opponentElo, playerResult);
+  return res.json({
+    success: true,
+    newElo: updateResult.newElo,
+    eloChange: updateResult.eloChange,
+    playerData: updateResult.playerData
+  });
+});
+
 // Stockfish WASM module is unreliable on server-side, using fallback algorithm instead
 let StockfishFactory = null;
 

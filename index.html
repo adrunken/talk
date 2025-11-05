@@ -2496,6 +2496,18 @@ function ready() {
         updateHistoryControls && updateHistoryControls();
         $('#chess-modal').removeClass('hidden');
         updateSettingUI('confirm-moves');
+
+        if (data['isAiGame'] && chessGame.turn !== chessGame.color) {
+            setTimeout(function() {
+                requestAIMove();
+            }, 500);
+        }
+    }
+
+    function requestAIMove() {
+        if (!chessGame || !chessGame.isAiGame || !ws || ws.readyState !== 1) return;
+        if (chessGame.turn === chessGame.color) return;
+        ws.send(JSON.stringify({ type: 'chess_request_ai_move', game_id: chessGame.id }));
     }
 
     // WebSocket message handler

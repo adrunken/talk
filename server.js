@@ -84,9 +84,64 @@ function saveUserSettings(username, settings) {
   return true;
 }
 
+// ELO Rating System
+const ELO_FILE = path.join(DATA_DIR, 'user-elo.json');
+const STARTING_ELO = 1200;
+const K_FACTOR = 32; // Standard K-factor for rating adjustments
+
+let userElos = {}; // username -> { elo: number, gamesPlayed: number, winRate: number }
+
+function loadUserElos() {
+  try {
+    if (fs.existsSync(ELO_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ELO_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        userElos = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistUserElos() {
+  try { fs.writeFile(ELO_FILE, JSON.stringify(userElos, null, 2), () => {}); } catch(_) {}
+}
+
+function getUserElo(username) {
+  if (!username) return null;
+  if (!userElos[username]) {
+    userElos[username] = { elo: STARTING_ELO, gamesPlayed: 0, wins: 0 };
+    persistUserElos();
+  }
+  return userElos[username];
+}
+
+function calculateExpectedScore(playerElo, opponentElo) {
+  return 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+}
+
+function updatePlayerElo(username, opponentElo, result) {
+  // result: 1 for win, 0.5 for draw, 0 for loss
+  const playerData = getUserElo(username);
+  const expected = calculateExpectedScore(playerData.elo, opponentElo);
+  const eloChange = Math.round(K_FACTOR * (result - expected));
+
+  playerData.elo = Math.max(100, playerData.elo + eloChange);
+  playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
+
+  if (result === 1) {
+    playerData.wins = (playerData.wins || 0) + 1;
+  } else if (result === 0.5) {
+    playerData.draws = (playerData.draws || 0) + 1;
+  }
+
+  persistUserElos();
+  return { newElo: playerData.elo, eloChange, playerData };
+}
+
 loadMessages();
 loadKnownUsers();
 loadUserSettings();
+loadUserElos();
 
 // Server
 const app = express();
@@ -163,6 +218,70 @@ app.post('/api/settings/:username', (req, res) => {
   }
   saveUserSettings(username, settings);
   return res.json({ success: true });
+});
+
+// ELO Rating API endpoints
+app.get('/api/elo/:username', (req, res) => {
+  const username = String(req.params.username || '').trim();
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  const eloData = getUserElo(username);
+  return res.json(eloData);
+});
+
+app.post('/api/elo/:username/update', (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const opponentElo = Number(req.body && req.body.opponentElo || 0);
+  const result = Number(req.body && req.body.result || 0);
+
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  if (opponentElo <= 0) {
+    return res.status(400).json({ error: 'opponentElo required and must be positive' });
+  }
+  if (![0, 0.5, 1].includes(result)) {
+    return res.status(400).json({ error: 'result must be 0 (loss), 0.5 (draw), or 1 (win)' });
+  }
+
+  const updateResult = updatePlayerElo(username, opponentElo, result);
+  return res.json({
+    success: true,
+    newElo: updateResult.newElo,
+    eloChange: updateResult.eloChange,
+    playerData: updateResult.playerData
+  });
+});
+
+app.post('/api/chess/game/end', (req, res) => {
+  const username = String(req.body && req.body.username || '').trim();
+  const result = String(req.body && req.body.result || '').trim();
+  const opponentElo = Number(req.body && req.body.opponentElo || 1600);
+
+  if (!username) {
+    return res.status(400).json({ error: 'username required' });
+  }
+  if (!['1-0', '0-1', '1/2-1/2'].includes(result)) {
+    return res.status(400).json({ error: 'result must be 1-0, 0-1, or 1/2-1/2' });
+  }
+
+  let playerResult;
+  if (result === '1-0') {
+    playerResult = 1;
+  } else if (result === '0-1') {
+    playerResult = 0;
+  } else {
+    playerResult = 0.5;
+  }
+
+  const updateResult = updatePlayerElo(username, opponentElo, playerResult);
+  return res.json({
+    success: true,
+    newElo: updateResult.newElo,
+    eloChange: updateResult.eloChange,
+    playerData: updateResult.playerData
+  });
 });
 
 // Stockfish WASM module is unreliable on server-side, using fallback algorithm instead
@@ -715,7 +834,7 @@ wss.on('connection', (ws, req) => {
   }
   userMessageTimes.set(ws, []);
 
-  ws.on('message', (data) => {
+  ws.on('message', async (data) => {
     let msgStr = data.toString();
     if (msgStr.length > 4096) { send(ws, { type: 'flood' }); try { ws.close(); } catch(_){} return; }
 
@@ -891,6 +1010,186 @@ wss.on('connection', (ws, req) => {
           const over = { type: 'chess_over', game_id: gid, result, reason: 'resign', fen: g.board.fen() };
           sendToUsername(g.white, over); sendToUsername(g.black, over);
         }
+      }
+    }
+    else if (msg.type === 'chess_ai_start') {
+      const username = users.get(ws);
+      const playerElo = Number(msg.playerElo || 0);
+
+      if (!username) {
+        send(ws, { type: 'chess_error', message: 'Username required' });
+        return;
+      }
+
+      const gid = nextGameId++;
+      const board = new ChessCtor();
+      const aiElo = 1600;
+      const playerColor = Math.random() < 0.5 ? 'w' : 'b';
+      const white = playerColor === 'w' ? username : 'zyberAI';
+      const black = playerColor === 'b' ? username : 'zyberAI';
+
+      games.set(gid, {
+        board,
+        white,
+        black,
+        over: false,
+        isAiGame: true,
+        playerUsername: username,
+        playerColor,
+        playerElo,
+        aiElo
+      });
+
+      const payload = {
+        type: 'chess_start',
+        game_id: gid,
+        white,
+        black,
+        fen: board.fen(),
+        turn: 'white',
+        isAiGame: true,
+        playerColor,
+        aiElo
+      };
+      send(ws, payload);
+    }
+    else if (msg.type === 'chess_ai_move') {
+      const gid = msg.game_id;
+      const src = String(msg.from || '');
+      const dst = String(msg.to || '');
+      const promo = (msg.promotion || '').toLowerCase();
+      const username = users.get(ws);
+
+      if (!games.has(gid)) {
+        send(ws, { type: 'chess_error', message: 'Game not found' });
+        return;
+      }
+
+      const g = games.get(gid);
+      const board = g.board;
+
+      if (!g.isAiGame) {
+        send(ws, { type: 'chess_error', message: 'Not an AI game' });
+        return;
+      }
+
+      if (g.over) {
+        send(ws, { type: 'chess_error', message: 'Game over' });
+        return;
+      }
+
+      if (username !== g.playerUsername) {
+        send(ws, { type: 'chess_error', message: 'Not your game' });
+        return;
+      }
+
+      const moveSpec = { from: src, to: dst };
+      if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
+      const playerMove = board.move(moveSpec);
+
+      if (!playerMove) {
+        send(ws, { type: 'chess_illegal', reason: 'illegal' });
+        return;
+      }
+
+      const playerMovePayload = {
+        type: 'chess_move',
+        game_id: gid,
+        from: src,
+        to: dst,
+        promotion: playerMove.promotion || null,
+        san: playerMove.san,
+        fen: board.fen(),
+        turn: board.turn() === 'w' ? 'white' : 'black',
+        check: board.in_check()
+      };
+      send(ws, playerMovePayload);
+
+      if (board.game_over()) {
+        g.over = true;
+        let result, reason;
+        if (board.in_checkmate()) {
+          result = board.turn() === 'w' ? '0-1' : '1-0';
+          reason = 'checkmate';
+        } else if (board.in_stalemate() || board.in_draw()) {
+          result = '1/2-1/2';
+          reason = 'stalemate';
+        } else {
+          result = '1/2-1/2';
+          reason = 'draw';
+        }
+
+        const gameOverPayload = {
+          type: 'chess_over',
+          game_id: gid,
+          result,
+          reason,
+          fen: board.fen()
+        };
+        send(ws, gameOverPayload);
+        return;
+      }
+
+      try {
+        const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
+
+        if (!bestMove) {
+          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
+          return;
+        }
+
+        const from = bestMove.substring(0, 2);
+        const to = bestMove.substring(2, 4);
+        const promotion = bestMove.length > 4 ? bestMove[4] : null;
+
+        const aiMoveSpec = { from, to };
+        if (promotion) aiMoveSpec.promotion = promotion;
+        const aiMove = board.move(aiMoveSpec);
+
+        if (aiMove) {
+          const aiMovePayload = {
+            type: 'chess_move',
+            game_id: gid,
+            from,
+            to,
+            promotion: aiMove.promotion || null,
+            san: aiMove.san,
+            fen: board.fen(),
+            turn: board.turn() === 'w' ? 'white' : 'black',
+            check: board.in_check(),
+            isAiMove: true
+          };
+          send(ws, aiMovePayload);
+
+          if (board.game_over()) {
+            g.over = true;
+            let result, reason;
+            if (board.in_checkmate()) {
+              result = board.turn() === 'w' ? '0-1' : '1-0';
+              reason = 'checkmate';
+            } else if (board.in_stalemate() || board.in_draw()) {
+              result = '1/2-1/2';
+              reason = 'stalemate';
+            } else {
+              result = '1/2-1/2';
+              reason = 'draw';
+            }
+
+            const gameOverPayload = {
+              type: 'chess_over',
+              game_id: gid,
+              result,
+              reason,
+              fen: board.fen()
+            };
+            send(ws, gameOverPayload);
+          }
+        } else {
+          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+        }
+      } catch (err) {
+        console.error('AI move error:', err);
+        send(ws, { type: 'chess_error', message: 'AI move generation failed' });
       }
     }
   });

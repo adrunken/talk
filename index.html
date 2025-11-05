@@ -754,6 +754,10 @@ html {
       <div class="chess-panel-header">
         <h4>Chess</h4>
       </div>
+      <div id="chess-elo-display" class="chess-elo-display" style="font-size:0.875rem;padding:0.5rem;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:0.5rem;text-align:center;display:none;">
+        <div style="color:var(--text-muted);font-size:0.75rem;margin-bottom:0.25rem;">Your Rating</div>
+        <div style="font-weight:600;color:var(--accent-primary);font-size:1rem;" id="chess-player-elo">1200</div>
+      </div>
       <div class="history-controls" style="display:flex;gap:0.5rem;align-items:center;">
         <button class="chess-button" id="chess-prev" title="Previous move"><i class="fas fa-chevron-left"></i></button>
         <button class="chess-button" id="chess-next" title="Next move"><i class="fas fa-chevron-right"></i></button>
@@ -762,9 +766,11 @@ html {
       <div class="chess-status" id="chess-status"></div>
       <div>White: <span id="chess-white"></span></div>
       <div>Black: <span id="chess-black"></span></div>
+      <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
         <button class="chess-button" id="chess-resign">Resign</button>
+        <button class="chess-button" id="chess-ai-game">Play AI</button>
         <button class="chess-button" id="chess-close">Close</button>
       </div>
     </div>
@@ -1426,6 +1432,10 @@ function sendMove(from, to, promotion) {
     if (stockfishGame) {
         handleStockfishMove(from, to, promotion);
         clearPendingMove();
+        return;
+    }
+    if (chessGame && chessGame.isAiGame) {
+        handleAIMove(from, to, promotion);
         return;
     }
     if (!ws || ws.readyState !== 1) return;
@@ -2287,6 +2297,9 @@ function ready() {
         }
     });
 
+    $('#chess-ai-game').on('click', function(){
+        startAIGame();
+    });
 
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)
@@ -2382,6 +2395,43 @@ function ready() {
         $('#rejoin-wrapper').remove();
     }
 
+    function loadPlayerElo() {
+        var me = $('#username').text();
+        if (!me) return;
+        fetch(API_BASE + '/api/elo/' + encodeURIComponent(me))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data && data.elo) {
+                    $('#chess-player-elo').text(Math.round(data.elo));
+                    $('#chess-elo-display').show();
+                }
+            })
+            .catch(function(err) { console.log('Failed to load ELO:', err); });
+    }
+
+    function handleAIMove(from, to, promotion) {
+        if (!chessGame || !ws || ws.readyState !== 1) return;
+        var payload = { type: 'chess_ai_move', game_id: chessGame.id, from: from, to: to };
+        if (promotion) payload.promotion = promotion;
+        ws.send(JSON.stringify(payload));
+        clearSelection();
+        clearPendingMove();
+    }
+
+    function startAIGame() {
+        var me = $('#username').text();
+        if (!me || !ws || ws.readyState !== 1) {
+            flashStatus('Cannot start AI game');
+            return;
+        }
+        var playerElo = parseInt($('#chess-player-elo').text()) || 1200;
+        chessGame = null;
+        pendingUserMove = null;
+        premoveQueue = [];
+        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo }));
+        flashStatus('Starting AI game...');
+    }
+
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();
@@ -2394,14 +2444,22 @@ function ready() {
             turn: data['turn'],
             lastMove: null,
             over: false,
+            isAiGame: data['isAiGame'] || false,
+            aiElo: data['aiElo'] || 1600,
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
             historyIndex: 0
         };
         hideRejoinPrompt();
         $('#chess-white').text(chessGame.white);
         $('#chess-black').text(chessGame.black);
-        $('#chess-status').text('Your color: ' + chessGame.color);
+        $('#chess-status').text('Your color: ' + chessGame.color + (data['isAiGame'] ? ' (vs AI ' + data['aiElo'] + ')' : ''));
         pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+
+        if (data['isAiGame']) {
+            loadPlayerElo();
+            $('#chess-elo-change').hide();
+        }
+
         renderBoard();
         updateHistoryControls && updateHistoryControls();
         $('#chess-modal').removeClass('hidden');
@@ -2534,6 +2592,35 @@ function ready() {
                 chessGame.over = true;
                 $('#chess-status').text('Game over: ' + data['result'] + ' (' + data['reason'] + ')');
                 hideRejoinPrompt();
+
+                if (chessGame.isAiGame) {
+                    var me = $('#username').text();
+                    var playerColor = chessGame.color === 'white' ? 'w' : 'b';
+                    var playerResult = 0;
+                    if (data['result'] === '1-0' && playerColor === 'w') playerResult = 1;
+                    else if (data['result'] === '0-1' && playerColor === 'b') playerResult = 1;
+                    else if (data['result'] === '1/2-1/2') playerResult = 0.5;
+
+                    fetch(API_BASE + '/api/chess/game/end', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: me,
+                            result: data['result'],
+                            opponentElo: chessGame.aiElo
+                        })
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            $('#chess-player-elo').text(Math.round(data.newElo));
+                            $('#chess-elo-change-value').text((data.eloChange > 0 ? '+' : '') + data.eloChange);
+                            $('#chess-elo-change').show();
+                            flashStatus('ELO: ' + $('#chess-player-elo').text() + ' (' + (data.eloChange > 0 ? '+' : '') + data.eloChange + ')');
+                        }
+                    })
+                    .catch(function(err) { console.log('Failed to update ELO:', err); });
+                }
             }
         }
         else if (data['type'] === 'chess_illegal') {
@@ -2541,6 +2628,20 @@ function ready() {
         }
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
+        }
+        else if (data['type'] === 'chess_move' && data['isAiMove']) {
+            if (chessGame && chessGame.id === data['game_id']) {
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.inCheck = !!data['check'];
+                chessGame.lastMove = { from: data['from'], to: data['to'] };
+                chessGame.moveHistory = chessGame.moveHistory || [];
+                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
+                chessGame.historyIndex = chessGame.moveHistory.length - 1;
+                renderBoard();
+                updateChessStatus();
+                clearPendingMove();
+            }
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

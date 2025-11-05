@@ -1,0 +1,18 @@
+{
+  "testuser": {
+    "elo": 1229,
+    "gamesPlayed": 1,
+    "wins": 1
+  },
+  "testuser2": {
+    "elo": 1176,
+    "gamesPlayed": 1,
+    "wins": 0
+  },
+  "testuser3": {
+    "elo": 1200,
+    "gamesPlayed": 1,
+    "wins": 0,
+    "draws": 1
+  }
+}

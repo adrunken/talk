@@ -5,8 +5,8 @@ const fs = require('fs');
 const WebSocket = require('ws');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
-const { spawn } = require('child_process');
 const { EventEmitter } = require('events');
+const Stockfish = require('stockfish');
 
 // Config (mirrors config.py defaults)
 const HOST = '0.0.0.0';

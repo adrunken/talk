@@ -442,36 +442,13 @@ async function initStockfish() {
 
   stockfishInitPromise = (async () => {
     try {
-      console.log('[stockfish] Initializing UCI engine...');
+      console.log('[stockfish] Initializing Stockfish WASM engine...');
 
-      // Try common stockfish binary locations
-      const possiblePaths = [
-        'stockfish',                          // System PATH
-        '/usr/games/stockfish',              // Linux
-        '/usr/bin/stockfish',                // Linux alternative
-        '/usr/local/bin/stockfish',          // macOS homebrew
-        '/opt/homebrew/bin/stockfish',       // M1 macOS
-        'C:\\stockfish\\stockfish.exe',      // Windows
-        './stockfish',                        // Current directory
-      ];
-
-      let lastError = null;
-
-      for (const enginePath of possiblePaths) {
-        try {
-          console.log(`[stockfish] Trying: ${enginePath}`);
-          const engine = new StockfishEngine(enginePath);
-          await engine.start();
-          stockfishEngine = engine;
-          console.log('[stockfish] Engine initialized and ready');
-          return stockfishEngine;
-        } catch (err) {
-          lastError = err;
-          console.log(`[stockfish] Failed: ${err.message}`);
-        }
-      }
-
-      throw new Error(`Could not find stockfish binary. Last error: ${lastError ? lastError.message : 'unknown'}`);
+      const engine = new StockfishEngine();
+      await engine.start();
+      stockfishEngine = engine;
+      console.log('[stockfish] Engine initialized and ready');
+      return stockfishEngine;
 
     } catch (err) {
       console.error('[stockfish] Initialization error:', err.message);

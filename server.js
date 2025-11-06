@@ -1041,6 +1041,20 @@ wss.on('connection', (ws, req) => {
             fen: g.board.fen()
           };
 
+          // Update Elo for player-vs-player games
+          if (!g.isAiGame && g.white && g.black) {
+            const whiteResult = winner === g.white ? 1 : 0;
+            const blackResult = winner === g.black ? 1 : 0;
+
+            const whiteElo = getUserElo(g.white).elo;
+            const blackElo = getUserElo(g.black).elo;
+
+            updatePlayerElo(g.white, blackElo, whiteResult);
+            updatePlayerElo(g.black, whiteElo, blackResult);
+
+            console.log('[chess] Player-vs-player game resigned:', g.white, 'vs', g.black, 'winner:', winner);
+          }
+
           // Send to both players if it's a regular game
           if (!g.isAiGame) {
             sendToUsername(g.white, over);

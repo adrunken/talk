@@ -30,6 +30,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const MSG_FILE = path.join(DATA_DIR, 'messages.jsonl');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'user-settings.json');
+const ONLINE_HISTORY_FILE = path.join(DATA_DIR, 'online-history.json');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 let idx = 0; // next message id
@@ -95,6 +96,38 @@ function saveUserSettings(username, settings) {
   return true;
 }
 
+// Online History
+let onlineHistory = {}; // username -> Array<{action: 'online'|'offline', timestamp: number, time: string}>
+
+function loadOnlineHistory() {
+  try {
+    if (fs.existsSync(ONLINE_HISTORY_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ONLINE_HISTORY_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        onlineHistory = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistOnlineHistory() {
+  try { fs.writeFile(ONLINE_HISTORY_FILE, JSON.stringify(onlineHistory, null, 2), () => {}); } catch(_) {}
+}
+
+function recordOnlineEvent(username, action) {
+  if (!username || !['online', 'offline'].includes(action)) return;
+  if (!onlineHistory[username]) {
+    onlineHistory[username] = [];
+  }
+  const timestamp = Math.floor(now());
+  const date = new Date(timestamp * 1000);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const time = `${hours}:${minutes}`;
+  onlineHistory[username].push({ action, timestamp, time });
+  persistOnlineHistory();
+}
+
 // ELO Rating System
 const ELO_FILE = path.join(DATA_DIR, 'user-elo.json');
 const STARTING_ELO = 1200;
@@ -153,6 +186,7 @@ loadMessages();
 loadKnownUsers();
 loadUserSettings();
 loadUserElos();
+loadOnlineHistory();
 
 // Server
 const app = express();
@@ -1032,6 +1066,9 @@ setInterval(() => {
   for (const [ws, lastPing] of pings.entries()) {
     if (t - lastPing > 30) {
       const uname = users.get(ws);
+      if (uname) {
+        recordOnlineEvent(uname, 'offline');
+      }
       users.delete(ws);
       pings.delete(ws);
       userMessageTimes.delete(ws);
@@ -1089,14 +1126,42 @@ wss.on('connection', (ws, req) => {
         deliverQueuedInvites(username);
       }
       if (message) {
-        if (message.length > 1000) message = message.slice(0, 1000) + '...';
-        const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
-        const obj = { type: 'message', message: safeMessage, username, id: idx, datetime: Math.floor(now()) };
-        messages[idx] = obj;
-        appendMessage(obj);
-        idx += 1;
-        const s = JSON.stringify(obj);
-        for (const [u] of users) send(u, s);
+        if (message.toLowerCase() === '/online history') {
+          const uname = String(username || '').toLowerCase();
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            const obj = { type: 'message', message: 'Permission denied. Only admin can view online history.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            const s = JSON.stringify(obj);
+            send(ws, s);
+            idx += 1;
+          } else {
+            const history = [];
+            for (const [user, events] of Object.entries(onlineHistory)) {
+              for (const event of events) {
+                if (event.action === 'online') {
+                  history.push({ user, time: event.time, timestamp: event.timestamp });
+                }
+              }
+            }
+            history.sort((a, b) => a.timestamp - b.timestamp);
+            const last7 = history.slice(-7);
+            const historyText = last7.length === 0
+              ? 'No online history recorded.'
+              : last7.map(h => `${h.user} ${h.time}`).join('\n');
+            const obj = { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) };
+            const s = JSON.stringify(obj);
+            send(ws, s);
+            idx += 1;
+          }
+        } else {
+          if (message.length > 1000) message = message.slice(0, 1000) + '...';
+          const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
+          const obj = { type: 'message', message: safeMessage, username, id: idx, datetime: Math.floor(now()) };
+          messages[idx] = obj;
+          appendMessage(obj);
+          idx += 1;
+          const s = JSON.stringify(obj);
+          for (const [u] of users) send(u, s);
+        }
       }
     }
     else if (msg.type === 'messagesbefore') {
@@ -1136,6 +1201,7 @@ wss.on('connection', (ws, req) => {
       knownUsers.add(username);
       persistKnownUsers();
       if (isNew) {
+        recordOnlineEvent(username, 'online');
         send(ws, { type: 'messages', before: 0, messages: messagesRange(Math.max(0, idx - 100), idx) });
       }
       sendUserList();

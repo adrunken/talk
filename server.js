@@ -186,6 +186,7 @@ loadMessages();
 loadKnownUsers();
 loadUserSettings();
 loadUserElos();
+loadOnlineHistory();
 
 // Server
 const app = express();

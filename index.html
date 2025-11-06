@@ -2331,6 +2331,7 @@ function ready() {
             chessGame = null;
         } else if (chessGame && ws && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'chess_resign', game_id: chessGame.id }));
+            flashStatus('Game resigned');
         }
     });
 

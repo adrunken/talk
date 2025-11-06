@@ -96,6 +96,38 @@ function saveUserSettings(username, settings) {
   return true;
 }
 
+// Online History
+let onlineHistory = {}; // username -> Array<{action: 'online'|'offline', timestamp: number, time: string}>
+
+function loadOnlineHistory() {
+  try {
+    if (fs.existsSync(ONLINE_HISTORY_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ONLINE_HISTORY_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        onlineHistory = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistOnlineHistory() {
+  try { fs.writeFile(ONLINE_HISTORY_FILE, JSON.stringify(onlineHistory, null, 2), () => {}); } catch(_) {}
+}
+
+function recordOnlineEvent(username, action) {
+  if (!username || !['online', 'offline'].includes(action)) return;
+  if (!onlineHistory[username]) {
+    onlineHistory[username] = [];
+  }
+  const timestamp = Math.floor(now());
+  const date = new Date(timestamp * 1000);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const time = `${hours}:${minutes}`;
+  onlineHistory[username].push({ action, timestamp, time });
+  persistOnlineHistory();
+}
+
 // ELO Rating System
 const ELO_FILE = path.join(DATA_DIR, 'user-elo.json');
 const STARTING_ELO = 1200;

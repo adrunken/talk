@@ -1250,19 +1250,33 @@ wss.on('connection', (ws, req) => {
         const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
 
         if (!bestMove) {
+          console.error('[ai] No move from bestMoveWithStockfish');
           send(ws, { type: 'chess_error', message: 'AI move generation failed' });
           return;
         }
 
-        const from = bestMove.substring(0, 2);
-        const to = bestMove.substring(2, 4);
-        const promotion = bestMove.length > 4 ? bestMove[4] : null;
+        console.log('[ai] Received move:', bestMove, 'length:', bestMove.length);
+
+        if (bestMove.length < 4) {
+          console.error('[ai] Move format invalid:', bestMove);
+          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+          return;
+        }
+
+        let from = bestMove.substring(0, 2).toLowerCase();
+        let to = bestMove.substring(2, 4).toLowerCase();
+        let promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
+
+        console.log('[ai] Move parsed - from:', from, 'to:', to, 'promotion:', promotion);
+        console.log('[ai] FEN:', board.fen());
+        console.log('[ai] Legal moves:', board.moves({ verbose: true }).slice(0, 5).map(m => m.from + m.to).join(', '));
 
         const aiMoveSpec = { from, to };
         if (promotion) aiMoveSpec.promotion = promotion;
         const aiMove = board.move(aiMoveSpec);
 
         if (aiMove) {
+          console.log('[ai] Move accepted:', aiMove.san);
           const aiMovePayload = {
             type: 'chess_move',
             game_id: gid,
@@ -1301,6 +1315,8 @@ wss.on('connection', (ws, req) => {
             send(ws, gameOverPayload);
           }
         } else {
+          console.error('[ai] Failed to apply move - spec:', aiMoveSpec);
+          console.error('[ai] Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));
           send(ws, { type: 'chess_error', message: 'AI move is invalid' });
         }
       } catch (err) {

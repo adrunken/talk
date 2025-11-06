@@ -384,6 +384,30 @@ html {
     color: var(--text-secondary);
 }
 
+.play-ai-button {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.play-ai-button:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.play-ai-button:active {
+    transform: translateY(0);
+}
+
 /* Previous messages link */
 #previous { 
     margin-bottom: 1.5rem; 
@@ -704,6 +728,10 @@ html {
     <div>
         <h3>Online Users</h3>
         <div id="connected"></div>
+    </div>
+
+    <div>
+        <button id="play-ai-btn" class="play-ai-button">Play AI</button>
     </div>
 
 </div>
@@ -1425,6 +1453,15 @@ function hidePromotionDialog() {
     $('#promotion-overlay').addClass('hidden');
     $('#promotion-options').empty();
     clearSelection();
+}
+
+function handleAIMove(from, to, promotion) {
+    if (!chessGame || !ws || ws.readyState !== 1) return;
+    var payload = { type: 'chess_ai_move', game_id: chessGame.id, from: from, to: to };
+    if (promotion) payload.promotion = promotion;
+    ws.send(JSON.stringify(payload));
+    clearSelection();
+    clearPendingMove();
 }
 
 function sendMove(from, to, promotion) {
@@ -2294,7 +2331,12 @@ function ready() {
             chessGame = null;
         } else if (chessGame && ws && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'chess_resign', game_id: chessGame.id }));
+            flashStatus('Game resigned');
         }
+    });
+
+    $('#play-ai-btn').on('click', function(){
+        startAIGame();
     });
 
     $('#chess-ai-game').on('click', function(){
@@ -2409,15 +2451,6 @@ function ready() {
             .catch(function(err) { console.log('Failed to load ELO:', err); });
     }
 
-    function handleAIMove(from, to, promotion) {
-        if (!chessGame || !ws || ws.readyState !== 1) return;
-        var payload = { type: 'chess_ai_move', game_id: chessGame.id, from: from, to: to };
-        if (promotion) payload.promotion = promotion;
-        ws.send(JSON.stringify(payload));
-        clearSelection();
-        clearPendingMove();
-    }
-
     function startAIGame() {
         var me = $('#username').text();
         if (!me || !ws || ws.readyState !== 1) {
@@ -2464,6 +2497,18 @@ function ready() {
         updateHistoryControls && updateHistoryControls();
         $('#chess-modal').removeClass('hidden');
         updateSettingUI('confirm-moves');
+
+        if (data['isAiGame'] && chessGame.turn !== chessGame.color) {
+            setTimeout(function() {
+                requestAIMove();
+            }, 500);
+        }
+    }
+
+    function requestAIMove() {
+        if (!chessGame || !chessGame.isAiGame || !ws || ws.readyState !== 1) return;
+        if (chessGame.turn === chessGame.color) return;
+        ws.send(JSON.stringify({ type: 'chess_request_ai_move', game_id: chessGame.id }));
     }
 
     // WebSocket message handler
@@ -2568,6 +2613,20 @@ function ready() {
             try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
             startChessGame(data);
         }
+        else if (data['type'] === 'chess_move' && data['isAiMove']) {
+            if (chessGame && chessGame.id === data['game_id']) {
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.inCheck = !!data['check'];
+                chessGame.lastMove = { from: data['from'], to: data['to'] };
+                chessGame.moveHistory = chessGame.moveHistory || [];
+                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
+                chessGame.historyIndex = chessGame.moveHistory.length - 1;
+                renderBoard();
+                updateChessStatus();
+                clearPendingMove();
+            }
+        }
         else if (data['type'] === 'chess_move') {
             if (chessGame && chessGame.id === data['game_id']) {
                 chessGame.fen = data['fen'];
@@ -2628,20 +2687,6 @@ function ready() {
         }
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
-        }
-        else if (data['type'] === 'chess_move' && data['isAiMove']) {
-            if (chessGame && chessGame.id === data['game_id']) {
-                chessGame.fen = data['fen'];
-                chessGame.turn = data['turn'];
-                chessGame.inCheck = !!data['check'];
-                chessGame.lastMove = { from: data['from'], to: data['to'] };
-                chessGame.moveHistory = chessGame.moveHistory || [];
-                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
-                chessGame.historyIndex = chessGame.moveHistory.length - 1;
-                renderBoard();
-                updateChessStatus();
-                clearPendingMove();
-            }
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

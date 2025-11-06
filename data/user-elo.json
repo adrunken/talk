@@ -14,5 +14,10 @@
     "gamesPlayed": 1,
     "wins": 0,
     "draws": 1
+  },
+  "zahir": {
+    "elo": 1229,
+    "gamesPlayed": 1,
+    "wins": 1
   }
 }

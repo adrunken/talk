@@ -5,8 +5,7 @@ const fs = require('fs');
 const WebSocket = require('ws');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
-const { spawn } = require('child_process');
-const { EventEmitter } = require('events');
+const Stockfish = require('stockfish');
 
 // Config (mirrors config.py defaults)
 const HOST = '0.0.0.0';
@@ -284,9 +283,6 @@ app.post('/api/chess/game/end', (req, res) => {
   });
 });
 
-// Stockfish WASM module is unreliable on server-side, using fallback algorithm instead
-let StockfishFactory = null;
-
 function eloToDepth(elo) {
   const rating = Number(elo) || 600;
 
@@ -321,129 +317,14 @@ function eloToDepth(elo) {
   return 8;
 }
 
-class StockfishEngine extends EventEmitter {
-  constructor(enginePath) {
-    super();
-    this.enginePath = enginePath;
-    this.process = null;
-    this.ready = false;
-    this.queue = [];
-    this.currentSearch = null;
-  }
-
-  async start() {
-    return new Promise((resolve, reject) => {
-      try {
-        console.log('[stockfish] Starting engine:', this.enginePath);
-        this.process = spawn(this.enginePath, [], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: 30000
-        });
-
-        let initialized = false;
-
-        this.process.stdout.on('data', (data) => {
-          const lines = data.toString().split('\n');
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed) continue;
-
-            console.log('[stockfish-out]', trimmed);
-
-            if (trimmed === 'uciok') {
-              this.ready = true;
-              if (!initialized) {
-                initialized = true;
-                resolve(this);
-              }
-            } else if (trimmed.startsWith('bestmove')) {
-              const parts = trimmed.split(' ');
-              const move = parts[1];
-              if (this.currentSearch) {
-                clearTimeout(this.currentSearch.timeout);
-                this.currentSearch.resolve(move);
-                this.currentSearch = null;
-              }
-            }
-          }
-        });
-
-        this.process.stderr.on('data', (data) => {
-          console.warn('[stockfish-err]', data.toString());
-        });
-
-        this.process.on('error', (err) => {
-          console.error('[stockfish] Process error:', err);
-          if (!initialized) reject(err);
-        });
-
-        // Send initialization command
-        this.process.stdin.write('uci\n');
-
-        // Timeout for initialization
-        setTimeout(() => {
-          if (!initialized) {
-            reject(new Error('Stockfish initialization timeout'));
-          }
-        }, 5000);
-
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  send(command) {
-    if (this.process && this.process.stdin) {
-      console.log('[stockfish-in]', command);
-      this.process.stdin.write(command + '\n');
-    }
-  }
-
-  async go(options) {
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        resolve(null);
-      }, 30000);
-
-      this.currentSearch = { resolve, timeout };
-
-      let goCommand = 'go';
-      if (options.depth) {
-        goCommand += ' depth ' + options.depth;
-      } else if (options.movetime) {
-        goCommand += ' movetime ' + options.movetime;
-      } else {
-        goCommand += ' depth 15';
-      }
-
-      this.send(goCommand);
-    });
-  }
-
-  async setoption(name, value) {
-    this.send(`setoption name ${name} value ${value}`);
-  }
-
-  async position(fen) {
-    this.send(`position fen ${fen}`);
-  }
-
-  async newgame() {
-    this.send('ucinewgame');
-  }
-
-  stop() {
-    if (this.process) {
-      this.process.kill();
-    }
-  }
-}
-
 let stockfishEngine = null;
 let stockfishInitPromise = null;
 
-async function initStockfish() {
+async function initStockfishEngine() {
+  if (stockfishEngine === false) {
+    return null; // Already tried and failed
+  }
+
   if (stockfishEngine) {
     console.log('[stockfish] Engine already initialized');
     return stockfishEngine;
@@ -456,181 +337,246 @@ async function initStockfish() {
 
   stockfishInitPromise = (async () => {
     try {
-      console.log('[stockfish] Initializing UCI engine...');
+      console.log('[stockfish] Initializing Stockfish WASM engine...');
 
-      // Try common stockfish binary locations
-      const possiblePaths = [
-        'stockfish',                          // System PATH
-        '/usr/games/stockfish',              // Linux
-        '/usr/bin/stockfish',                // Linux alternative
-        '/usr/local/bin/stockfish',          // macOS homebrew
-        '/opt/homebrew/bin/stockfish',       // M1 macOS
-        'C:\\stockfish\\stockfish.exe',      // Windows
-        './stockfish',                        // Current directory
-      ];
+      const engine = Stockfish();
 
-      let lastError = null;
-
-      for (const enginePath of possiblePaths) {
-        try {
-          console.log(`[stockfish] Trying: ${enginePath}`);
-          const engine = new StockfishEngine(enginePath);
-          await engine.start();
-          stockfishEngine = engine;
-          console.log('[stockfish] Engine initialized and ready');
-          return stockfishEngine;
-        } catch (err) {
-          lastError = err;
-          console.log(`[stockfish] Failed: ${err.message}`);
-        }
+      if (!engine || typeof engine.postMessage !== 'function') {
+        console.warn('[stockfish] Engine does not support postMessage, skipping WASM');
+        stockfishEngine = false;
+        return null;
       }
 
-      throw new Error(`Could not find stockfish binary. Last error: ${lastError ? lastError.message : 'unknown'}`);
+      stockfishEngine = new Promise((resolve, reject) => {
+        let isReady = false;
+
+        engine.onmessage = (message) => {
+          if (message === 'uciok') {
+            isReady = true;
+            console.log('[stockfish] Engine initialized');
+          }
+        };
+
+        engine.onerror = (err) => {
+          console.error('[stockfish] Engine error:', err);
+          reject(err);
+        };
+
+        try {
+          engine.postMessage('uci');
+        } catch (err) {
+          console.error('[stockfish] Error sending uci command:', err);
+          reject(err);
+        }
+
+        setTimeout(() => {
+          resolve(engine);
+        }, 1000);
+      });
+
+      return await stockfishEngine;
 
     } catch (err) {
-      console.error('[stockfish] Initialization error:', err.message);
+      console.error('[stockfish] WASM initialization failed:', err.message);
+      stockfishEngine = false; // Mark as failed
       stockfishInitPromise = null;
-      throw err;
+      return null;
     }
   })();
 
   return stockfishInitPromise;
 }
 
-async function bestMoveWithStockfish(fen, depth, elo) {
+const moveCache = new Map(); // Cache for Lichess API results
+
+async function getMoveLichessAPI(fen, depth, elo) {
   try {
-    if (!stockfishEngine) {
-      try {
-        await initStockfish();
-      } catch (err) {
-        console.warn('[stockfish] Binary not available, using fallback algorithm');
-        return bestMoveFallback(fen, depth);
+    console.log('[lichess] Requesting move from Lichess API for depth', depth);
+
+    // Lichess API endpoint for computer analysis
+    const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn('[lichess] API returned status:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('[lichess] API response:', JSON.stringify(data).substring(0, 200));
+
+    if (data && data.pvs && data.pvs.length > 0) {
+      const bestVariation = data.pvs[0];
+
+      // moves is a space-separated string like "e2e4 d7d5"
+      if (bestVariation.moves && typeof bestVariation.moves === 'string') {
+        const moves = bestVariation.moves.split(' ');
+        if (moves.length > 0 && moves[0].length >= 4) {
+          const move = moves[0];
+          console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
+          return move;
+        }
       }
     }
 
-    if (!stockfishEngine) {
-      console.warn('[stockfish] Engine unavailable, using fallback algorithm');
-      return bestMoveFallback(fen, depth);
-    }
-
-    await stockfishEngine.newgame();
-
-    // Set skill level based on ELO
-    if (elo && !isNaN(elo)) {
-      const skillLevel = eloToSkillLevel(elo);
-      console.log('[stockfish] Setting skill level to', skillLevel, 'for ELO', elo);
-      await stockfishEngine.setoption('Skill Level', skillLevel);
-    }
-
-    // Prepare position
-    await stockfishEngine.position(fen);
-
-    // Search with depth
-    const depthToUse = Math.max(1, Math.min(30, Number(depth) || 15));
-    console.log('[stockfish] Searching with depth', depthToUse);
-
-    const bestMove = await stockfishEngine.go({ depth: depthToUse });
-
-    if (bestMove) {
-      console.log('[stockfish] Best move:', bestMove);
-      return bestMove;
-    }
-
-    console.warn('[stockfish] No best move returned, using fallback');
-    return bestMoveFallback(fen, depth);
+    console.warn('[lichess] No valid moves in response');
+    return null;
 
   } catch (err) {
-    console.error('[stockfish] Error during search:', err);
-    console.log('[stockfish] Falling back to simple algorithm');
-    return bestMoveFallback(fen, depth);
+    console.error('[lichess] API error:', err.message);
+    return null;
   }
 }
 
-function evaluateBoardMaterial(chess) {
+async function bestMoveWithStockfish(fen, depth, elo) {
+  // Try Lichess API first (most reliable)
+  console.log('[ai] Attempting Lichess API for move generation');
+  const lichessMove = await getMoveLichessAPI(fen, depth, elo);
+  if (lichessMove && lichessMove.length >= 4) {
+    return lichessMove; // Success with Lichess
+  }
+
+  // Lichess failed, use improved fallback algorithm
+  console.log('[ai] Lichess API failed, using fallback algorithm');
+  return bestMoveFallback(fen, depth, elo);
+}
+
+function evaluateBoardPositional(chess) {
   const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
   const board = chess.board();
   let score = 0;
-  for (const row of board) {
-    for (const piece of row) {
+
+  // Material score
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
       if (!piece) continue;
       const v = values[piece.type] || 0;
-      score += (piece.color === 'w') ? v : -v;
+      let posBonus = 0;
+
+      // Positional bonuses
+      if (piece.type === 'p') {
+        // Pawns advance towards promotion
+        posBonus = piece.color === 'w' ? (6 - i) * 10 : (i - 1) * 10;
+      } else if (piece.type === 'n') {
+        // Knights prefer central squares
+        const dist = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - dist) * 5;
+      } else if (piece.type === 'r') {
+        // Rooks on 7th rank
+        posBonus = (piece.color === 'w' && i === 1) ? 30 : (piece.color === 'b' && i === 6) ? 30 : 0;
+      }
+
+      const finalValue = v + posBonus;
+      score += (piece.color === 'w') ? finalValue : -finalValue;
     }
   }
+
   return score;
 }
 
-function bestMoveFallback(fen, depth) {
+function bestMoveFallback(fen, depth, elo) {
   const chess = new ChessCtor();
   try { chess.load(fen); } catch (_) { return null; }
 
-  // Limit depth for fallback algorithm to avoid timeouts
-  // Fallback is much slower than real Stockfish
   const requestedDepth = Number(depth) || 5;
-  const maxDepth = Math.max(1, Math.min(5, requestedDepth));
+  const maxDepth = Math.max(1, Math.min(6, requestedDepth));
 
   const player = chess.turn();
   const startTime = Date.now();
-  const timeLimit = 8000; // 8 seconds max to stay under 10s browser timeout
+  const timeLimit = 8000;
   let nodeCount = 0;
-  const maxNodes = 500000; // Limit nodes to prevent timeout
+  const maxNodes = 1000000;
+  const lastMove = chess.history({ verbose: true })[chess.history().length - 1];
 
-  function negamax(d, alpha, beta) {
+  function negamax(d, alpha, beta, prevMove) {
     nodeCount++;
 
-    // Timeout check every 1000 nodes
     if (nodeCount % 1000 === 0) {
-      if (Date.now() - startTime > timeLimit) {
-        return 0; // Return neutral eval if timeout
-      }
-      if (nodeCount > maxNodes) {
-        return 0;
-      }
+      if (Date.now() - startTime > timeLimit) return 0;
+      if (nodeCount > maxNodes) return 0;
     }
 
     if (d === 0 || chess.game_over()) {
-      const evalScore = evaluateBoardMaterial(chess);
+      const evalScore = evaluateBoardPositional(chess);
       return player === 'w' ? evalScore : -evalScore;
     }
 
     let best = -Infinity;
     const moves = chess.moves({ verbose: true });
 
+    // Sort moves: captures first, then other moves
+    moves.sort((a, b) => {
+      const aIsCapture = !!a.captured ? 1 : 0;
+      const bIsCapture = !!b.captured ? 1 : 0;
+      return bIsCapture - aIsCapture;
+    });
+
     for (const m of moves) {
+      // Avoid obvious bad moves: don't immediately undo the last move
+      if (prevMove && m.from === prevMove.to && m.to === prevMove.from) {
+        continue;
+      }
+
       chess.move(m);
-      const score = -negamax(d - 1, -beta, -alpha);
+      const score = -negamax(d - 1, -beta, -alpha, m);
       chess.undo();
+
       if (score > best) best = score;
       if (score > alpha) alpha = score;
       if (alpha >= beta) break;
     }
-    return best;
+
+    return best === -Infinity ? 0 : best;
   }
+
+  const moves = chess.moves({ verbose: true });
+  if (moves.length === 0) return null;
 
   let bestMove = null;
   let bestScore = -Infinity;
-  const moves = chess.moves({ verbose: true });
 
-  // If no moves, return null
-  if (moves.length === 0) return null;
-
-  // Try iterative deepening - search shallow first, then deeper if time allows
   for (let searchDepth = 1; searchDepth <= maxDepth; searchDepth++) {
     if (Date.now() - startTime > timeLimit) break;
 
     bestMove = null;
     bestScore = -Infinity;
+    const moveScores = [];
 
     for (const m of moves) {
       if (Date.now() - startTime > timeLimit) break;
 
       chess.move(m);
-      const score = -negamax(searchDepth - 1, -Infinity, Infinity);
+      const score = -negamax(searchDepth - 1, -Infinity, Infinity, m);
       chess.undo();
+
+      moveScores.push({ move: m, score });
 
       if (score > bestScore) {
         bestScore = score;
         bestMove = m;
+      }
+    }
+
+    // At the last depth, if there are multiple moves with same top score, prefer captures
+    if (searchDepth === maxDepth && moveScores.length > 0) {
+      const topScore = Math.max(...moveScores.map(ms => ms.score));
+      const topMoves = moveScores.filter(ms => ms.score === topScore);
+
+      // Prefer captures among equally good moves
+      const capturesInTop = topMoves.filter(ms => ms.move.captured);
+      if (capturesInTop.length > 0) {
+        bestMove = capturesInTop[0].move;
+      } else if (topMoves.length > 0) {
+        // Among non-captures, add slight randomness to avoid repetition
+        bestMove = topMoves[Math.floor(Math.random() * Math.min(3, topMoves.length))].move;
       }
     }
 
@@ -1000,15 +946,32 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'chess_resign') {
       const gid = msg.game_id;
-      const player = users.get(ws);
+      const username = users.get(ws);
+
       if (games.has(gid)) {
         const g = games.get(gid);
         if (!g.over) {
           g.over = true;
-          const winner = player === g.white ? g.black : g.white;
+          const winner = username === g.white ? g.black : g.white;
           const result = winner === g.white ? '1-0' : '0-1';
-          const over = { type: 'chess_over', game_id: gid, result, reason: 'resign', fen: g.board.fen() };
-          sendToUsername(g.white, over); sendToUsername(g.black, over);
+          const over = {
+            type: 'chess_over',
+            game_id: gid,
+            result,
+            reason: 'resign',
+            fen: g.board.fen()
+          };
+
+          // Send to both players if it's a regular game
+          if (!g.isAiGame) {
+            sendToUsername(g.white, over);
+            sendToUsername(g.black, over);
+          } else {
+            // For AI games, just send to the player
+            send(ws, over);
+          }
+
+          console.log('[chess] Player resigned -', username, 'vs', g.white === username ? g.black : g.white);
         }
       }
     }
@@ -1134,19 +1097,33 @@ wss.on('connection', (ws, req) => {
         const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
 
         if (!bestMove) {
+          console.error('[ai] No move from bestMoveWithStockfish');
           send(ws, { type: 'chess_error', message: 'AI move generation failed' });
           return;
         }
 
-        const from = bestMove.substring(0, 2);
-        const to = bestMove.substring(2, 4);
-        const promotion = bestMove.length > 4 ? bestMove[4] : null;
+        console.log('[ai] Received move:', bestMove, 'length:', bestMove.length);
+
+        if (bestMove.length < 4) {
+          console.error('[ai] Move format invalid:', bestMove);
+          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+          return;
+        }
+
+        let from = bestMove.substring(0, 2).toLowerCase();
+        let to = bestMove.substring(2, 4).toLowerCase();
+        let promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
+
+        console.log('[ai] Move parsed - from:', from, 'to:', to, 'promotion:', promotion);
+        console.log('[ai] FEN:', board.fen());
+        console.log('[ai] Legal moves:', board.moves({ verbose: true }).slice(0, 5).map(m => m.from + m.to).join(', '));
 
         const aiMoveSpec = { from, to };
         if (promotion) aiMoveSpec.promotion = promotion;
         const aiMove = board.move(aiMoveSpec);
 
         if (aiMove) {
+          console.log('[ai] Move accepted:', aiMove.san);
           const aiMovePayload = {
             type: 'chess_move',
             game_id: gid,
@@ -1185,6 +1162,138 @@ wss.on('connection', (ws, req) => {
             send(ws, gameOverPayload);
           }
         } else {
+          console.error('[ai] Failed to apply move - spec:', aiMoveSpec);
+          console.error('[ai] Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));
+          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+        }
+      } catch (err) {
+        console.error('AI move error:', err);
+        send(ws, { type: 'chess_error', message: 'AI move generation failed' });
+      }
+    }
+    else if (msg.type === 'chess_request_ai_move') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (!games.has(gid)) {
+        send(ws, { type: 'chess_error', message: 'Game not found' });
+        return;
+      }
+
+      const g = games.get(gid);
+      const board = g.board;
+
+      if (!g.isAiGame) {
+        send(ws, { type: 'chess_error', message: 'Not an AI game' });
+        return;
+      }
+
+      if (g.over) {
+        send(ws, { type: 'chess_error', message: 'Game over' });
+        return;
+      }
+
+      if (username !== g.playerUsername) {
+        send(ws, { type: 'chess_error', message: 'Not your game' });
+        return;
+      }
+
+      if (board.game_over()) {
+        g.over = true;
+        let result, reason;
+        if (board.in_checkmate()) {
+          result = board.turn() === 'w' ? '0-1' : '1-0';
+          reason = 'checkmate';
+        } else if (board.in_stalemate() || board.in_draw()) {
+          result = '1/2-1/2';
+          reason = 'stalemate';
+        } else {
+          result = '1/2-1/2';
+          reason = 'draw';
+        }
+
+        const gameOverPayload = {
+          type: 'chess_over',
+          game_id: gid,
+          result,
+          reason,
+          fen: board.fen()
+        };
+        send(ws, gameOverPayload);
+        return;
+      }
+
+      try {
+        const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
+
+        if (!bestMove) {
+          console.error('[ai] No move from bestMoveWithStockfish');
+          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
+          return;
+        }
+
+        console.log('[ai] Received move:', bestMove, 'length:', bestMove.length);
+
+        if (bestMove.length < 4) {
+          console.error('[ai] Move format invalid:', bestMove);
+          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+          return;
+        }
+
+        let from = bestMove.substring(0, 2).toLowerCase();
+        let to = bestMove.substring(2, 4).toLowerCase();
+        let promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
+
+        console.log('[ai] Move parsed - from:', from, 'to:', to, 'promotion:', promotion);
+        console.log('[ai] FEN:', board.fen());
+        console.log('[ai] Legal moves:', board.moves({ verbose: true }).slice(0, 5).map(m => m.from + m.to).join(', '));
+
+        const aiMoveSpec = { from, to };
+        if (promotion) aiMoveSpec.promotion = promotion;
+        const aiMove = board.move(aiMoveSpec);
+
+        if (aiMove) {
+          console.log('[ai] Move accepted:', aiMove.san);
+          const aiMovePayload = {
+            type: 'chess_move',
+            game_id: gid,
+            from,
+            to,
+            promotion: aiMove.promotion || null,
+            san: aiMove.san,
+            fen: board.fen(),
+            turn: board.turn() === 'w' ? 'white' : 'black',
+            check: board.in_check(),
+            isAiMove: true
+          };
+          send(ws, aiMovePayload);
+
+          if (board.game_over()) {
+            g.over = true;
+            let result, reason;
+            if (board.in_checkmate()) {
+              result = board.turn() === 'w' ? '0-1' : '1-0';
+              reason = 'checkmate';
+            } else if (board.in_stalemate() || board.in_draw()) {
+              result = '1/2-1/2';
+              reason = 'stalemate';
+            } else {
+              result = '1/2-1/2';
+              reason = 'draw';
+            }
+
+            const gameOverPayload = {
+              type: 'chess_over',
+              game_id: gid,
+              result,
+              reason,
+              fen: board.fen()
+            };
+            send(ws, gameOverPayload);
+          }
+        } else {
+          console.error('[ai] Failed to apply move - spec:', aiMoveSpec);
+          console.error('[ai] Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));
           send(ws, { type: 'chess_error', message: 'AI move is invalid' });
         }
       } catch (err) {

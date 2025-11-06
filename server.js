@@ -13,6 +13,18 @@ const PORT = process.env.PORT || 12000;
 const ADMINNAME = 'admin';
 const ADMINHIDDENNAME = 'adminxyz';
 
+// Opening book
+let openingsBook = { openings: [] };
+try {
+  const openingsPath = path.join(__dirname, 'openings.json');
+  if (fs.existsSync(openingsPath)) {
+    openingsBook = JSON.parse(fs.readFileSync(openingsPath, 'utf8'));
+    console.log('[openings] Loaded', openingsBook.openings.length, 'opening variations');
+  }
+} catch (err) {
+  console.warn('[openings] Failed to load opening book:', err.message);
+}
+
 // Persistence
 const DATA_DIR = path.join(__dirname, 'data');
 const MSG_FILE = path.join(DATA_DIR, 'messages.jsonl');

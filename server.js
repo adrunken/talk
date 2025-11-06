@@ -436,70 +436,15 @@ async function getMoveLichessAPI(fen, depth, elo) {
 }
 
 async function bestMoveWithStockfish(fen, depth, elo) {
-  // Try WASM first
-  try {
-    const engine = await initStockfishEngine();
-
-    if (engine) {
-      console.log('[ai] Attempting WASM engine for move generation');
-
-      const wasmMove = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          console.warn('[stockfish] WASM search timeout');
-          resolve(null);
-        }, 10000);
-
-        let gotBestMove = false;
-        const messageHandler = (message) => {
-          if (message.startsWith('bestmove')) {
-            if (!gotBestMove) {
-              gotBestMove = true;
-              const parts = message.split(' ');
-              const move = parts[1];
-
-              if (move && move !== '0000' && move.length >= 4) {
-                console.log('[stockfish] WASM move:', move);
-                clearTimeout(timeout);
-                engine.onmessage = null;
-                resolve(move);
-              } else {
-                console.warn('[stockfish] Invalid WASM move:', move);
-                clearTimeout(timeout);
-                engine.onmessage = null;
-                resolve(null);
-              }
-            }
-          }
-        };
-
-        engine.onmessage = messageHandler;
-
-        // Set position and search
-        engine.postMessage('ucinewgame');
-        engine.postMessage(`position fen ${fen}`);
-
-        const searchDepth = Math.max(1, Math.min(30, Number(depth) || 15));
-        engine.postMessage(`go depth ${searchDepth}`);
-      });
-
-      if (wasmMove) {
-        return wasmMove; // Success with WASM
-      }
-    }
-
-  } catch (err) {
-    console.error('[stockfish] WASM error:', err.message);
-  }
-
-  // WASM failed, try Lichess API
-  console.log('[ai] WASM failed or unavailable, trying Lichess API');
+  // Try Lichess API first (most reliable)
+  console.log('[ai] Attempting Lichess API for move generation');
   const lichessMove = await getMoveLichessAPI(fen, depth, elo);
-  if (lichessMove) {
+  if (lichessMove && lichessMove.length >= 4) {
     return lichessMove; // Success with Lichess
   }
 
-  // Both failed, use improved fallback algorithm
-  console.log('[ai] All primary methods failed, using fallback algorithm');
+  // Lichess failed, use improved fallback algorithm
+  console.log('[ai] Lichess API failed, using fallback algorithm');
   return bestMoveFallback(fen, depth, elo);
 }
 

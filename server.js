@@ -335,77 +335,135 @@ function evaluateBoardMaterial(chess) {
   return score;
 }
 
-function bestMoveFallback(fen, depth) {
+function evaluateBoardPositional(chess) {
+  const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+  const board = chess.board();
+  let score = 0;
+
+  // Material score
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (!piece) continue;
+      const v = values[piece.type] || 0;
+      let posBonus = 0;
+
+      // Positional bonuses
+      if (piece.type === 'p') {
+        // Pawns advance towards promotion
+        posBonus = piece.color === 'w' ? (6 - i) * 10 : (i - 1) * 10;
+      } else if (piece.type === 'n') {
+        // Knights prefer central squares
+        const dist = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - dist) * 5;
+      } else if (piece.type === 'r') {
+        // Rooks on 7th rank
+        posBonus = (piece.color === 'w' && i === 1) ? 30 : (piece.color === 'b' && i === 6) ? 30 : 0;
+      }
+
+      const finalValue = v + posBonus;
+      score += (piece.color === 'w') ? finalValue : -finalValue;
+    }
+  }
+
+  return score;
+}
+
+function bestMoveFallback(fen, depth, elo) {
   const chess = new ChessCtor();
   try { chess.load(fen); } catch (_) { return null; }
 
-  // Limit depth for fallback algorithm to avoid timeouts
-  // Fallback is much slower than real Stockfish
   const requestedDepth = Number(depth) || 5;
-  const maxDepth = Math.max(1, Math.min(5, requestedDepth));
+  const maxDepth = Math.max(1, Math.min(6, requestedDepth));
 
   const player = chess.turn();
   const startTime = Date.now();
-  const timeLimit = 8000; // 8 seconds max to stay under 10s browser timeout
+  const timeLimit = 8000;
   let nodeCount = 0;
-  const maxNodes = 500000; // Limit nodes to prevent timeout
+  const maxNodes = 1000000;
+  const lastMove = chess.history({ verbose: true })[chess.history().length - 1];
 
-  function negamax(d, alpha, beta) {
+  function negamax(d, alpha, beta, prevMove) {
     nodeCount++;
 
-    // Timeout check every 1000 nodes
     if (nodeCount % 1000 === 0) {
-      if (Date.now() - startTime > timeLimit) {
-        return 0; // Return neutral eval if timeout
-      }
-      if (nodeCount > maxNodes) {
-        return 0;
-      }
+      if (Date.now() - startTime > timeLimit) return 0;
+      if (nodeCount > maxNodes) return 0;
     }
 
     if (d === 0 || chess.game_over()) {
-      const evalScore = evaluateBoardMaterial(chess);
+      const evalScore = evaluateBoardPositional(chess);
       return player === 'w' ? evalScore : -evalScore;
     }
 
     let best = -Infinity;
     const moves = chess.moves({ verbose: true });
 
+    // Sort moves: captures first, then other moves
+    moves.sort((a, b) => {
+      const aIsCapture = !!a.captured ? 1 : 0;
+      const bIsCapture = !!b.captured ? 1 : 0;
+      return bIsCapture - aIsCapture;
+    });
+
     for (const m of moves) {
+      // Avoid obvious bad moves: don't immediately undo the last move
+      if (prevMove && m.from === prevMove.to && m.to === prevMove.from) {
+        continue;
+      }
+
       chess.move(m);
-      const score = -negamax(d - 1, -beta, -alpha);
+      const score = -negamax(d - 1, -beta, -alpha, m);
       chess.undo();
+
       if (score > best) best = score;
       if (score > alpha) alpha = score;
       if (alpha >= beta) break;
     }
-    return best;
+
+    return best === -Infinity ? 0 : best;
   }
+
+  const moves = chess.moves({ verbose: true });
+  if (moves.length === 0) return null;
 
   let bestMove = null;
   let bestScore = -Infinity;
-  const moves = chess.moves({ verbose: true });
 
-  // If no moves, return null
-  if (moves.length === 0) return null;
-
-  // Try iterative deepening - search shallow first, then deeper if time allows
   for (let searchDepth = 1; searchDepth <= maxDepth; searchDepth++) {
     if (Date.now() - startTime > timeLimit) break;
 
     bestMove = null;
     bestScore = -Infinity;
+    const moveScores = [];
 
     for (const m of moves) {
       if (Date.now() - startTime > timeLimit) break;
 
       chess.move(m);
-      const score = -negamax(searchDepth - 1, -Infinity, Infinity);
+      const score = -negamax(searchDepth - 1, -Infinity, Infinity, m);
       chess.undo();
+
+      moveScores.push({ move: m, score });
 
       if (score > bestScore) {
         bestScore = score;
         bestMove = m;
+      }
+    }
+
+    // At the last depth, if there are multiple moves with same top score, prefer captures
+    if (searchDepth === maxDepth && moveScores.length > 0) {
+      const topScore = Math.max(...moveScores.map(ms => ms.score));
+      const topMoves = moveScores.filter(ms => ms.score === topScore);
+
+      // Prefer captures among equally good moves
+      const capturesInTop = topMoves.filter(ms => ms.move.captured);
+      if (capturesInTop.length > 0) {
+        bestMove = capturesInTop[0].move;
+      } else if (topMoves.length > 0) {
+        // Among non-captures, add slight randomness to avoid repetition
+        bestMove = topMoves[Math.floor(Math.random() * Math.min(3, topMoves.length))].move;
       }
     }
 

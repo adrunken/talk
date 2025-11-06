@@ -1129,7 +1129,9 @@ wss.on('connection', (ws, req) => {
         if (message.toLowerCase() === '/online history') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
-            send(ws, { type: 'message', message: 'Permission denied. Only admin can view online history.', username: 'System', id: idx, datetime: Math.floor(now()) });
+            const obj = { type: 'message', message: 'Permission denied. Only admin can view online history.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            const s = JSON.stringify(obj);
+            send(ws, s);
             idx += 1;
           } else {
             const history = [];
@@ -1150,7 +1152,9 @@ wss.on('connection', (ws, req) => {
             const historyText = history.length === 0
               ? 'No online history recorded.'
               : history.map(h => `${h.user} ${h.time}`).join('\n');
-            send(ws, { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) });
+            const obj = { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) };
+            const s = JSON.stringify(obj);
+            for (const [u] of users) send(u, s);
             idx += 1;
           }
         } else {

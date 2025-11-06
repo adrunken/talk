@@ -1154,7 +1154,7 @@ wss.on('connection', (ws, req) => {
               : history.map(h => `${h.user} ${h.time}`).join('\n');
             const obj = { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) };
             const s = JSON.stringify(obj);
-            for (const [u] of users) send(u, s);
+            send(ws, s);
             idx += 1;
           }
         } else {

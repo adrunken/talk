@@ -435,6 +435,45 @@ async function getMoveLichessAPI(fen, depth, elo) {
   }
 }
 
+async function getMoveChessAPI(fen, depth, elo) {
+  try {
+    console.log('[chess-api] Requesting move from Chess-API.com for depth', depth);
+
+    const url = `https://chess-api.com/v4/queen?fen=${encodeURIComponent(fen)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn('[chess-api] API returned status:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('[chess-api] API response:', JSON.stringify(data).substring(0, 200));
+
+    if (data && data.bestMove && typeof data.bestMove === 'string') {
+      const move = data.bestMove;
+      if (move.length >= 4) {
+        console.log('[chess-api] Best move:', move);
+        return move;
+      }
+    }
+
+    console.warn('[chess-api] No valid moves in response');
+    return null;
+
+  } catch (err) {
+    console.error('[chess-api] API error:', err.message);
+    return null;
+  }
+}
+
 async function bestMoveWithStockfish(fen, depth, elo) {
   // Try Lichess API first (most reliable)
   console.log('[ai] Attempting Lichess API for move generation');

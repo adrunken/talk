@@ -324,65 +324,28 @@ class StockfishEngine extends EventEmitter {
     this.engine = null;
     this.ready = false;
     this.currentSearch = null;
-    this.messageHandlers = new Map();
   }
 
   async start() {
-    return new Promise((resolve, reject) => {
-      try {
-        console.log('[stockfish] Initializing Stockfish WASM engine...');
-
-        this.engine = Stockfish();
-
-        let initialized = false;
-        const timeout = setTimeout(() => {
-          if (!initialized) {
-            reject(new Error('Stockfish initialization timeout'));
-          }
-        }, 10000);
-
-        this.engine.onmessage = (event) => {
-          const message = event.data || event;
-          const line = typeof message === 'string' ? message : message.toString();
-
-          console.log('[stockfish-out]', line);
-
-          if (line === 'uciok') {
-            this.ready = true;
-            if (!initialized) {
-              initialized = true;
-              clearTimeout(timeout);
-              resolve(this);
-            }
-          } else if (line.startsWith('bestmove')) {
-            const parts = line.split(' ');
-            const move = parts[1];
-            if (this.currentSearch) {
-              clearTimeout(this.currentSearch.timeout);
-              this.currentSearch.resolve(move);
-              this.currentSearch = null;
-            }
-          }
-        };
-
-        this.engine.onerror = (error) => {
-          console.error('[stockfish] Error:', error);
-          if (!initialized) {
-            reject(error);
-          }
-        };
-
-        this.send('uci');
-      } catch (err) {
-        reject(err);
-      }
-    });
+    try {
+      console.log('[stockfish] Initializing node-stockfish engine...');
+      this.engine = new NodeStockfish.default();
+      this.ready = true;
+      console.log('[stockfish] Engine initialized and ready');
+      return this;
+    } catch (err) {
+      throw err;
+    }
   }
 
-  send(command) {
+  async send(command) {
     if (this.engine) {
       console.log('[stockfish-in]', command);
-      this.engine.postMessage(command);
+      try {
+        await this.engine.addMessageListener(command);
+      } catch (e) {
+        // Command doesn't need listener
+      }
     }
   }
 
@@ -391,8 +354,6 @@ class StockfishEngine extends EventEmitter {
       const timeout = setTimeout(() => {
         resolve(null);
       }, 30000);
-
-      this.currentSearch = { resolve, timeout };
 
       let goCommand = 'go';
       if (options.depth) {
@@ -403,25 +364,65 @@ class StockfishEngine extends EventEmitter {
         goCommand += ' depth 15';
       }
 
-      this.send(goCommand);
+      try {
+        this.engine.onMessage((message) => {
+          console.log('[stockfish-out]', message);
+          if (message.startsWith('bestmove')) {
+            const parts = message.split(' ');
+            const move = parts[1];
+            clearTimeout(timeout);
+            resolve(move);
+          }
+        });
+
+        this.engine.stdin.write(goCommand + '\n');
+      } catch (err) {
+        clearTimeout(timeout);
+        resolve(null);
+      }
     });
   }
 
   async setoption(name, value) {
-    this.send(`setoption name ${name} value ${value}`);
+    if (this.engine) {
+      console.log('[stockfish-in]', `setoption name ${name} value ${value}`);
+      try {
+        this.engine.stdin.write(`setoption name ${name} value ${value}\n`);
+      } catch (e) {
+        console.warn('[stockfish] Failed to set option:', e.message);
+      }
+    }
   }
 
   async position(fen) {
-    this.send(`position fen ${fen}`);
+    if (this.engine) {
+      console.log('[stockfish-in]', `position fen ${fen}`);
+      try {
+        this.engine.stdin.write(`position fen ${fen}\n`);
+      } catch (e) {
+        console.warn('[stockfish] Failed to set position:', e.message);
+      }
+    }
   }
 
   async newgame() {
-    this.send('ucinewgame');
+    if (this.engine) {
+      console.log('[stockfish-in]', 'ucinewgame');
+      try {
+        this.engine.stdin.write('ucinewgame\n');
+      } catch (e) {
+        console.warn('[stockfish] Failed to reset game:', e.message);
+      }
+    }
   }
 
   stop() {
-    if (this.engine && typeof this.engine.terminate === 'function') {
-      this.engine.terminate();
+    if (this.engine && typeof this.engine.quit === 'function') {
+      try {
+        this.engine.quit();
+      } catch (e) {
+        console.warn('[stockfish] Failed to stop engine:', e.message);
+      }
     }
   }
 }

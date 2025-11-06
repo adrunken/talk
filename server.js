@@ -439,14 +439,16 @@ async function getMoveChessAPI(fen, depth, elo) {
   try {
     console.log('[chess-api] Requesting move from Chess-API.com for depth', depth);
 
-    const url = `https://chess-api.com/v4/queen?fen=${encodeURIComponent(fen)}`;
+    const url = 'https://chess-api.com/v1';
 
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       timeout: 15000,
       headers: {
+        'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      body: JSON.stringify({ fen })
     });
 
     if (!response.ok) {
@@ -457,8 +459,8 @@ async function getMoveChessAPI(fen, depth, elo) {
     const data = await response.json();
     console.log('[chess-api] API response:', JSON.stringify(data).substring(0, 200));
 
-    if (data && data.bestMove && typeof data.bestMove === 'string') {
-      const move = data.bestMove;
+    if (data && data.bestmove && typeof data.bestmove === 'string') {
+      const move = data.bestmove;
       if (move.length >= 4) {
         console.log('[chess-api] Best move:', move);
         return move;

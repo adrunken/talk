@@ -121,10 +121,13 @@ function recordOnlineEvent(username, action) {
   }
   const timestamp = Math.floor(now());
   const date = new Date(timestamp * 1000);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const time = `${hours}:${minutes}`;
-  onlineHistory[username].push({ action, timestamp, time });
+  const time = date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  olineHistory[username].push({ action, timestamp, time });
   persistOnlineHistory();
 }
 

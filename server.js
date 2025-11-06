@@ -317,9 +317,131 @@ function eloToDepth(elo) {
   return 8;
 }
 
+let stockfishEngine = null;
+let stockfishInitPromise = null;
+
+class StockfishEngineWASM {
+  constructor(engine) {
+    this.engine = engine;
+    this.ready = true;
+  }
+
+  async position(fen) {
+    return new Promise((resolve) => {
+      this.engine.onmessage = () => resolve();
+      this.engine.postMessage(`position fen ${fen}`);
+    });
+  }
+
+  async go(options) {
+    return new Promise((resolve) => {
+      let bestMove = null;
+
+      this.engine.onmessage = (message) => {
+        if (message.includes('bestmove')) {
+          const parts = message.split(' ');
+          bestMove = parts[1];
+          resolve(bestMove);
+        }
+      };
+
+      let goCommand = 'go';
+      if (options.depth) {
+        goCommand += ' depth ' + options.depth;
+      } else if (options.movetime) {
+        goCommand += ' movetime ' + options.movetime;
+      } else {
+        goCommand += ' depth 15';
+      }
+
+      this.engine.postMessage(goCommand);
+
+      // Timeout fallback
+      setTimeout(() => {
+        if (!bestMove) resolve(bestMove);
+      }, 30000);
+    });
+  }
+
+  async setoption(name, value) {
+    return new Promise((resolve) => {
+      this.engine.onmessage = () => resolve();
+      this.engine.postMessage(`setoption name ${name} value ${value}`);
+    });
+  }
+
+  async newgame() {
+    return new Promise((resolve) => {
+      this.engine.onmessage = () => resolve();
+      this.engine.postMessage('ucinewgame');
+    });
+  }
+
+  quit() {
+    try {
+      this.engine.postMessage('quit');
+    } catch (e) {
+      // Engine already quit
+    }
+  }
+}
+
+async function initStockfishEngine() {
+  if (stockfishEngine) {
+    console.log('[stockfish] Engine already initialized');
+    return stockfishEngine;
+  }
+
+  if (stockfishInitPromise) {
+    console.log('[stockfish] Waiting for initialization in progress');
+    return stockfishInitPromise;
+  }
+
+  stockfishInitPromise = (async () => {
+    try {
+      console.log('[stockfish] Initializing Stockfish WASM engine...');
+
+      const engine = await initStockfish();
+      stockfishEngine = new StockfishEngineWASM(engine);
+
+      console.log('[stockfish] Stockfish WASM engine ready');
+      return stockfishEngine;
+    } catch (err) {
+      console.error('[stockfish] WASM initialization failed:', err);
+      console.log('[stockfish] Falling back to simple algorithm');
+      stockfishInitPromise = null;
+      return null;
+    }
+  })();
+
+  return stockfishInitPromise;
+}
+
 async function bestMoveWithStockfish(fen, depth, elo) {
-  console.log('[stockfish] Using improved fallback algorithm for AI move');
-  return bestMoveFallback(fen, depth, elo);
+  try {
+    const engine = await initStockfishEngine();
+
+    if (!engine) {
+      console.log('[stockfish] No engine available, using fallback algorithm');
+      return bestMoveFallback(fen, depth, elo);
+    }
+
+    await engine.position(fen);
+    const bestMove = await engine.go({ depth: Math.max(1, Math.min(30, Number(depth) || 15)) });
+
+    if (bestMove && bestMove !== '0000') {
+      console.log('[stockfish] Best move:', bestMove);
+      return bestMove;
+    }
+
+    console.warn('[stockfish] No valid move returned, using fallback');
+    return bestMoveFallback(fen, depth, elo);
+
+  } catch (err) {
+    console.error('[stockfish] Error:', err);
+    console.log('[stockfish] Using fallback algorithm');
+    return bestMoveFallback(fen, depth, elo);
+  }
 }
 
 function evaluateBoardPositional(chess) {

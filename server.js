@@ -1066,6 +1066,9 @@ setInterval(() => {
   for (const [ws, lastPing] of pings.entries()) {
     if (t - lastPing > 30) {
       const uname = users.get(ws);
+      if (uname) {
+        recordOnlineEvent(uname, 'offline');
+      }
       users.delete(ws);
       pings.delete(ws);
       userMessageTimes.delete(ws);

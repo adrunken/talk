@@ -321,6 +321,10 @@ let stockfishEngine = null;
 let stockfishInitPromise = null;
 
 async function initStockfishEngine() {
+  if (stockfishEngine === false) {
+    return null; // Already tried and failed
+  }
+
   if (stockfishEngine) {
     console.log('[stockfish] Engine already initialized');
     return stockfishEngine;
@@ -335,8 +339,15 @@ async function initStockfishEngine() {
     try {
       console.log('[stockfish] Initializing Stockfish WASM engine...');
 
+      const engine = Stockfish();
+
+      if (!engine || typeof engine.postMessage !== 'function') {
+        console.warn('[stockfish] Engine does not support postMessage, skipping WASM');
+        stockfishEngine = false;
+        return null;
+      }
+
       stockfishEngine = new Promise((resolve, reject) => {
-        const engine = Stockfish();
         let isReady = false;
 
         engine.onmessage = (message) => {
@@ -351,26 +362,24 @@ async function initStockfishEngine() {
           reject(err);
         };
 
-        // Send UCI command to initialize
-        engine.postMessage('uci');
+        try {
+          engine.postMessage('uci');
+        } catch (err) {
+          console.error('[stockfish] Error sending uci command:', err);
+          reject(err);
+        }
 
-        // Resolve after a short delay to allow uciok message
         setTimeout(() => {
-          if (isReady) {
-            resolve(engine);
-          } else {
-            resolve(engine); // Even if not ready, resolve with the engine
-          }
+          resolve(engine);
         }, 1000);
       });
 
       return await stockfishEngine;
 
     } catch (err) {
-      console.error('[stockfish] WASM initialization failed:', err);
-      console.log('[stockfish] Falling back to simple algorithm');
+      console.error('[stockfish] WASM initialization failed:', err.message);
+      stockfishEngine = false; // Mark as failed
       stockfishInitPromise = null;
-      stockfishEngine = null;
       return null;
     }
   })();

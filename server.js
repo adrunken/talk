@@ -1033,6 +1033,7 @@ wss.on('connection', (ws, req) => {
     else if (msg.type === 'chess_ai_start') {
       const username = users.get(ws);
       const playerElo = Number(msg.playerElo || 0);
+      const aiElo = Number(msg.aiElo || 1600);
 
       if (!username) {
         send(ws, { type: 'chess_error', message: 'Username required' });
@@ -1041,7 +1042,6 @@ wss.on('connection', (ws, req) => {
 
       const gid = nextGameId++;
       const board = new ChessCtor();
-      const aiElo = 1600;
       const playerColor = Math.random() < 0.5 ? 'w' : 'b';
       const white = playerColor === 'w' ? username : 'zyberAI';
       const black = playerColor === 'b' ? username : 'zyberAI';

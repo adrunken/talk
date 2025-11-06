@@ -1138,20 +1138,15 @@ wss.on('connection', (ws, req) => {
             for (const [user, events] of Object.entries(onlineHistory)) {
               for (const event of events) {
                 if (event.action === 'online') {
-                  history.push({ user, time: event.time });
+                  history.push({ user, time: event.time, timestamp: event.timestamp });
                 }
               }
             }
-            history.sort((a, b) => {
-              const aTime = a.time;
-              const bTime = b.time;
-              if (aTime < bTime) return -1;
-              if (aTime > bTime) return 1;
-              return a.user.localeCompare(b.user);
-            });
-            const historyText = history.length === 0
+            history.sort((a, b) => a.timestamp - b.timestamp);
+            const last7 = history.slice(-7);
+            const historyText = last7.length === 0
               ? 'No online history recorded.'
-              : history.map(h => `${h.user} ${h.time}`).join('\n');
+              : last7.map(h => `${h.user} ${h.time}`).join('\n');
             const obj = { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) };
             const s = JSON.stringify(obj);
             send(ws, s);

@@ -378,59 +378,114 @@ async function initStockfishEngine() {
   return stockfishInitPromise;
 }
 
+const moveCache = new Map(); // Cache for Lichess API results
+
+async function getMoveLichessAPI(fen, depth, elo) {
+  try {
+    console.log('[lichess] Requesting move from Lichess API for depth', depth);
+
+    // Lichess API endpoint for computer analysis
+    const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.warn('[lichess] API returned status:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.pvs && data.pvs.length > 0) {
+      const bestVariation = data.pvs[0];
+      if (bestVariation.moves && bestVariation.moves.length > 0) {
+        const move = bestVariation.moves[0];
+        console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
+        return move;
+      }
+    }
+
+    console.warn('[lichess] No valid moves in response');
+    return null;
+
+  } catch (err) {
+    console.error('[lichess] API error:', err.message);
+    return null;
+  }
+}
+
 async function bestMoveWithStockfish(fen, depth, elo) {
+  // Try WASM first
   try {
     const engine = await initStockfishEngine();
 
-    if (!engine) {
-      console.log('[stockfish] No engine available, using fallback algorithm');
-      return bestMoveFallback(fen, depth, elo);
-    }
+    if (engine) {
+      console.log('[ai] Attempting WASM engine for move generation');
 
-    return await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.warn('[stockfish] Search timeout, using fallback');
-        resolve(bestMoveFallback(fen, depth, elo));
-      }, 12000);
+      const wasmMove = await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.warn('[stockfish] WASM search timeout');
+          resolve(null);
+        }, 10000);
 
-      let gotBestMove = false;
-      const messageHandler = (message) => {
-        if (message.startsWith('bestmove')) {
-          if (!gotBestMove) {
-            gotBestMove = true;
-            const parts = message.split(' ');
-            const move = parts[1];
+        let gotBestMove = false;
+        const messageHandler = (message) => {
+          if (message.startsWith('bestmove')) {
+            if (!gotBestMove) {
+              gotBestMove = true;
+              const parts = message.split(' ');
+              const move = parts[1];
 
-            if (move && move !== '0000' && move.length >= 4) {
-              console.log('[stockfish] Best move:', move);
-              clearTimeout(timeout);
-              engine.onmessage = null;
-              resolve(move);
-            } else {
-              console.warn('[stockfish] Invalid move returned:', move);
-              clearTimeout(timeout);
-              engine.onmessage = null;
-              resolve(bestMoveFallback(fen, depth, elo));
+              if (move && move !== '0000' && move.length >= 4) {
+                console.log('[stockfish] WASM move:', move);
+                clearTimeout(timeout);
+                engine.onmessage = null;
+                resolve(move);
+              } else {
+                console.warn('[stockfish] Invalid WASM move:', move);
+                clearTimeout(timeout);
+                engine.onmessage = null;
+                resolve(null);
+              }
             }
           }
-        }
-      };
+        };
 
-      engine.onmessage = messageHandler;
+        engine.onmessage = messageHandler;
 
-      // Set position and search
-      engine.postMessage('ucinewgame');
-      engine.postMessage(`position fen ${fen}`);
+        // Set position and search
+        engine.postMessage('ucinewgame');
+        engine.postMessage(`position fen ${fen}`);
 
-      const searchDepth = Math.max(1, Math.min(30, Number(depth) || 15));
-      engine.postMessage(`go depth ${searchDepth}`);
-    });
+        const searchDepth = Math.max(1, Math.min(30, Number(depth) || 15));
+        engine.postMessage(`go depth ${searchDepth}`);
+      });
+
+      if (wasmMove) {
+        return wasmMove; // Success with WASM
+      }
+    }
 
   } catch (err) {
-    console.error('[stockfish] Error:', err.message);
-    console.log('[stockfish] Using fallback algorithm');
-    return bestMoveFallback(fen, depth, elo);
+    console.error('[stockfish] WASM error:', err.message);
   }
+
+  // WASM failed, try Lichess API
+  console.log('[ai] WASM failed or unavailable, trying Lichess API');
+  const lichessMove = await getMoveLichessAPI(fen, depth, elo);
+  if (lichessMove) {
+    return lichessMove; // Success with Lichess
+  }
+
+  // Both failed, use improved fallback algorithm
+  console.log('[ai] All primary methods failed, using fallback algorithm');
+  return bestMoveFallback(fen, depth, elo);
 }
 
 function evaluateBoardPositional(chess) {

@@ -620,7 +620,79 @@ function bestMoveFallback(fen, depth, elo) {
   const timeLimit = 8000;
   let nodeCount = 0;
   const maxNodes = 1000000;
-  const lastMove = chess.history({ verbose: true })[chess.history().length - 1];
+  const moveHistory = chess.history({ verbose: true });
+  const lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
+  const lastLastMove = moveHistory.length > 1 ? moveHistory[moveHistory.length - 2] : null;
+
+  // Track move repetition to penalize silly back-and-forth
+  const recentMovePattern = [];
+  for (let i = Math.max(0, moveHistory.length - 4); i < moveHistory.length; i++) {
+    const m = moveHistory[i];
+    recentMovePattern.push({ from: m.from, to: m.to });
+  }
+
+  function orderMoves(moves, capturedPieceFrom) {
+    return moves.sort((a, b) => {
+      let aScore = 0;
+      let bScore = 0;
+
+      // Checks first (forcing moves)
+      const aGivesCheck = (() => {
+        chess.move(a);
+        const inCheck = chess.in_check();
+        chess.undo();
+        return inCheck;
+      })();
+      const bGivesCheck = (() => {
+        chess.move(b);
+        const inCheck = chess.in_check();
+        chess.undo();
+        return inCheck;
+      })();
+
+      if (aGivesCheck) aScore += 1000;
+      if (bGivesCheck) bScore += 1000;
+
+      // Promotions
+      if (a.promotion) aScore += 500;
+      if (b.promotion) bScore += 500;
+
+      // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
+      if (a.captured) {
+        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[a.captured] || 0;
+        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[a.piece] || 0;
+        aScore += victimValue * 10 - attackerValue;
+      }
+      if (b.captured) {
+        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[b.captured] || 0;
+        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[b.piece] || 0;
+        bScore += victimValue * 10 - attackerValue;
+      }
+
+      // Attacks on high-value pieces
+      chess.move(a);
+      const aAttacksCount = chess.moves({ verbose: true }).filter(m => m.captured && { q: 9, r: 5 }[m.captured]).length;
+      chess.undo();
+      chess.move(b);
+      const bAttacksCount = chess.moves({ verbose: true }).filter(m => m.captured && { q: 9, r: 5 }[m.captured]).length;
+      chess.undo();
+
+      aScore += aAttacksCount * 50;
+      bScore += bAttacksCount * 50;
+
+      // Penalize repetition (back-and-forth moves)
+      if (lastMove && lastLastMove) {
+        if (a.from === lastMove.to && a.to === lastMove.from) {
+          aScore -= 200; // Heavy penalty for immediate reversal
+        }
+        if (a.from === lastLastMove.from && a.to === lastLastMove.to) {
+          aScore -= 150; // Penalty for repeating same piece move pattern
+        }
+      }
+
+      return bScore - aScore;
+    });
+  }
 
   function negamax(d, alpha, beta, prevMove) {
     nodeCount++;
@@ -636,14 +708,10 @@ function bestMoveFallback(fen, depth, elo) {
     }
 
     let best = -Infinity;
-    const moves = chess.moves({ verbose: true });
+    let moves = chess.moves({ verbose: true });
 
-    // Sort moves: captures first, then other moves
-    moves.sort((a, b) => {
-      const aIsCapture = !!a.captured ? 1 : 0;
-      const bIsCapture = !!b.captured ? 1 : 0;
-      return bIsCapture - aIsCapture;
-    });
+    // Order moves for better pruning
+    moves = orderMoves(moves, null);
 
     for (const m of moves) {
       // Avoid obvious bad moves: don't immediately undo the last move
@@ -675,8 +743,9 @@ function bestMoveFallback(fen, depth, elo) {
     bestMove = null;
     bestScore = -Infinity;
     const moveScores = [];
+    let orderedMoves = orderMoves(moves.slice(), null);
 
-    for (const m of moves) {
+    for (const m of orderedMoves) {
       if (Date.now() - startTime > timeLimit) break;
 
       chess.move(m);
@@ -691,18 +760,22 @@ function bestMoveFallback(fen, depth, elo) {
       }
     }
 
-    // At the last depth, if there are multiple moves with same top score, prefer captures
+    // At the last depth, prefer moves that don't repeat patterns
     if (searchDepth === maxDepth && moveScores.length > 0) {
       const topScore = Math.max(...moveScores.map(ms => ms.score));
-      const topMoves = moveScores.filter(ms => ms.score === topScore);
+      const topMoves = moveScores.filter(ms => ms.score >= topScore - 20); // Small margin for similar scores
 
-      // Prefer captures among equally good moves
-      const capturesInTop = topMoves.filter(ms => ms.move.captured);
-      if (capturesInTop.length > 0) {
-        bestMove = capturesInTop[0].move;
+      // Filter out repetitive moves if better options exist
+      const nonRepetitiveMoves = topMoves.filter(ms => {
+        const m = ms.move;
+        if (lastMove && m.from === lastMove.to && m.to === lastMove.from) return false;
+        return true;
+      });
+
+      if (nonRepetitiveMoves.length > 0) {
+        bestMove = nonRepetitiveMoves[0].move;
       } else if (topMoves.length > 0) {
-        // Among non-captures, add slight randomness to avoid repetition
-        bestMove = topMoves[Math.floor(Math.random() * Math.min(3, topMoves.length))].move;
+        bestMove = topMoves[0].move;
       }
     }
 

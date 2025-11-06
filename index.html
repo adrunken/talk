@@ -2687,6 +2687,22 @@ function ready() {
                         }
                     })
                     .catch(function(err) { console.log('Failed to update ELO:', err); });
+                } else {
+                    var me = $('#username').text();
+                    fetch(API_BASE + '/api/elo/' + encodeURIComponent(me), {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(eloData) {
+                        if (eloData && typeof eloData.elo === 'number') {
+                            $('#chess-player-elo').text(Math.round(eloData.elo));
+                            $('#chess-elo-change').show();
+                            $('#chess-elo-display').show();
+                            flashStatus('ELO: ' + $('#chess-player-elo').text());
+                        }
+                    })
+                    .catch(function(err) { console.log('Failed to fetch ELO:', err); });
                 }
             }
         }

@@ -1126,14 +1126,43 @@ wss.on('connection', (ws, req) => {
         deliverQueuedInvites(username);
       }
       if (message) {
-        if (message.length > 1000) message = message.slice(0, 1000) + '...';
-        const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
-        const obj = { type: 'message', message: safeMessage, username, id: idx, datetime: Math.floor(now()) };
-        messages[idx] = obj;
-        appendMessage(obj);
-        idx += 1;
-        const s = JSON.stringify(obj);
-        for (const [u] of users) send(u, s);
+        if (message.toLowerCase() === '/online history') {
+          const uname = String(username || '').toLowerCase();
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            send(ws, { type: 'message', message: 'Permission denied. Only admin can view online history.', username: 'System', id: idx, datetime: Math.floor(now()) });
+            idx += 1;
+          } else {
+            const history = [];
+            for (const [user, events] of Object.entries(onlineHistory)) {
+              for (const event of events) {
+                if (event.action === 'online') {
+                  history.push({ user, time: event.time });
+                }
+              }
+            }
+            history.sort((a, b) => {
+              const aTime = a.time;
+              const bTime = b.time;
+              if (aTime < bTime) return -1;
+              if (aTime > bTime) return 1;
+              return a.user.localeCompare(b.user);
+            });
+            const historyText = history.length === 0
+              ? 'No online history recorded.'
+              : history.map(h => `${h.user} ${h.time}`).join('\n');
+            send(ws, { type: 'message', message: historyText, username: 'System', id: idx, datetime: Math.floor(now()) });
+            idx += 1;
+          }
+        } else {
+          if (message.length > 1000) message = message.slice(0, 1000) + '...';
+          const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
+          const obj = { type: 'message', message: safeMessage, username, id: idx, datetime: Math.floor(now()) };
+          messages[idx] = obj;
+          appendMessage(obj);
+          idx += 1;
+          const s = JSON.stringify(obj);
+          for (const [u] of users) send(u, s);
+        }
       }
     }
     else if (msg.type === 'messagesbefore') {

@@ -482,8 +482,15 @@ async function bestMoveWithStockfish(fen, depth, elo) {
     return lichessMove; // Success with Lichess
   }
 
-  // Lichess failed, use improved fallback algorithm
-  console.log('[ai] Lichess API failed, using fallback algorithm');
+  // Lichess failed, try Chess-API.com
+  console.log('[ai] Lichess API failed, attempting Chess-API.com fallback');
+  const chessApiMove = await getMoveChessAPI(fen, depth, elo);
+  if (chessApiMove && chessApiMove.length >= 4) {
+    return chessApiMove; // Success with Chess-API
+  }
+
+  // Both APIs failed, use improved fallback algorithm
+  console.log('[ai] Chess-API.com failed, using local fallback algorithm');
   return bestMoveFallback(fen, depth, elo);
 }
 

@@ -488,8 +488,91 @@ async function getMoveChessAPI(fen, depth, elo) {
   }
 }
 
+function getOpeningMove(fen, elo) {
+  const chess = new ChessCtor();
+  try { chess.load(fen); } catch (_) { return null; }
+
+  const moveCount = chess.history().length;
+  const MAX_OPENING_MOVES = 30; // 15-20 moves total = 30-40 half-moves
+
+  // Only use opening book for early game
+  if (moveCount > MAX_OPENING_MOVES) {
+    return null;
+  }
+
+  // Get all applicable openings for this ELO
+  const applicableOpenings = openingsBook.openings.filter(opening =>
+    opening.elo && opening.elo.includes(Math.round(elo / 200) * 200)
+  );
+
+  if (applicableOpenings.length === 0) {
+    // Fall back to closest ELO opening
+    const closestOpening = openingsBook.openings.find(opening =>
+      opening.elo && opening.elo.length > 0
+    );
+    if (!closestOpening) return null;
+    applicableOpenings.push(closestOpening);
+  }
+
+  // Find openings that match current position
+  for (const opening of applicableOpenings) {
+    if (!opening.moves || opening.moves.length === 0) continue;
+
+    // Check if this opening's moves match our current position
+    const testChess = new ChessCtor();
+    let matches = true;
+
+    for (let i = 0; i < Math.min(moveCount, opening.moves.length); i++) {
+      const moveStr = opening.moves[i];
+      if (moveStr.length < 4) {
+        matches = false;
+        break;
+      }
+
+      const from = moveStr.substring(0, 2);
+      const to = moveStr.substring(2, 4);
+      const promotion = moveStr.length > 4 ? moveStr[4] : null;
+
+      const moveSpec = { from, to };
+      if (promotion) moveSpec.promotion = promotion;
+
+      try {
+        const move = testChess.move(moveSpec);
+        if (!move) {
+          matches = false;
+          break;
+        }
+      } catch (_) {
+        matches = false;
+        break;
+      }
+    }
+
+    if (!matches) continue;
+
+    // This opening matches. Is there a next move?
+    if (moveCount < opening.moves.length) {
+      const nextMove = opening.moves[moveCount];
+      if (nextMove && nextMove.length >= 4) {
+        console.log('[openings] Using', opening.name, 'move', moveCount + 1, ':', nextMove);
+        return nextMove;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function bestMoveWithStockfish(fen, depth, elo) {
-  // Try Lichess API first (most reliable)
+  // Try opening book first
+  console.log('[ai] Checking opening book for move');
+  const openingMove = getOpeningMove(fen, elo);
+  if (openingMove && openingMove.length >= 4) {
+    console.log('[ai] Opening book move found:', openingMove);
+    return openingMove;
+  }
+
+  // Try Lichess API (most reliable)
   console.log('[ai] Attempting Lichess API for move generation');
   const lichessMove = await getMoveLichessAPI(fen, depth, elo);
   if (lichessMove && lichessMove.length >= 4) {

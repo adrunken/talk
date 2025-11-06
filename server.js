@@ -1473,20 +1473,26 @@ wss.on('connection', (ws, req) => {
         const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
 
         if (!bestMove) {
-          console.error('[ai] No move from bestMoveWithStockfish');
-          const legalMoves = board.moves();
-          if (legalMoves.length > 0) {
-            const fallbackMove = board.moves({ verbose: true })[0];
-            const moveStr = fallbackMove.from + fallbackMove.to + (fallbackMove.promotion || '');
-            console.log('[ai] Using fallback move:', moveStr);
-            board.move(fallbackMove);
+          console.error('[ai] No move from bestMoveWithStockfish, using intelligent fallback');
+          const verboseMoves = board.moves({ verbose: true });
+          if (verboseMoves.length > 0) {
+            let selectedMove = verboseMoves[0];
+            const captureMoves = verboseMoves.filter(m => m.captured);
+            if (captureMoves.length > 0) {
+              selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+              console.log('[ai] Using capture fallback move:', selectedMove.san);
+            } else {
+              selectedMove = verboseMoves[Math.floor(Math.random() * verboseMoves.length)];
+              console.log('[ai] Using random fallback move:', selectedMove.san);
+            }
+            board.move(selectedMove);
             const aiMovePayload = {
               type: 'chess_move',
               game_id: gid,
-              from: fallbackMove.from,
-              to: fallbackMove.to,
-              promotion: fallbackMove.promotion || null,
-              san: fallbackMove.san,
+              from: selectedMove.from,
+              to: selectedMove.to,
+              promotion: selectedMove.promotion || null,
+              san: selectedMove.san,
               fen: board.fen(),
               turn: board.turn() === 'w' ? 'white' : 'black',
               check: board.in_check(),

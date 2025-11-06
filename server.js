@@ -631,67 +631,37 @@ function bestMoveFallback(fen, depth, elo) {
     recentMovePattern.push({ from: m.from, to: m.to });
   }
 
-  function orderMoves(moves, capturedPieceFrom) {
-    return moves.sort((a, b) => {
-      let aScore = 0;
-      let bScore = 0;
+  function orderMoves(moves) {
+    const moveScores = moves.map((m) => {
+      let score = 0;
 
-      // Checks first (forcing moves)
-      const aGivesCheck = (() => {
-        chess.move(a);
-        const inCheck = chess.in_check();
-        chess.undo();
-        return inCheck;
-      })();
-      const bGivesCheck = (() => {
-        chess.move(b);
-        const inCheck = chess.in_check();
-        chess.undo();
-        return inCheck;
-      })();
-
-      if (aGivesCheck) aScore += 1000;
-      if (bGivesCheck) bScore += 1000;
-
-      // Promotions
-      if (a.promotion) aScore += 500;
-      if (b.promotion) bScore += 500;
+      // Promotions first
+      if (m.promotion) score += 500;
 
       // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
-      if (a.captured) {
-        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[a.captured] || 0;
-        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[a.piece] || 0;
-        aScore += victimValue * 10 - attackerValue;
-      }
-      if (b.captured) {
-        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[b.captured] || 0;
-        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[b.piece] || 0;
-        bScore += victimValue * 10 - attackerValue;
+      if (m.captured) {
+        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.captured] || 0;
+        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.piece] || 0;
+        score += victimValue * 10 - attackerValue;
       }
 
-      // Attacks on high-value pieces
-      chess.move(a);
-      const aAttacksCount = chess.moves({ verbose: true }).filter(m => m.captured && { q: 9, r: 5 }[m.captured]).length;
-      chess.undo();
-      chess.move(b);
-      const bAttacksCount = chess.moves({ verbose: true }).filter(m => m.captured && { q: 9, r: 5 }[m.captured]).length;
-      chess.undo();
-
-      aScore += aAttacksCount * 50;
-      bScore += bAttacksCount * 50;
-
-      // Penalize repetition (back-and-forth moves)
-      if (lastMove && lastLastMove) {
-        if (a.from === lastMove.to && a.to === lastMove.from) {
-          aScore -= 200; // Heavy penalty for immediate reversal
-        }
-        if (a.from === lastLastMove.from && a.to === lastLastMove.to) {
-          aScore -= 150; // Penalty for repeating same piece move pattern
-        }
+      // Penalize repetition (back-and-forth moves) - heavy penalty
+      if (lastMove && m.from === lastMove.to && m.to === lastMove.from) {
+        score -= 500; // Heavy penalty for immediate reversal
+      }
+      if (lastLastMove && m.from === lastLastMove.from && m.to === lastLastMove.to) {
+        score -= 300; // Penalty for repeating same piece move pattern
       }
 
-      return bScore - aScore;
+      // Slight preference for center moves
+      const toFileCenter = Math.abs(m.to.charCodeAt(0) - 100.5);
+      const toRankCenter = Math.abs((parseInt(m.to[1]) - 4.5));
+      score -= (toFileCenter + toRankCenter) * 2;
+
+      return { move: m, score };
     });
+
+    return moveScores.sort((a, b) => b.score - a.score).map(ms => ms.move);
   }
 
   function negamax(d, alpha, beta, prevMove) {

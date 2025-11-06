@@ -713,7 +713,7 @@ function bestMoveFallback(fen, depth, elo) {
     bestMove = null;
     bestScore = -Infinity;
     const moveScores = [];
-    let orderedMoves = orderMoves(moves.slice(), null);
+    let orderedMoves = orderMoves(moves.slice());
 
     for (const m of orderedMoves) {
       if (Date.now() - startTime > timeLimit) break;

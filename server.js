@@ -30,6 +30,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const MSG_FILE = path.join(DATA_DIR, 'messages.jsonl');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'user-settings.json');
+const ONLINE_HISTORY_FILE = path.join(DATA_DIR, 'online-history.json');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 let idx = 0; // next message id

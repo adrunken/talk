@@ -385,8 +385,6 @@ html {
 }
 
 .play-ai-button {
-    width: 100%;
-    padding: 0.75rem;
     background: var(--accent-primary);
     color: #fff;
     border: none;
@@ -730,8 +728,17 @@ html {
         <div id="connected"></div>
     </div>
 
-    <div>
-        <button id="play-ai-btn" class="play-ai-button">Play AI</button>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button id="play-ai-btn" class="play-ai-button" style="flex: 1; padding: 0.5rem;">Play AI</button>
+        <select id="ai-elo-dropdown" style="padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; font-family: inherit;">
+            <option value="800">800 (Easy)</option>
+            <option value="1200">1200 (Medium)</option>
+            <option value="1600" selected>1600 (Hard)</option>
+            <option value="2000">2000 (Expert)</option>
+            <option value="2400">2400 (Master)</option>
+            <option value="2800">2800 (IM)</option>
+            <option value="3200">3200 (GM)</option>
+        </select>
     </div>
 
 </div>
@@ -2458,11 +2465,12 @@ function ready() {
             return;
         }
         var playerElo = parseInt($('#chess-player-elo').text()) || 1200;
+        var aiElo = parseInt($('#ai-elo-dropdown').val()) || 1600;
         chessGame = null;
         pendingUserMove = null;
         premoveQueue = [];
-        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo }));
-        flashStatus('Starting AI game...');
+        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo, aiElo: aiElo }));
+        flashStatus('Starting AI game vs ' + aiElo + ' Elo...');
     }
 
     function startChessGame(data) {

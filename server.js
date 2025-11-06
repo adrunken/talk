@@ -1170,6 +1170,7 @@ wss.on('connection', (ws, req) => {
       knownUsers.add(username);
       persistKnownUsers();
       if (isNew) {
+        recordOnlineEvent(username, 'online');
         send(ws, { type: 'messages', before: 0, messages: messagesRange(Math.max(0, idx - 100), idx) });
       }
       sendUserList();

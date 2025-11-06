@@ -2499,6 +2499,9 @@ function ready() {
         if (data['isAiGame']) {
             loadPlayerElo();
             $('#chess-elo-change').hide();
+        } else {
+            loadPlayerElo();
+            $('#chess-elo-change').hide();
         }
 
         renderBoard();

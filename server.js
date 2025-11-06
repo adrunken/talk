@@ -13,6 +13,18 @@ const PORT = process.env.PORT || 12000;
 const ADMINNAME = 'admin';
 const ADMINHIDDENNAME = 'adminxyz';
 
+// Opening book
+let openingsBook = { openings: [] };
+try {
+  const openingsPath = path.join(__dirname, 'openings.json');
+  if (fs.existsSync(openingsPath)) {
+    openingsBook = JSON.parse(fs.readFileSync(openingsPath, 'utf8'));
+    console.log('[openings] Loaded', openingsBook.openings.length, 'opening variations');
+  }
+} catch (err) {
+  console.warn('[openings] Failed to load opening book:', err.message);
+}
+
 // Persistence
 const DATA_DIR = path.join(__dirname, 'data');
 const MSG_FILE = path.join(DATA_DIR, 'messages.jsonl');
@@ -476,8 +488,94 @@ async function getMoveChessAPI(fen, depth, elo) {
   }
 }
 
+function getOpeningMove(fen, elo) {
+  const chess = new ChessCtor();
+  try { chess.load(fen); } catch (_) { return null; }
+
+  const moveCount = chess.history().length;
+  const MAX_OPENING_MOVES = 40; // 15-20 moves total = 30-40 half-moves
+
+  // Only use opening book for early game
+  if (moveCount > MAX_OPENING_MOVES) {
+    return null;
+  }
+
+  // Get all applicable openings for this ELO
+  // Match ELO range: include openings for this ELO level and lower (stronger players know more openings)
+  const applicableOpenings = openingsBook.openings.filter(opening => {
+    if (!opening.elo || opening.elo.length === 0) return false;
+    const minElo = Math.min(...opening.elo);
+    return elo >= minElo;
+  }).sort((a, b) => {
+    // Prefer openings closest to player's ELO
+    const aMin = Math.min(...a.elo);
+    const bMin = Math.min(...b.elo);
+    return Math.abs(elo - aMin) - Math.abs(elo - bMin);
+  });
+
+  if (applicableOpenings.length === 0) {
+    return null;
+  }
+
+  // Find openings that match current position
+  for (const opening of applicableOpenings) {
+    if (!opening.moves || opening.moves.length === 0) continue;
+
+    // Check if this opening's moves match our current position
+    const testChess = new ChessCtor();
+    let matches = true;
+
+    for (let i = 0; i < Math.min(moveCount, opening.moves.length); i++) {
+      const moveStr = opening.moves[i];
+      if (moveStr.length < 4) {
+        matches = false;
+        break;
+      }
+
+      const from = moveStr.substring(0, 2);
+      const to = moveStr.substring(2, 4);
+      const promotion = moveStr.length > 4 ? moveStr[4] : null;
+
+      const moveSpec = { from, to };
+      if (promotion) moveSpec.promotion = promotion;
+
+      try {
+        const move = testChess.move(moveSpec);
+        if (!move) {
+          matches = false;
+          break;
+        }
+      } catch (_) {
+        matches = false;
+        break;
+      }
+    }
+
+    if (!matches) continue;
+
+    // This opening matches. Is there a next move?
+    if (moveCount < opening.moves.length) {
+      const nextMove = opening.moves[moveCount];
+      if (nextMove && nextMove.length >= 4) {
+        console.log('[openings] Using', opening.name, 'move', (moveCount / 2).toFixed(1), ':', nextMove);
+        return nextMove;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function bestMoveWithStockfish(fen, depth, elo) {
-  // Try Lichess API first (most reliable)
+  // Try opening book first
+  console.log('[ai] Checking opening book for move');
+  const openingMove = getOpeningMove(fen, elo);
+  if (openingMove && openingMove.length >= 4) {
+    console.log('[ai] Opening book move found:', openingMove);
+    return openingMove;
+  }
+
+  // Try Lichess API (most reliable)
   console.log('[ai] Attempting Lichess API for move generation');
   const lichessMove = await getMoveLichessAPI(fen, depth, elo);
   if (lichessMove && lichessMove.length >= 4) {
@@ -500,32 +598,110 @@ function evaluateBoardPositional(chess) {
   const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
   const board = chess.board();
   let score = 0;
+  let whiteAttacks = new Set();
+  let blackAttacks = new Set();
 
-  // Material score
+  // Piece-square tables for better positional evaluation
+  const pawnTable = {
+    w: [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],
+    b: [0,0,0,0,0,0,0,0, 5,10,10,-20,-20,10,10,5, 5,-5,-10,0,0,-10,-5,5, 0,0,0,20,20,0,0,0, 5,5,10,25,25,10,5,5, 10,10,20,30,30,20,10,10, 50,50,50,50,50,50,50,50, 0,0,0,0,0,0,0,0]
+  };
+
+  const knightTable = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+  ];
+
+  const kingEarlyTable = [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20
+  ];
+
+  // Calculate attacks for both sides
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       const piece = board[i][j];
       if (!piece) continue;
+
+      // Temporarily get piece moves to identify attacked squares
+      const tempChess = new ChessCtor();
+      tempChess.load(chess.fen());
+      const pieceMoves = tempChess.moves({ square: String.fromCharCode(97+j) + (8-i), verbose: true });
+      const attackSet = piece.color === 'w' ? whiteAttacks : blackAttacks;
+      pieceMoves.forEach(m => attackSet.add(m.to));
+    }
+  }
+
+  // Material and positional scoring
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (!piece) continue;
+
       const v = values[piece.type] || 0;
       let posBonus = 0;
+      const sqIndex = i * 8 + j;
 
-      // Positional bonuses
       if (piece.type === 'p') {
-        // Pawns advance towards promotion
-        posBonus = piece.color === 'w' ? (6 - i) * 10 : (i - 1) * 10;
+        // Use pawn table
+        posBonus = pawnTable[piece.color][piece.color === 'w' ? sqIndex : 63 - sqIndex];
       } else if (piece.type === 'n') {
-        // Knights prefer central squares
-        const dist = Math.abs(3.5 - j) + Math.abs(3.5 - i);
-        posBonus = (7 - dist) * 5;
+        // Use knight table
+        posBonus = knightTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
+      } else if (piece.type === 'b') {
+        // Bishops prefer long diagonals and center
+        const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - distToCenter) * 3;
       } else if (piece.type === 'r') {
-        // Rooks on 7th rank
-        posBonus = (piece.color === 'w' && i === 1) ? 30 : (piece.color === 'b' && i === 6) ? 30 : 0;
+        // Rooks on 7th rank are strong
+        if ((piece.color === 'w' && i === 1) || (piece.color === 'b' && i === 6)) {
+          posBonus = 50;
+        }
+        // Rooks on open files
+        let isOpenFile = true;
+        for (let fi = 0; fi < 8; fi++) {
+          if (board[fi][j] && board[fi][j].type === 'p') {
+            isOpenFile = false;
+            break;
+          }
+        }
+        if (isOpenFile) posBonus += 20;
+      } else if (piece.type === 'q') {
+        // Queen prefers center
+        const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - distToCenter) * 2;
+      } else if (piece.type === 'k') {
+        // Use king safety table
+        posBonus = kingEarlyTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
       }
 
       const finalValue = v + posBonus;
       score += (piece.color === 'w') ? finalValue : -finalValue;
     }
   }
+
+  // Piece activity bonus (pieces that are attacking something)
+  const wMoves = chess.moves({ verbose: true });
+  const wAttackCount = wMoves.filter(m => m.captured).length;
+  const bAttackCount = wMoves.filter(m => chess.turn() === 'b' && m.captured).length;
+
+  score += wAttackCount * 5 - bAttackCount * 5;
+
+  // Mobility bonus (more moves = more flexibility)
+  const mobilityBonus = wMoves.length * 2;
+  score += chess.turn() === 'w' ? mobilityBonus : -mobilityBonus;
 
   return score;
 }
@@ -542,7 +718,49 @@ function bestMoveFallback(fen, depth, elo) {
   const timeLimit = 8000;
   let nodeCount = 0;
   const maxNodes = 1000000;
-  const lastMove = chess.history({ verbose: true })[chess.history().length - 1];
+  const moveHistory = chess.history({ verbose: true });
+  const lastMove = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null;
+  const lastLastMove = moveHistory.length > 1 ? moveHistory[moveHistory.length - 2] : null;
+
+  // Track move repetition to penalize silly back-and-forth
+  const recentMovePattern = [];
+  for (let i = Math.max(0, moveHistory.length - 4); i < moveHistory.length; i++) {
+    const m = moveHistory[i];
+    recentMovePattern.push({ from: m.from, to: m.to });
+  }
+
+  function orderMoves(moves) {
+    const moveScores = moves.map((m) => {
+      let score = 0;
+
+      // Promotions first
+      if (m.promotion) score += 500;
+
+      // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
+      if (m.captured) {
+        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.captured] || 0;
+        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.piece] || 0;
+        score += victimValue * 10 - attackerValue;
+      }
+
+      // Penalize repetition (back-and-forth moves) - heavy penalty
+      if (lastMove && m.from === lastMove.to && m.to === lastMove.from) {
+        score -= 500; // Heavy penalty for immediate reversal
+      }
+      if (lastLastMove && m.from === lastLastMove.from && m.to === lastLastMove.to) {
+        score -= 300; // Penalty for repeating same piece move pattern
+      }
+
+      // Slight preference for center moves
+      const toFileCenter = Math.abs(m.to.charCodeAt(0) - 100.5);
+      const toRankCenter = Math.abs((parseInt(m.to[1]) - 4.5));
+      score -= (toFileCenter + toRankCenter) * 2;
+
+      return { move: m, score };
+    });
+
+    return moveScores.sort((a, b) => b.score - a.score).map(ms => ms.move);
+  }
 
   function negamax(d, alpha, beta, prevMove) {
     nodeCount++;
@@ -558,21 +776,12 @@ function bestMoveFallback(fen, depth, elo) {
     }
 
     let best = -Infinity;
-    const moves = chess.moves({ verbose: true });
+    let moves = chess.moves({ verbose: true });
 
-    // Sort moves: captures first, then other moves
-    moves.sort((a, b) => {
-      const aIsCapture = !!a.captured ? 1 : 0;
-      const bIsCapture = !!b.captured ? 1 : 0;
-      return bIsCapture - aIsCapture;
-    });
+    // Order moves for better pruning
+    moves = orderMoves(moves, null);
 
     for (const m of moves) {
-      // Avoid obvious bad moves: don't immediately undo the last move
-      if (prevMove && m.from === prevMove.to && m.to === prevMove.from) {
-        continue;
-      }
-
       chess.move(m);
       const score = -negamax(d - 1, -beta, -alpha, m);
       chess.undo();
@@ -597,8 +806,9 @@ function bestMoveFallback(fen, depth, elo) {
     bestMove = null;
     bestScore = -Infinity;
     const moveScores = [];
+    let orderedMoves = orderMoves(moves.slice());
 
-    for (const m of moves) {
+    for (const m of orderedMoves) {
       if (Date.now() - startTime > timeLimit) break;
 
       chess.move(m);
@@ -613,18 +823,22 @@ function bestMoveFallback(fen, depth, elo) {
       }
     }
 
-    // At the last depth, if there are multiple moves with same top score, prefer captures
+    // At the last depth, prefer moves that don't repeat patterns
     if (searchDepth === maxDepth && moveScores.length > 0) {
       const topScore = Math.max(...moveScores.map(ms => ms.score));
-      const topMoves = moveScores.filter(ms => ms.score === topScore);
+      const topMoves = moveScores.filter(ms => ms.score >= topScore - 20); // Small margin for similar scores
 
-      // Prefer captures among equally good moves
-      const capturesInTop = topMoves.filter(ms => ms.move.captured);
-      if (capturesInTop.length > 0) {
-        bestMove = capturesInTop[0].move;
+      // Filter out repetitive moves if better options exist
+      const nonRepetitiveMoves = topMoves.filter(ms => {
+        const m = ms.move;
+        if (lastMove && m.from === lastMove.to && m.to === lastMove.from) return false;
+        return true;
+      });
+
+      if (nonRepetitiveMoves.length > 0) {
+        bestMove = nonRepetitiveMoves[0].move;
       } else if (topMoves.length > 0) {
-        // Among non-captures, add slight randomness to avoid repetition
-        bestMove = topMoves[Math.floor(Math.random() * Math.min(3, topMoves.length))].move;
+        bestMove = topMoves[0].move;
       }
     }
 
@@ -961,7 +1175,7 @@ wss.on('connection', (ws, req) => {
         const board = new ChessCtor();
         let white, black;
         if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false });
+        games.set(gid, { board, white, black, over: false, isAiGame: false });
         const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
         sendToUsername(white, payload); sendToUsername(black, payload);
         invites.delete(key);
@@ -993,6 +1207,30 @@ wss.on('connection', (ws, req) => {
           else result = '1/2-1/2';
           const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
           const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
+
+          // Update Elo for player-vs-player games
+          if (!g.isAiGame && g.white && g.black) {
+            let whiteResult, blackResult;
+            if (result === '1-0') {
+              whiteResult = 1; // white wins
+              blackResult = 0; // black loses
+            } else if (result === '0-1') {
+              whiteResult = 0; // white loses
+              blackResult = 1; // black wins
+            } else {
+              whiteResult = 0.5; // draw
+              blackResult = 0.5; // draw
+            }
+
+            const whiteElo = getUserElo(g.white).elo;
+            const blackElo = getUserElo(g.black).elo;
+
+            updatePlayerElo(g.white, blackElo, whiteResult);
+            updatePlayerElo(g.black, whiteElo, blackResult);
+
+            console.log('[chess] Player-vs-player game ended:', g.white, 'vs', g.black, 'result:', result);
+          }
+
           sendToUsername(g.white, over); sendToUsername(g.black, over);
         }
       } else {
@@ -1016,6 +1254,20 @@ wss.on('connection', (ws, req) => {
             reason: 'resign',
             fen: g.board.fen()
           };
+
+          // Update Elo for player-vs-player games
+          if (!g.isAiGame && g.white && g.black) {
+            const whiteResult = winner === g.white ? 1 : 0;
+            const blackResult = winner === g.black ? 1 : 0;
+
+            const whiteElo = getUserElo(g.white).elo;
+            const blackElo = getUserElo(g.black).elo;
+
+            updatePlayerElo(g.white, blackElo, whiteResult);
+            updatePlayerElo(g.black, whiteElo, blackResult);
+
+            console.log('[chess] Player-vs-player game resigned:', g.white, 'vs', g.black, 'winner:', winner);
+          }
 
           // Send to both players if it's a regular game
           if (!g.isAiGame) {

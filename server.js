@@ -493,7 +493,7 @@ function getOpeningMove(fen, elo) {
   try { chess.load(fen); } catch (_) { return null; }
 
   const moveCount = chess.history().length;
-  const MAX_OPENING_MOVES = 30; // 15-20 moves total = 30-40 half-moves
+  const MAX_OPENING_MOVES = 40; // 15-20 moves total = 30-40 half-moves
 
   // Only use opening book for early game
   if (moveCount > MAX_OPENING_MOVES) {
@@ -501,17 +501,20 @@ function getOpeningMove(fen, elo) {
   }
 
   // Get all applicable openings for this ELO
-  const applicableOpenings = openingsBook.openings.filter(opening =>
-    opening.elo && opening.elo.includes(Math.round(elo / 200) * 200)
-  );
+  // Match ELO range: include openings for this ELO level and lower (stronger players know more openings)
+  const applicableOpenings = openingsBook.openings.filter(opening => {
+    if (!opening.elo || opening.elo.length === 0) return false;
+    const minElo = Math.min(...opening.elo);
+    return elo >= minElo;
+  }).sort((a, b) => {
+    // Prefer openings closest to player's ELO
+    const aMin = Math.min(...a.elo);
+    const bMin = Math.min(...b.elo);
+    return Math.abs(elo - aMin) - Math.abs(elo - bMin);
+  });
 
   if (applicableOpenings.length === 0) {
-    // Fall back to closest ELO opening
-    const closestOpening = openingsBook.openings.find(opening =>
-      opening.elo && opening.elo.length > 0
-    );
-    if (!closestOpening) return null;
-    applicableOpenings.push(closestOpening);
+    return null;
   }
 
   // Find openings that match current position
@@ -554,7 +557,7 @@ function getOpeningMove(fen, elo) {
     if (moveCount < opening.moves.length) {
       const nextMove = opening.moves[moveCount];
       if (nextMove && nextMove.length >= 4) {
-        console.log('[openings] Using', opening.name, 'move', moveCount + 1, ':', nextMove);
+        console.log('[openings] Using', opening.name, 'move', (moveCount / 2).toFixed(1), ':', nextMove);
         return nextMove;
       }
     }

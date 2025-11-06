@@ -961,7 +961,7 @@ wss.on('connection', (ws, req) => {
         const board = new ChessCtor();
         let white, black;
         if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false });
+        games.set(gid, { board, white, black, over: false, isAiGame: false });
         const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
         sendToUsername(white, payload); sendToUsername(black, payload);
         invites.delete(key);

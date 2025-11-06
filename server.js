@@ -684,11 +684,6 @@ function bestMoveFallback(fen, depth, elo) {
     moves = orderMoves(moves, null);
 
     for (const m of moves) {
-      // Avoid obvious bad moves: don't immediately undo the last move
-      if (prevMove && m.from === prevMove.to && m.to === prevMove.from) {
-        continue;
-      }
-
       chess.move(m);
       const score = -negamax(d - 1, -beta, -alpha, m);
       chess.undo();

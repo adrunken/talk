@@ -1574,17 +1574,23 @@ wss.on('connection', (ws, req) => {
         } else {
           console.error('[ai] Failed to apply move - spec:', aiMoveSpec);
           console.error('[ai] Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));
-          const legalMoves = board.moves();
-          if (legalMoves.length > 0) {
-            const fallbackMove = board.moves({ verbose: true })[0];
-            board.move(fallbackMove);
+          const verboseMoves = board.moves({ verbose: true });
+          if (verboseMoves.length > 0) {
+            let selectedMove = verboseMoves[0];
+            const captureMoves = verboseMoves.filter(m => m.captured);
+            if (captureMoves.length > 0) {
+              selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+            } else {
+              selectedMove = verboseMoves[Math.floor(Math.random() * verboseMoves.length)];
+            }
+            board.move(selectedMove);
             const aiMovePayload = {
               type: 'chess_move',
               game_id: gid,
-              from: fallbackMove.from,
-              to: fallbackMove.to,
-              promotion: fallbackMove.promotion || null,
-              san: fallbackMove.san,
+              from: selectedMove.from,
+              to: selectedMove.to,
+              promotion: selectedMove.promotion || null,
+              san: selectedMove.san,
               fen: board.fen(),
               turn: board.turn() === 'w' ? 'white' : 'black',
               check: board.in_check(),

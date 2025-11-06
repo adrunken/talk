@@ -500,32 +500,110 @@ function evaluateBoardPositional(chess) {
   const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
   const board = chess.board();
   let score = 0;
+  let whiteAttacks = new Set();
+  let blackAttacks = new Set();
 
-  // Material score
+  // Piece-square tables for better positional evaluation
+  const pawnTable = {
+    w: [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],
+    b: [0,0,0,0,0,0,0,0, 5,10,10,-20,-20,10,10,5, 5,-5,-10,0,0,-10,-5,5, 0,0,0,20,20,0,0,0, 5,5,10,25,25,10,5,5, 10,10,20,30,30,20,10,10, 50,50,50,50,50,50,50,50, 0,0,0,0,0,0,0,0]
+  };
+
+  const knightTable = [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+  ];
+
+  const kingEarlyTable = [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20
+  ];
+
+  // Calculate attacks for both sides
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       const piece = board[i][j];
       if (!piece) continue;
+
+      // Temporarily get piece moves to identify attacked squares
+      const tempChess = new ChessCtor();
+      tempChess.load(chess.fen());
+      const pieceMoves = tempChess.moves({ square: String.fromCharCode(97+j) + (8-i), verbose: true });
+      const attackSet = piece.color === 'w' ? whiteAttacks : blackAttacks;
+      pieceMoves.forEach(m => attackSet.add(m.to));
+    }
+  }
+
+  // Material and positional scoring
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (!piece) continue;
+
       const v = values[piece.type] || 0;
       let posBonus = 0;
+      const sqIndex = i * 8 + j;
 
-      // Positional bonuses
       if (piece.type === 'p') {
-        // Pawns advance towards promotion
-        posBonus = piece.color === 'w' ? (6 - i) * 10 : (i - 1) * 10;
+        // Use pawn table
+        posBonus = pawnTable[piece.color][piece.color === 'w' ? sqIndex : 63 - sqIndex];
       } else if (piece.type === 'n') {
-        // Knights prefer central squares
-        const dist = Math.abs(3.5 - j) + Math.abs(3.5 - i);
-        posBonus = (7 - dist) * 5;
+        // Use knight table
+        posBonus = knightTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
+      } else if (piece.type === 'b') {
+        // Bishops prefer long diagonals and center
+        const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - distToCenter) * 3;
       } else if (piece.type === 'r') {
-        // Rooks on 7th rank
-        posBonus = (piece.color === 'w' && i === 1) ? 30 : (piece.color === 'b' && i === 6) ? 30 : 0;
+        // Rooks on 7th rank are strong
+        if ((piece.color === 'w' && i === 1) || (piece.color === 'b' && i === 6)) {
+          posBonus = 50;
+        }
+        // Rooks on open files
+        let isOpenFile = true;
+        for (let fi = 0; fi < 8; fi++) {
+          if (board[fi][j] && board[fi][j].type === 'p') {
+            isOpenFile = false;
+            break;
+          }
+        }
+        if (isOpenFile) posBonus += 20;
+      } else if (piece.type === 'q') {
+        // Queen prefers center
+        const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
+        posBonus = (7 - distToCenter) * 2;
+      } else if (piece.type === 'k') {
+        // Use king safety table
+        posBonus = kingEarlyTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
       }
 
       const finalValue = v + posBonus;
       score += (piece.color === 'w') ? finalValue : -finalValue;
     }
   }
+
+  // Piece activity bonus (pieces that are attacking something)
+  const wMoves = chess.moves({ verbose: true });
+  const wAttackCount = wMoves.filter(m => m.captured).length;
+  const bAttackCount = wMoves.filter(m => chess.turn() === 'b' && m.captured).length;
+
+  score += wAttackCount * 5 - bAttackCount * 5;
+
+  // Mobility bonus (more moves = more flexibility)
+  const mobilityBonus = wMoves.length * 2;
+  score += chess.turn() === 'w' ? mobilityBonus : -mobilityBonus;
 
   return score;
 }

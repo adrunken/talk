@@ -2462,11 +2462,12 @@ function ready() {
             return;
         }
         var playerElo = parseInt($('#chess-player-elo').text()) || 1200;
+        var aiElo = parseInt($('#ai-elo-dropdown').val()) || 1600;
         chessGame = null;
         pendingUserMove = null;
         premoveQueue = [];
-        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo }));
-        flashStatus('Starting AI game...');
+        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo, aiElo: aiElo }));
+        flashStatus('Starting AI game vs ' + aiElo + ' Elo...');
     }
 
     function startChessGame(data) {

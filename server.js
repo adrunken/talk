@@ -647,6 +647,13 @@ function eloToSkillLevel(elo) {
   return Math.max(0, Math.min(20, skillLevel));
 }
 
+function randomDelay() {
+  // Random delay between 2000-5000ms (2-5 seconds)
+  const minDelay = 2000;
+  const maxDelay = 5000;
+  return Math.random() * (maxDelay - minDelay) + minDelay;
+}
+
 app.post('/api/stockfish/move', async (req, res) => {
   const fen = String(req.body && req.body.fen || '').trim();
   let depth = Number(req.body && (req.body.depth ?? 0));

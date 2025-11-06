@@ -946,15 +946,32 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'chess_resign') {
       const gid = msg.game_id;
-      const player = users.get(ws);
+      const username = users.get(ws);
+
       if (games.has(gid)) {
         const g = games.get(gid);
         if (!g.over) {
           g.over = true;
-          const winner = player === g.white ? g.black : g.white;
+          const winner = username === g.white ? g.black : g.white;
           const result = winner === g.white ? '1-0' : '0-1';
-          const over = { type: 'chess_over', game_id: gid, result, reason: 'resign', fen: g.board.fen() };
-          sendToUsername(g.white, over); sendToUsername(g.black, over);
+          const over = {
+            type: 'chess_over',
+            game_id: gid,
+            result,
+            reason: 'resign',
+            fen: g.board.fen()
+          };
+
+          // Send to both players if it's a regular game
+          if (!g.isAiGame) {
+            sendToUsername(g.white, over);
+            sendToUsername(g.black, over);
+          } else {
+            // For AI games, just send to the player
+            send(ws, over);
+          }
+
+          console.log('[chess] Player resigned -', username, 'vs', g.white === username ? g.black : g.white);
         }
       }
     }

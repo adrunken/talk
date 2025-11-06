@@ -993,6 +993,30 @@ wss.on('connection', (ws, req) => {
           else result = '1/2-1/2';
           const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
           const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
+
+          // Update Elo for player-vs-player games
+          if (!g.isAiGame && g.white && g.black) {
+            let whiteResult, blackResult;
+            if (result === '1-0') {
+              whiteResult = 1; // white wins
+              blackResult = 0; // black loses
+            } else if (result === '0-1') {
+              whiteResult = 0; // white loses
+              blackResult = 1; // black wins
+            } else {
+              whiteResult = 0.5; // draw
+              blackResult = 0.5; // draw
+            }
+
+            const whiteElo = getUserElo(g.white).elo;
+            const blackElo = getUserElo(g.black).elo;
+
+            updatePlayerElo(g.white, blackElo, whiteResult);
+            updatePlayerElo(g.black, whiteElo, blackResult);
+
+            console.log('[chess] Player-vs-player game ended:', g.white, 'vs', g.black, 'result:', result);
+          }
+
           sendToUsername(g.white, over); sendToUsername(g.black, over);
         }
       } else {

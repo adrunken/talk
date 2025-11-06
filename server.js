@@ -316,90 +316,9 @@ function eloToDepth(elo) {
   return 8;
 }
 
-let stockfishEngine = null;
-let stockfishInitPromise = null;
-
-let stockfishEngine = null;
-let stockfishInitPromise = null;
-
-async function initStockfish() {
-  if (stockfishEngine) {
-    console.log('[stockfish] Engine already initialized');
-    return stockfishEngine;
-  }
-
-  if (stockfishInitPromise) {
-    console.log('[stockfish] Waiting for initialization in progress');
-    return stockfishInitPromise;
-  }
-
-  stockfishInitPromise = (async () => {
-    try {
-      console.log('[stockfish] Initializing Stockfish WASM engine...');
-
-      const engine = new StockfishEngine();
-      await engine.start();
-      stockfishEngine = engine;
-      console.log('[stockfish] Engine initialized and ready');
-      return stockfishEngine;
-
-    } catch (err) {
-      console.error('[stockfish] Initialization error:', err.message);
-      stockfishInitPromise = null;
-      throw err;
-    }
-  })();
-
-  return stockfishInitPromise;
-}
-
 async function bestMoveWithStockfish(fen, depth, elo) {
-  try {
-    if (!stockfishEngine) {
-      try {
-        await initStockfish();
-      } catch (err) {
-        console.warn('[stockfish] Binary not available, using fallback algorithm');
-        return bestMoveFallback(fen, depth);
-      }
-    }
-
-    if (!stockfishEngine) {
-      console.warn('[stockfish] Engine unavailable, using fallback algorithm');
-      return bestMoveFallback(fen, depth);
-    }
-
-    await stockfishEngine.newgame();
-
-    // Set skill level based on ELO
-    if (elo && !isNaN(elo)) {
-      const skillLevel = eloToSkillLevel(elo);
-      console.log('[stockfish] Setting skill level to', skillLevel, 'for ELO', elo);
-      await stockfishEngine.setoption('Skill Level', skillLevel);
-    }
-
-    // Prepare position
-    await stockfishEngine.position(fen);
-
-    // Search with depth
-    const depthToUse = Math.max(1, Math.min(30, Number(depth) || 15));
-    console.log('[stockfish] Searching with depth', depthToUse);
-
-    const bestMove = await stockfishEngine.go({ depth: depthToUse });
-
-    if (bestMove) {
-      console.log('[stockfish] Best move:', bestMove);
-      return bestMove;
-    }
-
-    console.warn('[stockfish] No best move returned, using fallback');
-    return bestMoveFallback(fen, depth);
-
-  } catch (err) {
-    console.error('[stockfish] Error during search:', err);
-    console.log('[stockfish] Falling back to simple algorithm');
-    return bestMoveFallback(fen, depth);
-  }
+  console.log('[stockfish] Using improved fallback algorithm for AI move');
+  return bestMoveFallback(fen, depth, elo);
 }
 
 function evaluateBoardMaterial(chess) {

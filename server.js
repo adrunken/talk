@@ -1191,31 +1191,36 @@ wss.on('connection', (ws, req) => {
             check: board.in_check(),
             isAiMove: true
           };
-          send(ws, aiMovePayload);
 
-          if (board.game_over()) {
-            g.over = true;
-            let result, reason;
-            if (board.in_checkmate()) {
-              result = board.turn() === 'w' ? '0-1' : '1-0';
-              reason = 'checkmate';
-            } else if (board.in_stalemate() || board.in_draw()) {
-              result = '1/2-1/2';
-              reason = 'stalemate';
-            } else {
-              result = '1/2-1/2';
-              reason = 'draw';
+          const delay = randomDelay();
+          console.log('[ai] Waiting', delay.toFixed(0), 'ms before move');
+          setTimeout(() => {
+            send(ws, aiMovePayload);
+
+            if (board.game_over()) {
+              g.over = true;
+              let result, reason;
+              if (board.in_checkmate()) {
+                result = board.turn() === 'w' ? '0-1' : '1-0';
+                reason = 'checkmate';
+              } else if (board.in_stalemate() || board.in_draw()) {
+                result = '1/2-1/2';
+                reason = 'stalemate';
+              } else {
+                result = '1/2-1/2';
+                reason = 'draw';
+              }
+
+              const gameOverPayload = {
+                type: 'chess_over',
+                game_id: gid,
+                result,
+                reason,
+                fen: board.fen()
+              };
+              send(ws, gameOverPayload);
             }
-
-            const gameOverPayload = {
-              type: 'chess_over',
-              game_id: gid,
-              result,
-              reason,
-              fen: board.fen()
-            };
-            send(ws, gameOverPayload);
-          }
+          }, delay);
         } else {
           console.error('[ai] Failed to apply move - spec:', aiMoveSpec);
           console.error('[ai] Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));

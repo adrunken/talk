@@ -401,13 +401,19 @@ async function getMoveLichessAPI(fen, depth, elo) {
     }
 
     const data = await response.json();
+    console.log('[lichess] API response:', JSON.stringify(data).substring(0, 200));
 
     if (data && data.pvs && data.pvs.length > 0) {
       const bestVariation = data.pvs[0];
-      if (bestVariation.moves && bestVariation.moves.length > 0) {
-        const move = bestVariation.moves[0];
-        console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
-        return move;
+
+      // moves is a space-separated string like "e2e4 d7d5"
+      if (bestVariation.moves && typeof bestVariation.moves === 'string') {
+        const moves = bestVariation.moves.split(' ');
+        if (moves.length > 0 && moves[0].length >= 4) {
+          const move = moves[0];
+          console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
+          return move;
+        }
       }
     }
 

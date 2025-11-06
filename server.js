@@ -127,7 +127,7 @@ function recordOnlineEvent(username, action) {
     minute: '2-digit',
     hour12: false
   });
-  olineHistory[username].push({ action, timestamp, time });
+  onlineHistory[username].push({ action, timestamp, time });
   persistOnlineHistory();
 }
 

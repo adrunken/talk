@@ -2495,12 +2495,17 @@ function ready() {
     }
 
     function showAiRejoinPrompt(gameData) {
-        if (!$('#invites #rejoin-ai-game').length) {
-            var wrap = $('<div class="user-row" id="rejoin-ai-wrapper" />');
-            var btn = $('<button class="invite-user-btn" id="rejoin-ai-game" data-game="' + btoa(JSON.stringify(gameData)) + '">AI game in progress</button>');
-            wrap.append(btn);
-            $('#invites').append(wrap);
-            console.log('[debug] AI rejoin prompt shown');
+        try {
+            if (!$('#invites #rejoin-ai-game').length) {
+                var wrap = $('<div class="user-row" id="rejoin-ai-wrapper" />');
+                var btn = $('<button class="invite-user-btn" id="rejoin-ai-game">AI game in progress</button>');
+                btn.data('aiGameData', gameData);
+                wrap.append(btn);
+                $('#invites').append(wrap);
+                console.log('[debug] AI rejoin prompt shown successfully');
+            }
+        } catch(e) {
+            console.error('[debug] Error in showAiRejoinPrompt:', e);
         }
     }
 

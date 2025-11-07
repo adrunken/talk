@@ -2429,8 +2429,12 @@ function ready() {
     // Rejoin AI game button handler (delegated)
     $('#invites').on('click', '#rejoin-ai-game', function(){
         try {
-            var encodedData = $(this).attr('data-game');
-            var gameData = JSON.parse(atob(encodedData));
+            var gameData = $(this).data('aiGameData');
+            console.log('[debug] Rejoin AI game clicked, data:', gameData);
+            if (!gameData) {
+                console.error('[debug] No game data found');
+                return;
+            }
             var me = $('#username').text();
             chessGame = {
                 id: gameData.game_id,
@@ -2458,8 +2462,9 @@ function ready() {
             $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
             updateSettingUI('confirm-moves');
+            console.log('[debug] AI game rejoined successfully');
         } catch(e) {
-            console.error('Failed to rejoin AI game:', e);
+            console.error('[debug] Failed to rejoin AI game:', e);
         }
     });
 

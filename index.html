@@ -2616,7 +2616,11 @@ function ready() {
             showRejoinPrompt();
         }
         else if (data['type'] === 'chess_start') {
-            try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
+            if (data['isAiGame']) {
+                try { localStorage.setItem('active_ai_game', JSON.stringify(data)); } catch(e){}
+            } else {
+                try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
+            }
             startChessGame(data);
         }
         else if (data['type'] === 'chess_move' && data['isAiMove']) {

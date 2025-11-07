@@ -1396,7 +1396,10 @@ wss.on('connection', (ws, req) => {
       const promo = (msg.promotion || '').toLowerCase();
       const username = users.get(ws);
 
+      console.log('[ai] chess_ai_move received: game_id=', gid, 'from=', src, 'to=', dst, 'username=', username);
+
       if (!games.has(gid)) {
+        console.error('[ai] chess_ai_move: Game not found:', gid);
         send(ws, { type: 'chess_error', message: 'Game not found' });
         return;
       }
@@ -1405,16 +1408,19 @@ wss.on('connection', (ws, req) => {
       const board = g.board;
 
       if (!g.isAiGame) {
+        console.error('[ai] chess_ai_move: Not an AI game');
         send(ws, { type: 'chess_error', message: 'Not an AI game' });
         return;
       }
 
       if (g.over) {
+        console.error('[ai] chess_ai_move: Game is over');
         send(ws, { type: 'chess_error', message: 'Game over' });
         return;
       }
 
       if (username !== g.playerUsername) {
+        console.error('[ai] chess_ai_move: Not your game - username=', username, 'playerUsername=', g.playerUsername);
         send(ws, { type: 'chess_error', message: 'Not your game' });
         return;
       }
@@ -1424,9 +1430,12 @@ wss.on('connection', (ws, req) => {
       const playerMove = board.move(moveSpec);
 
       if (!playerMove) {
+        console.error('[ai] chess_ai_move: Illegal move:', src, 'to', dst);
         send(ws, { type: 'chess_illegal', reason: 'illegal' });
         return;
       }
+
+      console.log('[ai] chess_ai_move: Player move accepted:', playerMove.san, 'new turn:', board.turn());
 
       const playerMovePayload = {
         type: 'chess_move',

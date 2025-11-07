@@ -2659,34 +2659,32 @@ function ready() {
                 hideRejoinPrompt();
 
                 if (chessGame.isAiGame) {
-                    if (data['reason'] !== 'resign') {
-                        var me = $('#username').text();
-                        var playerColor = chessGame.color === 'white' ? 'w' : 'b';
-                        var playerResult = 0;
-                        if (data['result'] === '1-0' && playerColor === 'w') playerResult = 1;
-                        else if (data['result'] === '0-1' && playerColor === 'b') playerResult = 1;
-                        else if (data['result'] === '1/2-1/2') playerResult = 0.5;
+                    var me = $('#username').text();
+                    var playerColor = chessGame.color === 'white' ? 'w' : 'b';
+                    var playerResult = 0;
+                    if (data['result'] === '1-0' && playerColor === 'w') playerResult = 1;
+                    else if (data['result'] === '0-1' && playerColor === 'b') playerResult = 1;
+                    else if (data['result'] === '1/2-1/2') playerResult = 0.5;
 
-                        fetch(API_BASE + '/api/chess/game/end', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                username: me,
-                                result: data['result'],
-                                opponentElo: chessGame.aiElo
-                            })
+                    fetch(API_BASE + '/api/chess/game/end', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: me,
+                            result: data['result'],
+                            opponentElo: chessGame.aiElo
                         })
-                        .then(function(res) { return res.json(); })
-                        .then(function(data) {
-                            if (data.success) {
-                                $('#chess-player-elo').text(Math.round(data.newElo));
-                                $('#chess-elo-change-value').text((data.eloChange > 0 ? '+' : '') + data.eloChange);
-                                $('#chess-elo-change').show();
-                                flashStatus('ELO: ' + $('#chess-player-elo').text() + ' (' + (data.eloChange > 0 ? '+' : '') + data.eloChange + ')');
-                            }
-                        })
-                        .catch(function(err) { console.log('Failed to update ELO:', err); });
-                    }
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            $('#chess-player-elo').text(Math.round(data.newElo));
+                            $('#chess-elo-change-value').text((data.eloChange > 0 ? '+' : '') + data.eloChange);
+                            $('#chess-elo-change').show();
+                            flashStatus('ELO: ' + $('#chess-player-elo').text() + ' (' + (data.eloChange > 0 ? '+' : '') + data.eloChange + ')');
+                        }
+                    })
+                    .catch(function(err) { console.log('Failed to update ELO:', err); });
                 } else {
                     var me = $('#username').text();
                     fetch(API_BASE + '/api/elo/' + encodeURIComponent(me), {

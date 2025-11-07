@@ -2734,12 +2734,11 @@ function ready() {
         }
         else if (data['type'] === 'chess_start') {
             if (data['isAiGame']) {
-                try {
-                    localStorage.setItem('active_ai_game', JSON.stringify(data));
-                    console.log('[debug] Saved AI game to localStorage:', data);
-                } catch(e){ console.error('[debug] Failed to save AI game:', e); }
+                if (safeSetLocalStorage('active_ai_game', JSON.stringify(data))) {
+                    console.log('[debug] Saved AI game to localStorage:', { game_id: data.game_id, white: data.white, black: data.black });
+                }
             } else {
-                try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
+                safeSetLocalStorage('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] }));
             }
             startChessGame(data);
         }

@@ -1929,14 +1929,16 @@ function ready() {
         ws.onopen = function() {
             ws.send(JSON.stringify({ "type" : "username", "username" : $('#username').text() }));
             setTimeout(function(){
-                try {
-                    var ag = localStorage.getItem('active_game');
-                    if (ag) {
+                var ag = safeGetLocalStorage('active_game');
+                if (ag) {
+                    try {
                         var obj = JSON.parse(ag);
                         ws.send(JSON.stringify({ type: 'chess_resume_request', game_id: obj.id }));
                         try { showRejoinPrompt(); } catch(_e){}
+                    } catch(parseErr) {
+                        console.error('[debug] Error parsing PvP game data:', parseErr.message);
                     }
-                } catch(e){}
+                }
             }, 150);
             setTimeout(function(){
                 console.log('[debug] Checking for saved AI game on reconnect...');

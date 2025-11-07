@@ -504,34 +504,51 @@ async function getMoveChessAPI(fen, depth, elo) {
 
     const url = 'https://chess-api.com/v1';
 
-    const response = await fetch(url, {
-      method: 'POST',
-      timeout: 15000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ fen })
-    });
+    // Use AbortController for proper timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    if (!response.ok) {
-      console.warn('[chess-api] API returned status:', response.status);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ fen })
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn('[chess-api] API returned status:', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[chess-api] API response:', JSON.stringify(data).substring(0, 200));
+
+      if (data && data.bestmove && typeof data.bestmove === 'string') {
+        const move = data.bestmove;
+        if (move.length >= 4) {
+          console.log('[chess-api] Best move:', move);
+          return move;
+        }
+      }
+
+      console.warn('[chess-api] No valid moves in response');
+      return null;
+
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        console.warn('[chess-api] API request timed out');
+      } else {
+        console.error('[chess-api] API fetch error:', fetchErr.message);
+      }
       return null;
     }
-
-    const data = await response.json();
-    console.log('[chess-api] API response:', JSON.stringify(data).substring(0, 200));
-
-    if (data && data.bestmove && typeof data.bestmove === 'string') {
-      const move = data.bestmove;
-      if (move.length >= 4) {
-        console.log('[chess-api] Best move:', move);
-        return move;
-      }
-    }
-
-    console.warn('[chess-api] No valid moves in response');
-    return null;
 
   } catch (err) {
     console.error('[chess-api] API error:', err.message);

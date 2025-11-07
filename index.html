@@ -2415,6 +2415,43 @@ function ready() {
         }
     });
 
+    // Rejoin AI game button handler (delegated)
+    $('#invites').on('click', '#rejoin-ai-game', function(){
+        try {
+            var encodedData = $(this).attr('data-game');
+            var gameData = JSON.parse(atob(encodedData));
+            var me = $('#username').text();
+            chessGame = {
+                id: gameData.game_id,
+                white: gameData.white,
+                black: gameData.black,
+                color: (gameData.white === me) ? 'white' : 'black',
+                fen: gameData.fen,
+                turn: gameData.turn,
+                lastMove: null,
+                over: false,
+                isAiGame: true,
+                aiElo: gameData.aiElo,
+                moveHistory: [{ fen: gameData.fen, from: null, to: null }],
+                historyIndex: 0
+            };
+            hideAiRejoinPrompt();
+            $('#chess-white').text(chessGame.white);
+            $('#chess-black').text(chessGame.black);
+            $('#chess-status').text('Your color: ' + chessGame.color + ' (vs AI ' + chessGame.aiElo + ')');
+            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+            loadPlayerElo();
+            $('#chess-elo-change').hide();
+            renderBoard();
+            updateHistoryControls && updateHistoryControls();
+            $('#chess-modal').removeClass('hidden');
+            __chessUnread = 0; __updateTitleBadge();
+            updateSettingUI('confirm-moves');
+        } catch(e) {
+            console.error('Failed to rejoin AI game:', e);
+        }
+    });
+
     function renderUserLists() {
         var me = $('#username').text();
         var onlineHtml = users.map(function(u){

@@ -1942,19 +1942,24 @@ function ready() {
                 console.log('[debug] Checking for saved AI game on reconnect...');
                 try {
                     var aig = localStorage.getItem('active_ai_game');
-                    console.log('[debug] localStorage.getItem("active_ai_game"):', aig ? 'found' : 'not found');
+                    console.log('[debug] localStorage.getItem("active_ai_game"):', aig ? 'found (' + aig.length + ' bytes)' : 'not found');
                     if (aig) {
-                        console.log('[debug] Raw data:', aig.substring(0, 100));
-                        var aiGameData = JSON.parse(aig);
-                        console.log('[debug] Parsed AI game data:', aiGameData);
-                        if ($('#invites').length) {
-                            console.log('[debug] #invites element found, calling showAiRejoinPrompt');
-                            try { showAiRejoinPrompt(aiGameData); } catch(_e){ console.error('[debug] showAiRejoinPrompt error:', _e); }
-                        } else {
-                            console.log('[debug] #invites element NOT found yet');
+                        try {
+                            console.log('[debug] Raw data starts with:', aig.substring(0, 100));
+                            var aiGameData = JSON.parse(aig);
+                            console.log('[debug] Parsed AI game data successfully:', { game_id: aiGameData.game_id, white: aiGameData.white, black: aiGameData.black });
+                            if ($('#invites').length) {
+                                console.log('[debug] #invites element found, calling showAiRejoinPrompt');
+                                showAiRejoinPrompt(aiGameData);
+                                console.log('[debug] showAiRejoinPrompt completed');
+                            } else {
+                                console.log('[debug] #invites element NOT found yet');
+                            }
+                        } catch(parseErr) {
+                            console.error('[debug] Error parsing AI game data:', parseErr.message);
                         }
                     }
-                } catch(e){ console.error('[debug] AI game restore error:', e); }
+                } catch(e){ console.error('[debug] AI game restore outer error:', e.message); }
             }, 300);
             lastPong = Date.now();
             $('#popup').addClass('hidden'); $(':not(#popup)').removeClass('opaque');

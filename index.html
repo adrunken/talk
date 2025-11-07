@@ -2771,10 +2771,8 @@ function ready() {
                 chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
                 chessGame.historyIndex = chessGame.moveHistory.length - 1;
                 if (chessGame.isAiGame) {
-                    try {
-                        var saveData = Object.assign({}, data, { fen: chessGame.fen, turn: chessGame.turn });
-                        localStorage.setItem('active_ai_game', JSON.stringify(saveData));
-                    } catch(e){}
+                    var saveData = Object.assign({}, data, { fen: chessGame.fen, turn: chessGame.turn });
+                    safeSetLocalStorage('active_ai_game', JSON.stringify(saveData));
                 }
                 renderBoard();
                 updateChessStatus();

@@ -442,38 +442,55 @@ async function getMoveLichessAPI(fen, depth, elo) {
     // Lichess API endpoint for computer analysis
     const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      timeout: 15000,
-      headers: {
-        'Accept': 'application/json'
+    // Use AbortController for proper timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn('[lichess] API returned status:', response.status);
+        return null;
       }
-    });
 
-    if (!response.ok) {
-      console.warn('[lichess] API returned status:', response.status);
-      return null;
-    }
+      const data = await response.json();
+      console.log('[lichess] API response:', JSON.stringify(data).substring(0, 200));
 
-    const data = await response.json();
-    console.log('[lichess] API response:', JSON.stringify(data).substring(0, 200));
+      if (data && data.pvs && data.pvs.length > 0) {
+        const bestVariation = data.pvs[0];
 
-    if (data && data.pvs && data.pvs.length > 0) {
-      const bestVariation = data.pvs[0];
-
-      // moves is a space-separated string like "e2e4 d7d5"
-      if (bestVariation.moves && typeof bestVariation.moves === 'string') {
-        const moves = bestVariation.moves.split(' ');
-        if (moves.length > 0 && moves[0].length >= 4) {
-          const move = moves[0];
-          console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
-          return move;
+        // moves is a space-separated string like "e2e4 d7d5"
+        if (bestVariation.moves && typeof bestVariation.moves === 'string') {
+          const moves = bestVariation.moves.split(' ');
+          if (moves.length > 0 && moves[0].length >= 4) {
+            const move = moves[0];
+            console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
+            return move;
+          }
         }
       }
-    }
 
-    console.warn('[lichess] No valid moves in response');
-    return null;
+      console.warn('[lichess] No valid moves in response');
+      return null;
+
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        console.warn('[lichess] API request timed out');
+      } else {
+        console.error('[lichess] API fetch error:', fetchErr.message);
+      }
+      return null;
+    }
 
   } catch (err) {
     console.error('[lichess] API error:', err.message);

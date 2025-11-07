@@ -1937,6 +1937,13 @@ function ready() {
                         try { showRejoinPrompt(); } catch(_e){}
                     }
                 } catch(e){}
+                try {
+                    var aig = localStorage.getItem('active_ai_game');
+                    if (aig) {
+                        var aiGameData = JSON.parse(aig);
+                        try { showAiRejoinPrompt(aiGameData); } catch(_e){}
+                    }
+                } catch(e){}
             }, 150);
             lastPong = Date.now();
             $('#popup').addClass('hidden'); $(':not(#popup)').removeClass('opaque');

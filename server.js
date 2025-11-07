@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 12000;
 const ADMINNAME = 'admin';
 const ADMINHIDDENNAME = 'adminxyz';
 
+// Human-like AI bot cache (game_id -> bot instance)
+const aiBotsCache = new Map();
+
 // Opening book
 let openingsBook = { openings: [] };
 try {

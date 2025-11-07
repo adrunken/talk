@@ -1939,11 +1939,13 @@ function ready() {
                 } catch(e){}
                 try {
                     var aig = localStorage.getItem('active_ai_game');
+                    console.log('[debug] Checking for saved AI game:', aig ? 'found' : 'not found');
                     if (aig) {
                         var aiGameData = JSON.parse(aig);
-                        try { showAiRejoinPrompt(aiGameData); } catch(_e){}
+                        console.log('[debug] Parsed AI game data:', aiGameData);
+                        try { showAiRejoinPrompt(aiGameData); } catch(_e){ console.error('[debug] showAiRejoinPrompt error:', _e); }
                     }
-                } catch(e){}
+                } catch(e){ console.error('[debug] AI game restore error:', e); }
             }, 150);
             lastPong = Date.now();
             $('#popup').addClass('hidden'); $(':not(#popup)').removeClass('opaque');

@@ -560,7 +560,15 @@ function getOpeningMove(fen, elo) {
   const chess = new ChessCtor();
   try { chess.load(fen); } catch (_) { return null; }
 
-  const moveCount = chess.history().length;
+  // Calculate moveCount from FEN because chess.history() is empty when loading a FEN
+  // FEN format: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  // The fullmove number is the last field (1-indexed)
+  const fenParts = fen.split(' ');
+  const fullmoveNumber = parseInt(fenParts[5] || '1', 10);
+  const isWhiteToMove = fenParts[1] === 'w';
+  // Calculate halfmoves: (fullmove - 1) * 2 + (0 if white, 1 if black)
+  const moveCount = Math.max(0, (fullmoveNumber - 1) * 2 + (isWhiteToMove ? 0 : 1));
+
   const MAX_OPENING_MOVES = 40; // 15-20 moves total = 30-40 half-moves
 
   // Only use opening book for early game

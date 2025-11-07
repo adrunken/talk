@@ -2523,6 +2523,41 @@ function ready() {
         $('#rejoin-ai-wrapper').remove();
     }
 
+    function safeGetLocalStorage(key) {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                return localStorage.getItem(key);
+            }
+        } catch(e) {
+            console.warn('[debug] localStorage access blocked:', e.message);
+        }
+        return null;
+    }
+
+    function safeSetLocalStorage(key, value) {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                localStorage.setItem(key, value);
+                return true;
+            }
+        } catch(e) {
+            console.warn('[debug] localStorage write blocked:', e.message);
+        }
+        return false;
+    }
+
+    function safeRemoveLocalStorage(key) {
+        try {
+            if (typeof localStorage !== 'undefined' && localStorage !== null) {
+                localStorage.removeItem(key);
+                return true;
+            }
+        } catch(e) {
+            console.warn('[debug] localStorage remove blocked:', e.message);
+        }
+        return false;
+    }
+
     function loadPlayerElo() {
         var me = $('#username').text();
         if (!me) return;

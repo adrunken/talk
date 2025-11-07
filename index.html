@@ -2714,6 +2714,8 @@ function ready() {
         }
         else if (data['type'] === 'chess_over') {
             try { localStorage.removeItem('active_game'); } catch(e){}
+            try { localStorage.removeItem('active_ai_game'); } catch(e){}
+            hideAiRejoinPrompt();
             if (chessGame && chessGame.id === data['game_id']) {
                 chessGame.over = true;
                 $('#chess-status').text('Game over: ' + data['result'] + ' (' + data['reason'] + ')');

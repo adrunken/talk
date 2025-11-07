@@ -1937,16 +1937,25 @@ function ready() {
                         try { showRejoinPrompt(); } catch(_e){}
                     }
                 } catch(e){}
+            }, 150);
+            setTimeout(function(){
+                console.log('[debug] Checking for saved AI game on reconnect...');
                 try {
                     var aig = localStorage.getItem('active_ai_game');
-                    console.log('[debug] Checking for saved AI game:', aig ? 'found' : 'not found');
+                    console.log('[debug] localStorage.getItem("active_ai_game"):', aig ? 'found' : 'not found');
                     if (aig) {
+                        console.log('[debug] Raw data:', aig.substring(0, 100));
                         var aiGameData = JSON.parse(aig);
                         console.log('[debug] Parsed AI game data:', aiGameData);
-                        try { showAiRejoinPrompt(aiGameData); } catch(_e){ console.error('[debug] showAiRejoinPrompt error:', _e); }
+                        if ($('#invites').length) {
+                            console.log('[debug] #invites element found, calling showAiRejoinPrompt');
+                            try { showAiRejoinPrompt(aiGameData); } catch(_e){ console.error('[debug] showAiRejoinPrompt error:', _e); }
+                        } else {
+                            console.log('[debug] #invites element NOT found yet');
+                        }
                     }
                 } catch(e){ console.error('[debug] AI game restore error:', e); }
-            }, 150);
+            }, 300);
             lastPong = Date.now();
             $('#popup').addClass('hidden'); $(':not(#popup)').removeClass('opaque');
             $('#writing').focus();

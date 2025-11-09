@@ -627,10 +627,10 @@ html {
 .history-controls .chess-button { width: 2.25rem; height: 2.25rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; }
 .history-controls .chess-button:disabled { opacity: 0.45; cursor: not-allowed; }
 /* Tentative move visuals */
-.chess-square.tentative-source .chess-piece { opacity: 0.08 !important; }
+.chess-square.tentative-source .chess-piece { opacity: 0 !important; pointer-events: none; }
 .chess-piece.tentative-piece { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; background-size: 80% auto; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25)); opacity: 0.95; transform: translateZ(0); }
 /* Tentative move visuals */
-.chess-square.tentative-source .chess-piece { opacity: 0.08 !important; }
+.chess-square.tentative-source .chess-piece { opacity: 0 !important; pointer-events: none; }
 .chess-piece.tentative-piece { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; background-size: 80% auto; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25)); opacity: 0.95; transform: translateZ(0); }
 
 /* Pieces (Staunton-style via external assets) */

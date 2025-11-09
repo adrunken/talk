@@ -914,6 +914,8 @@ function handleStockfishMove(from, to, promotion) {
         $('#chess-status').text('Game over: ' + result + ', ' + winner + ' wins!');
     } else {
         updateChessStatus();
+        // After engine moves, attempt to play any queued premoves (user may have queued while engine was thinking)
+        try { tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves failed', e); }
         setTimeout(function() { makeStockfishMove(); }, 300);
     }
     return true;

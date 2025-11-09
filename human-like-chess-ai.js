@@ -394,7 +394,8 @@ class HumanBot {
 
     // Style-aware selection based on requested ELO
     const legal = this.game?.moves?.({ verbose: true }) || [];
-    const chosen = selectStyleAwareLine(lines, this.profile, phase, legal, this.sideToMove(), this.opts.elo);
+    const fen = this.game.fen();
+    const chosen = selectStyleAwareLine(lines, this.profile, phase, legal, this.sideToMove(), this.opts.elo, fen);
     const pv = (chosen?.pv || '').trim();
     const firstMoveUci = pv.split(/\s+/)[0];
     if (!firstMoveUci) throw new Error('No PV move parsed');

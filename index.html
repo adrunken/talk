@@ -1509,6 +1509,21 @@ function sendMove(from, to, promotion) {
             flashStatus('Network issue: move queued');
         }
     } else {
+        // perform optimistic local update so UI reflects the move even if it's queued
+        try {
+            var sim = new Chess();
+            sim.load(chessGame.fen);
+            var applied = sim.move({ from: from, to: to, promotion: promotion });
+            if (applied) {
+                chessGame.fen = sim.fen();
+                chessGame.lastMove = { from: applied.from, to: applied.to };
+                chessGame.moveHistory = chessGame.moveHistory || [];
+                chessGame.moveHistory.push({ fen: sim.fen(), from: applied.from, to: applied.to });
+                chessGame.historyIndex = chessGame.moveHistory.length - 1;
+                renderBoard();
+            }
+        } catch (e) { console.warn('Optimistic update failed', e); }
+
         outgoingMoveQueue.push(payload);
         flashStatus('Network disconnected: move queued');
     }

@@ -1790,6 +1790,17 @@ function renderPremoveHighlights(){
                     // Add data attributes for debugging or interaction
                     $ghost.attr('data-premove-index', idx);
                     $ghost.attr('data-piece', pieceCode);
+                    // Apply current selected piece set image so it doesn't fallback to defaults
+                    try {
+                        var pieceData = boardPiecesSettings && boardPiecesSettings.piecesData && boardPiecesSettings.piecesData[boardPiecesSettings.selectedPieces];
+                        if (pieceData) {
+                            var tpl = (typeof pieceData === 'object') ? pieceData.url : pieceData;
+                            var color = pieceCode.charAt(0);
+                            var type = pieceCode.charAt(1);
+                            var imgUrl = tpl.replace(/{color}/g, color).replace(/{piece}/g, type);
+                            $ghost.css('backgroundImage', 'url(' + imgUrl + ')');
+                        }
+                    } catch(e) {}
                     $to.append($ghost);
                 } else {
                     // illegal on simulated board: still mark intended destination with subtle highlight

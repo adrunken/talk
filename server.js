@@ -1572,90 +1572,93 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      try {
-        console.log('[ai] chess_ai_move handler: getting move for ELO', g.aiElo, 'depth', eloToDepth(g.aiElo));
-        const bestMove = await bestMoveWithStockfish(board.fen(), eloToDepth(g.aiElo), g.aiElo);
+      const delayBeforeAiMove = randomDelay();
+      console.log('[ai] Waiting', delayBeforeAiMove.toFixed(0), 'ms before AI response');
 
-        if (!bestMove) {
-          console.error('[ai] chess_ai_move: No move from bestMoveWithStockfish');
-          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-          return;
-        }
+      setTimeout(async () => {
+        try {
+          let aiMoveResult = null;
 
-        console.log('[ai] chess_ai_move: Received move:', bestMove, 'length:', bestMove.length);
+          if (g.aiBot) {
+            try {
+              console.log('[ai] Using human-like chess AI bot for ELO', g.aiElo);
+              aiMoveResult = await g.aiBot.pickMove();
+              console.log('[ai] Human-like bot move:', aiMoveResult.san || aiMoveResult);
+            } catch (botErr) {
+              console.warn('[ai] Human-like bot failed:', botErr.message, '- falling back to opening book');
+              g.aiBot = null;
+            }
+          }
 
-        if (bestMove.length < 4) {
-          console.error('[ai] chess_ai_move: Move format invalid:', bestMove);
-          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
-          return;
-        }
+          if (!aiMoveResult) {
+            console.log('[ai] Using opening book + fallback algorithm');
+            let bestMove = getOpeningMove(board.fen(), g.aiElo);
+            if (!bestMove) {
+              bestMove = bestMoveFallback(board.fen(), eloToDepth(g.aiElo), g.aiElo);
+            }
 
-        let from = bestMove.substring(0, 2).toLowerCase();
-        let to = bestMove.substring(2, 4).toLowerCase();
-        let promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
+            if (!bestMove || bestMove.length < 4) {
+              console.error('[ai] Failed to get fallback move');
+              send(ws, { type: 'chess_error', message: 'AI move generation failed' });
+              return;
+            }
 
-        console.log('[ai] chess_ai_move: Move parsed - from:', from, 'to:', to, 'promotion:', promotion);
-        console.log('[ai] chess_ai_move: FEN:', board.fen());
-        console.log('[ai] chess_ai_move: Legal moves:', board.moves({ verbose: true }).slice(0, 5).map(m => m.from + m.to).join(', '));
+            const from = bestMove.substring(0, 2).toLowerCase();
+            const to = bestMove.substring(2, 4).toLowerCase();
+            const promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
 
-        const aiMoveSpec = { from, to };
-        if (promotion) aiMoveSpec.promotion = promotion;
-        const aiMove = board.move(aiMoveSpec);
+            aiMoveResult = board.move({ from, to, promotion });
+          }
 
-        if (aiMove) {
-          console.log('[ai] chess_ai_move: Move accepted:', aiMove.san);
+          if (!aiMoveResult) {
+            console.error('[ai] Failed to apply AI move');
+            send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+            return;
+          }
+
+          console.log('[ai] AI move applied:', aiMoveResult.san);
+
           const aiMovePayload = {
             type: 'chess_move',
             game_id: gid,
-            from,
-            to,
-            promotion: aiMove.promotion || null,
-            san: aiMove.san,
+            from: aiMoveResult.from,
+            to: aiMoveResult.to,
+            promotion: aiMoveResult.promotion || null,
+            san: aiMoveResult.san,
             fen: board.fen(),
             turn: board.turn() === 'w' ? 'white' : 'black',
             check: board.in_check(),
             isAiMove: true
           };
+          send(ws, aiMovePayload);
 
-          const delay = randomDelay();
-          console.log('[ai] chess_ai_move: Waiting', delay.toFixed(0), 'ms before move');
-          setTimeout(() => {
-            send(ws, aiMovePayload);
-            console.log('[ai] chess_ai_move: Sent AI move to client');
-
-            if (board.game_over()) {
-              g.over = true;
-              let result, reason;
-              if (board.in_checkmate()) {
-                result = board.turn() === 'w' ? '0-1' : '1-0';
-                reason = 'checkmate';
-              } else if (board.in_stalemate() || board.in_draw()) {
-                result = '1/2-1/2';
-                reason = 'stalemate';
-              } else {
-                result = '1/2-1/2';
-                reason = 'draw';
-              }
-
-              const gameOverPayload = {
-                type: 'chess_over',
-                game_id: gid,
-                result,
-                reason,
-                fen: board.fen()
-              };
-              send(ws, gameOverPayload);
+          if (board.game_over()) {
+            g.over = true;
+            let result, reason;
+            if (board.in_checkmate()) {
+              result = board.turn() === 'w' ? '0-1' : '1-0';
+              reason = 'checkmate';
+            } else if (board.in_stalemate() || board.in_draw()) {
+              result = '1/2-1/2';
+              reason = 'stalemate';
+            } else {
+              result = '1/2-1/2';
+              reason = 'draw';
             }
-          }, delay);
-        } else {
-          console.error('[ai] chess_ai_move: Failed to apply move - spec:', aiMoveSpec);
-          console.error('[ai] chess_ai_move: Available:', board.moves({ verbose: true }).slice(0, 10).map(m => m.from + m.to).join(', '));
-          send(ws, { type: 'chess_error', message: 'AI move is invalid' });
+
+            send(ws, {
+              type: 'chess_over',
+              game_id: gid,
+              result,
+              reason,
+              fen: board.fen()
+            });
+          }
+        } catch (err) {
+          console.error('[ai] AI move error:', err.message);
+          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
         }
-      } catch (err) {
-        console.error('[ai] chess_ai_move: Caught error:', err.message, err.stack);
-        send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-      }
+      }, delayBeforeAiMove)
     }
     else if (msg.type === 'chess_request_ai_move') {
       const gid = msg.game_id;

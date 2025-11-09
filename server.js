@@ -810,10 +810,18 @@ function evaluateBoardPositional(chess, elo = 1600) {
       } else if (piece.type === 'n') {
         // Use knight table
         posBonus = knightTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
+        // Closed positions favor knights for elo > 1200
+        if (Number(elo) > 1200) {
+          if (openness < 0.4) posBonus += Math.round((1 - openness) * 30);
+        }
       } else if (piece.type === 'b') {
         // Bishops prefer long diagonals and center
         const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
         posBonus = (7 - distToCenter) * 3;
+        // Open positions favor bishops for elo > 1200
+        if (Number(elo) > 1200) {
+          if (openness > 0.4) posBonus += Math.round(openness * 30);
+        }
       } else if (piece.type === 'r') {
         // Rooks on 7th rank are strong
         if ((piece.color === 'w' && i === 1) || (piece.color === 'b' && i === 6)) {

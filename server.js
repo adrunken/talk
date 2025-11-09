@@ -713,7 +713,8 @@ async function bestMoveWithStockfish(fen, depth, elo) {
 }
 
 function evaluateBoardPositional(chess) {
-  const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+  // Increase bishop value relative to knight: bishops are more valuable than knights
+  const values = { p: 100, n: 300, b: 360, r: 500, q: 900, k: 0 };
   const board = chess.board();
   let score = 0;
   let whiteAttacks = new Set();

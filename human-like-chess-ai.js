@@ -174,8 +174,11 @@ function selectHumanLikeLine(lines, prof, phase) {
 // Style profiles by ELO: aggressive/tactical vs positional/defensive
 function styleForElo(elo) {
   const e = Number(elo) || 1600;
-  if (e === 800 || e === 1200 || e === 1600) return { kind: 'aggressive', intensity: e === 800 ? 1.0 : (e === 1200 ? 0.85 : 0.7) };
-  if (e === 2000 || e === 2400) return { kind: 'positional', intensity: e === 2000 ? 0.75 : 0.9 };
+  if (e === 800) return { kind: 'aggressive', intensity: 1.0 };
+  if (e === 1200) return { kind: 'aggressive', intensity: 0.9 };
+  if (e === 1600) return { kind: 'aggressive', intensity: 0.75 };
+  if (e === 2000) return { kind: 'positional', intensity: 0.8 };
+  if (e === 2400) return { kind: 'positional', intensity: 0.95 };
   return { kind: 'balanced', intensity: 0.5 };
 }
 

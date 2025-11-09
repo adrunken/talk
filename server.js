@@ -847,7 +847,16 @@ function bestMoveFallback(fen, depth, elo) {
     recentMovePattern.push({ from: m.from, to: m.to });
   }
 
-  function orderMoves(moves) {
+  function styleForElo(eloNum) {
+    const e = Number(eloNum) || 1600;
+    if (e === 800 || e === 1200 || e === 1600) return { kind: 'aggressive', intensity: e === 800 ? 1.0 : (e === 1200 ? 0.85 : 0.7) };
+    if (e === 2000 || e === 2400) return { kind: 'positional', intensity: e === 2000 ? 0.75 : 0.9 };
+    return { kind: 'balanced', intensity: 0.5 };
+  }
+
+  function orderMoves(moves, side, eloNum) {
+    const style = styleForElo(eloNum);
+
     const moveScores = moves.map((m) => {
       let score = 0;
 
@@ -874,6 +883,41 @@ function bestMoveFallback(fen, depth, elo) {
       const toRankCenter = Math.abs((parseInt(m.to[1]) - 4.5));
       score -= (toFileCenter + toRankCenter) * 2;
 
+      // Style-based biases
+      try {
+        // Use main board temporarily for check detection
+        chess.move(m);
+        const givesCheck = chess.in_check();
+        chess.undo();
+
+        if (style.kind === 'aggressive') {
+          if (m.captured) score += Math.round(40 * style.intensity);
+          if (givesCheck) score += Math.round(35 * style.intensity);
+          if (m.piece === 'p') {
+            const fr = parseInt(m.from[1],10), tr = parseInt(m.to[1],10);
+            const advance = side === 'w' ? (tr - fr) : (fr - tr);
+            if (advance >= 2) score += Math.round(10 * style.intensity);
+            if ((m.to[0] === 'g' || m.to[0] === 'h' || m.to[0] === 'a' || m.to[0] === 'b') && advance >= 1) score += Math.round(8 * style.intensity);
+          }
+        }
+        if (style.kind === 'positional') {
+          if (m.flags && (m.flags.indexOf('k') !== -1 || m.flags.indexOf('q') !== -1)) score += Math.round(50 * style.intensity); // castling
+          if (m.piece === 'n') {
+            const devSquares = ['c3','d2','e2','f3','c6','d7','e7','f6'];
+            if (devSquares.includes(m.to)) score += Math.round(25 * style.intensity);
+          }
+          if (m.piece === 'b') {
+            const devSquares = ['c4','d3','e2','f1','c5','d6','e7','f8'];
+            if (devSquares.includes(m.to)) score += Math.round(20 * style.intensity);
+          }
+          if (m.piece === 'p') {
+            const singleSteps = ['e3','e6','d3','d6','c3','c6'];
+            if (singleSteps.includes(m.to)) score += Math.round(18 * style.intensity);
+          }
+          if (m.piece === 'q' && (m.to === 'h5' || m.to === 'a4')) score -= Math.round(15 * style.intensity); // discourage early queen sortie
+        }
+      } catch(_) {}
+
       return { move: m, score };
     });
 
@@ -897,7 +941,7 @@ function bestMoveFallback(fen, depth, elo) {
     let moves = chess.moves({ verbose: true });
 
     // Order moves for better pruning
-    moves = orderMoves(moves, null);
+    moves = orderMoves(moves, player, elo);
 
     for (const m of moves) {
       chess.move(m);
@@ -924,7 +968,7 @@ function bestMoveFallback(fen, depth, elo) {
     bestMove = null;
     bestScore = -Infinity;
     const moveScores = [];
-    let orderedMoves = orderMoves(moves.slice());
+    let orderedMoves = orderMoves(moves.slice(), player, elo);
 
     for (const m of orderedMoves) {
       if (Date.now() - startTime > timeLimit) break;

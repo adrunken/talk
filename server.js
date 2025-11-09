@@ -1386,6 +1386,11 @@ wss.on('connection', (ws, req) => {
           if (g.white === username || g.black === username || g.playerUsername === username) {
             const turn = g.board.turn() === 'w' ? 'white' : 'black';
             const payload = { type: 'chess_resume', game_id: gid, white: g.white, black: g.black, fen: g.board.fen(), turn };
+            if (g.isAiGame) {
+              payload.isAiGame = true;
+              payload.aiElo = g.aiElo || 1600;
+              payload.playerColor = g.playerColor || 'w';
+            }
             send(ws, payload);
             break; // only resume first active game
           }

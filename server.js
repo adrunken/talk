@@ -1448,6 +1448,18 @@ wss.on('connection', (ws, req) => {
       const white = playerColor === 'w' ? username : 'zyberAI';
       const black = playerColor === 'b' ? username : 'zyberAI';
 
+      // Try to create human-like AI bot, fall back to opening book if it fails
+      let aiBot = null;
+      try {
+        aiBot = await createAIBotForGame(board, aiElo);
+        if (aiBot) {
+          aiBotsCache.set(gid, aiBot);
+          console.log('[ai] Created human-like bot for game', gid, 'ELO', aiElo);
+        }
+      } catch (err) {
+        console.warn('[ai] Failed to create human-like bot:', err.message);
+      }
+
       games.set(gid, {
         board,
         white,
@@ -1457,7 +1469,8 @@ wss.on('connection', (ws, req) => {
         playerUsername: username,
         playerColor,
         playerElo,
-        aiElo
+        aiElo,
+        aiBot
       });
 
       const payload = {

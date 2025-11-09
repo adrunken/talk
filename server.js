@@ -968,7 +968,7 @@ function bestMoveFallback(fen, depth, elo) {
     }
 
     if (d === 0 || chess.game_over()) {
-      const evalScore = evaluateBoardPositional(chess);
+      const evalScore = evaluateBoardPositional(chess, elo);
       return player === 'w' ? evalScore : -evalScore;
     }
 

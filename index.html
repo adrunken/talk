@@ -1591,9 +1591,10 @@ function stageMove(from, to, promotion){
 
 function enqueuePremove(from, to, promotion){
     premoveQueue.push({ from: from, to: to, promotion: promotion || null });
+    var mv = premoveQueue[premoveQueue.length - 1];
+    console.log('[premove] enqueued', mv.from, '->', mv.to, 'promotion=', mv.promotion, 'queueLen=', premoveQueue.length);
     flashStatus('Premove queued');
     // Show the latest premove as tentative visual
-    var mv = premoveQueue[premoveQueue.length - 1];
     clearTentativeMoveVisuals();
     currentTentative = { from: mv.from, to: mv.to, isPremove: true };
     showTentativeMove(mv.from, mv.to, true);

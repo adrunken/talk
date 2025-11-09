@@ -805,7 +805,6 @@ html {
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
         <button class="chess-button" id="chess-resign">Resign</button>
-        <button class="chess-button" id="chess-ai-game">Play AI</button>
         <button class="chess-button" id="chess-close">Close</button>
       </div>
     </div>
@@ -902,6 +901,8 @@ var pendingPromotion = null;
 var pendingUserMove = null; // {from,to,promotion}
 var premoveQueue = [];
 var currentTentative = null; // {from,to,isPremove}
+// Outgoing move queue used when WebSocket is temporarily unavailable
+var outgoingMoveQueue = []; // each item: {game_id, from, to, promotion}
 // Guards to prevent re-entrant premove processing and concurrent engine fetches
 var __processingPremoves = false;
 // Chess settings
@@ -1482,13 +1483,36 @@ function sendMove(from, to, promotion) {
         handleAIMove(from, to, promotion);
         return;
     }
-    if (!ws || ws.readyState !== 1) return;
+
     var payload = { type: 'chess_move', game_id: chessGame.id, from: from, to: to };
     if (promotion) payload.promotion = promotion;
-    ws.send(JSON.stringify(payload));
+
+    // If websocket is available, send immediately. Otherwise queue for later.
+    if (ws && ws.readyState === 1) {
+        try {
+            ws.send(JSON.stringify(payload));
+        } catch (e) {
+            // fall through to queue
+            outgoingMoveQueue.push(payload);
+            flashStatus('Network issue: move queued');
+        }
+    } else {
+        outgoingMoveQueue.push(payload);
+        flashStatus('Network disconnected: move queued');
+    }
+
     clearSelection();
     $('#chess-board .chess-square').removeClass('drag-over');
     clearPendingMove();
+}
+
+// Flush any queued outgoing moves (called when ws reconnects)
+function flushOutgoingMoves() {
+    if (!ws || ws.readyState !== 1) return;
+    while (outgoingMoveQueue.length) {
+        var p = outgoingMoveQueue.shift();
+        try { ws.send(JSON.stringify(p)); } catch (e) { console.warn('Failed to flush queued move', e); outgoingMoveQueue.unshift(p); break; }
+    }
 }
 
 function updateConfirmButton(){
@@ -1949,6 +1973,10 @@ function ready() {
                         try { showRejoinPrompt(); } catch(_e){}
                     }
                 } catch(e){}
+                // Also ask server to notify of any active games for this username (server may already do this on username message)
+                try { ws.send(JSON.stringify({ type: 'username', username: $('#username').text() })); } catch(e){}
+                // Flush any moves that were queued while disconnected
+                try { flushOutgoingMoves(); } catch(e){}
             }, 150);
             lastPong = Date.now();
             $('#popup').addClass('hidden'); $(':not(#popup)').removeClass('opaque');
@@ -2357,9 +2385,6 @@ function ready() {
         startAIGame();
     });
 
-    $('#chess-ai-game').on('click', function(){
-        startAIGame();
-    });
 
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)

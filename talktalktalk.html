@@ -931,6 +931,32 @@ function handleStockfishMove(from, to, promotion) {
                 premoveQueue = premoveQueue || [];
                 premoveQueue.push({ from: tentativeCopy.from, to: tentativeCopy.to, promotion: tentativeCopy.promotion || null });
             }
+
+            // If premoveQueue is still empty, try to infer a pending premove from DOM (ghost/tentative pieces)
+            if ((!premoveQueue || !premoveQueue.length)) {
+                try {
+                    var $cand = $('#chess-board .chess-square.premove, #chess-board .chess-square.tentative-target').first();
+                    if ($cand && $cand.length) {
+                        var toSq = $cand.data('square');
+                        if (toSq) {
+                            console.log('[stockfish] found DOM premove candidate to=', toSq);
+                            try {
+                                var sim2 = new Chess();
+                                sim2.load(chessGame.fen);
+                                var moves = sim2.moves({ verbose: true });
+                                var playerColorLetter = chessGame.color === 'white' ? 'w' : 'b';
+                                var candidate = moves.find(function(m) { return m.to === toSq && m.color === playerColorLetter; });
+                                if (candidate) {
+                                    console.log('[stockfish] inferred premove from DOM: ', candidate.from, '->', candidate.to);
+                                    // enqueue and send so it will be applied
+                                    premoveQueue.push({ from: candidate.from, to: candidate.to, promotion: candidate.promotion || null });
+                                }
+                            } catch (e) { console.warn('[stockfish] DOM inference failed', e); }
+                        }
+                    }
+                } catch(e) { console.warn('[stockfish] DOM premove detection failed', e); }
+            }
+
             console.log('[stockfish] scheduling tryPlayPremoves shortly');
             setTimeout(function() { try { tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves failed', e); } }, 40);
         } catch(e) { console.warn('tryPlayPremoves failed', e); }

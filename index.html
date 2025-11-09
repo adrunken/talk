@@ -1653,6 +1653,7 @@ function tryPlayPremoves(){
                         chessGame.historyIndex = chessGame.moveHistory.length - 1;
                         renderBoard();
                         // send to server
+                        console.log('[premove] sending premove', mv.from, '->', mv.to, 'promotion=', mv.promotion, 'queueRemaining=', premoveQueue.length);
                         sendMove(mv.from, mv.to, mv.promotion);
                         // After sending, it's no longer our turn; break out and wait for server/opponent
                         break;

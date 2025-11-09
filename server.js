@@ -1378,6 +1378,21 @@ wss.on('connection', (ws, req) => {
       }
       sendUserList();
       deliverQueuedInvites(username);
+
+      // Notify this websocket of any active game (PvP or AI) for this user so client can rejoin
+      try {
+        for (const [gid, g] of games.entries()) {
+          if (g.over) continue;
+          if (g.white === username || g.black === username || g.playerUsername === username) {
+            const turn = g.board.turn() === 'w' ? 'white' : 'black';
+            const payload = { type: 'chess_resume', game_id: gid, white: g.white, black: g.black, fen: g.board.fen(), turn };
+            send(ws, payload);
+            break; // only resume first active game
+          }
+        }
+      } catch (e) {
+        console.warn('[chess] resume notify failed for', username, e && e.message);
+      }
     }
     else if (msg.type === 'forget_me') {
       const uname = users.get(ws);

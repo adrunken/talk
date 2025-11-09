@@ -903,13 +903,16 @@ function handleStockfishMove(from, to, promotion) {
         console.warn('[stockfish] failed to apply move', from, to);
         return false;
     }
+    // Capture tentative before renderBoard clears visuals
+    var tentativeCopy = currentTentative ? { from: currentTentative.from, to: currentTentative.to, promotion: currentTentative.promotion, isPremove: currentTentative.isPremove } : null;
+
     stockfishGame.fen = board.fen();
     stockfishGame.turn = board.turn();
     chessGame.fen = board.fen();
     chessGame.turn = board.turn() === 'w' ? 'white' : 'black';
     chessGame.lastMove = { from: from, to: to };
     renderBoard();
-    console.log('[stockfish] applied move, premoveQueueLen now=', (premoveQueue && premoveQueue.length) || 0);
+    console.log('[stockfish] applied move, premoveQueueLen now=', (premoveQueue && premoveQueue.length) || 0, 'tentativeCopy=', tentativeCopy);
     if (board.in_checkmate() || board.in_stalemate()) {
         stockfishGame.over = true;
         hideStockfishRejoinPrompt();
@@ -921,12 +924,12 @@ function handleStockfishMove(from, to, promotion) {
         updateChessStatus();
         // After engine moves, ensure any UI tentative premove is enqueued, then attempt to play queued premoves
         try {
-            console.log('[stockfish] invoking tryPlayPremoves, premoveQueueLen=', (premoveQueue && premoveQueue.length) || 0, 'currentTentative=', currentTentative);
-            if ((!premoveQueue || !premoveQueue.length) && currentTentative && currentTentative.isPremove) {
-                // If UI shows a tentative premove but it wasn't queued (edge case), enqueue it now
-                console.log('[stockfish] enqueuing currentTentative as premove', currentTentative.from, '->', currentTentative.to);
+            console.log('[stockfish] invoking tryPlayPremoves, premoveQueueLen=', (premoveQueue && premoveQueue.length) || 0, 'tentativeCopy=', tentativeCopy);
+            if ((!premoveQueue || !premoveQueue.length) && tentativeCopy && tentativeCopy.isPremove) {
+                // If UI showed a tentative premove before render, enqueue it now
+                console.log('[stockfish] enqueuing tentativeCopy as premove', tentativeCopy.from, '->', tentativeCopy.to);
                 premoveQueue = premoveQueue || [];
-                premoveQueue.push({ from: currentTentative.from, to: currentTentative.to, promotion: currentTentative.promotion || null });
+                premoveQueue.push({ from: tentativeCopy.from, to: tentativeCopy.to, promotion: tentativeCopy.promotion || null });
             }
             tryPlayPremoves();
         } catch(e) { console.warn('tryPlayPremoves failed', e); }

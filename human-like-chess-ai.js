@@ -171,6 +171,111 @@ function selectHumanLikeLine(lines, prof, phase) {
   return pick;
 }
 
+// Style profiles by ELO: aggressive/tactical vs positional/defensive
+function styleForElo(elo) {
+  const e = Number(elo) || 1600;
+  if (e === 800 || e === 1200 || e === 1600) return { kind: 'aggressive', intensity: e === 800 ? 1.0 : (e === 1200 ? 0.85 : 0.7) };
+  if (e === 2000 || e === 2400) return { kind: 'positional', intensity: e === 2000 ? 0.75 : 0.9 };
+  return { kind: 'balanced', intensity: 0.5 };
+}
+
+function matchVerboseMove(uci, legalMoves) {
+  const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci[4] ? uci[4].toLowerCase() : null;
+  const mv = legalMoves.find(m => m.from === from && m.to === to && (!promo || (m.promotion && m.promotion.toLowerCase() === promo)));
+  return mv || null;
+}
+
+function centralFile(fileChar) { return fileChar === 'd' || fileChar === 'e'; }
+function centralSquare(to) {
+  const f = to[0]; const r = parseInt(to[1],10);
+  return (f === 'd' || f === 'e') && (r === 4 || r === 5);
+}
+
+function computeMoveStyleScore(move, side) {
+  // move is chess.js verbose move
+  if (!move) return { aggression: 0, positional: 0 };
+  const san = String(move.san || '');
+  const flags = String(move.flags || '');
+  const piece = String(move.piece || '').toLowerCase();
+  const from = String(move.from || '');
+  const to = String(move.to || '');
+
+  let aggression = 0;
+  let positional = 0;
+
+  // Aggressive/tactical cues
+  if (flags.includes('c') || flags.includes('e') || san.includes('x')) aggression += 3; // capture
+  if (san.includes('+') || san.includes('#')) aggression += 2; // check/mate
+  if (piece === 'p') {
+    const fr = parseInt(from[1],10), tr = parseInt(to[1],10);
+    const advance = side === 'w' ? (tr - fr) : (fr - tr);
+    if (advance >= 2) aggression += 1; // pawn storm two squares
+    if ((to[0] === 'g' || to[0] === 'h' || to[0] === 'a' || to[0] === 'b') && advance >= 1) aggression += 1; // flank pawn push
+  }
+  if (centralSquare(to)) aggression += 1; // central incursion
+
+  // Positional/defensive cues
+  if (flags.includes('k') || flags.includes('q')) positional += 3; // castling
+  if (piece === 'n') {
+    const devSquares = ['c3','d2','e2','f3','c6','d7','e7','f6'];
+    if (devSquares.includes(to)) positional += 2; // classic knight development
+  }
+  if (piece === 'b') {
+    const devSquares = ['c4','d3','e2','f1','c5','d6','e7','f8'];
+    if (devSquares.includes(to)) positional += 2;
+  }
+  if (piece === 'p') {
+    if (centralFile(to[0])) {
+      const singleSteps = ['e3','e6','d3','d6','c3','c6'];
+      if (singleSteps.includes(to)) positional += 2; // healthy pawn structure moves
+    }
+  }
+  if (piece === 'q' && (san.includes('Qh5') || san.includes('Qa4'))) {
+    aggression += 1; // early queen sortie tends to be aggressive
+    positional -= 1;
+  }
+
+  return { aggression, positional };
+}
+
+function selectStyleAwareLine(lines, prof, phase, legalMoves, side, elo) {
+  if (!lines.length) return null;
+
+  // Base weights similar to selectHumanLikeLine
+  const top = [lines[0], lines[1] || lines[0], lines[2] || lines[1] || lines[0]];
+  const cp = lines[0].kind === 'mate' ? (lines[0].val > 0 ? 10000 : -10000) : lines[0].val;
+  let wBest = prof.bestW, w2 = prof.secondW, w3 = prof.thirdW;
+  if (Math.abs(cp) > 300) { wBest = clamp(wBest + 0.10, 0, 1); w2 = Math.max(0, w2 - 0.08); w3 = Math.max(0, w3 - 0.02); }
+  else if (phase === 'opening') { w2 += 0.05; w3 += 0.02; wBest = Math.max(0, 1 - (w2 + w3)); }
+
+  const baseWeights = [wBest, w2, w3];
+  const style = styleForElo(elo);
+
+  const adjusted = top.map((line, i) => {
+    const firstUci = String((line.pv || '').trim().split(/\s+/)[0] || '');
+    const mv = matchVerboseMove(firstUci, legalMoves || []);
+    const s = computeMoveStyleScore(mv, side);
+    let bias = 0;
+    if (style.kind === 'aggressive') {
+      bias += s.aggression * (0.25 * style.intensity);
+      bias -= s.positional * (0.05 * style.intensity);
+    } else if (style.kind === 'positional') {
+      bias += s.positional * (0.25 * style.intensity);
+      bias -= s.aggression * (0.05 * style.intensity);
+    } else {
+      // balanced: slight nudge towards tactical in middlegame
+      const phaseBoost = phase === 'middlegame' ? 0.15 : 0.1;
+      bias += (s.aggression + s.positional) * phaseBoost;
+    }
+    const w = Math.max(0, baseWeights[i]) * (1 + bias);
+    return { line, weight: w };
+  });
+
+  const items = adjusted.map(a => a.line);
+  const weights = adjusted.map(a => a.weight);
+  return weightedPick(items, weights);
+}
+
 function uciToMoveObj(uci) {
   // e2e4, e7e8q, etc
   const from = uci.slice(0,2), to = uci.slice(2,4), promo = uci[4];
@@ -249,7 +354,9 @@ class HumanBot {
 
     if (!lines?.length) throw new Error('Engine returned no lines');
 
-    const chosen = selectHumanLikeLine(lines, this.profile, phase);
+    // Style-aware selection based on requested ELO
+    const legal = this.game?.moves?.({ verbose: true }) || [];
+    const chosen = selectStyleAwareLine(lines, this.profile, phase, legal, this.sideToMove(), this.opts.elo);
     const pv = (chosen?.pv || '').trim();
     const firstMoveUci = pv.split(/\s+/)[0];
     if (!firstMoveUci) throw new Error('No PV move parsed');

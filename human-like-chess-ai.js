@@ -394,7 +394,6 @@ class HumanBot {
 
     // Style-aware selection based on requested ELO
     const legal = this.game?.moves?.({ verbose: true }) || [];
-    const fen = this.game.fen();
     const chosen = selectStyleAwareLine(lines, this.profile, phase, legal, this.sideToMove(), this.opts.elo, fen);
     const pv = (chosen?.pv || '').trim();
     const firstMoveUci = pv.split(/\s+/)[0];

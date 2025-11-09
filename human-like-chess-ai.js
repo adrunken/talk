@@ -241,7 +241,27 @@ function computeMoveStyleScore(move, side) {
   return { aggression, positional };
 }
 
-function selectStyleAwareLine(lines, prof, phase, legalMoves, side, elo) {
+function boardOpennessFromFen(fen) {
+  // fen piece placement in first field
+  const placement = (fen || '').split(' ')[0] || '';
+  const rows = placement.split('/');
+  const files = Array.from({ length: 8 }, () => 0);
+  for (let r = 0; r < rows.length; r++) {
+    let file = 0;
+    for (const ch of rows[r]) {
+      if (/[1-8]/.test(ch)) {
+        file += Number(ch);
+      } else {
+        if (ch.toLowerCase() === 'p') files[file]++;
+        file++;
+      }
+    }
+  }
+  const openFiles = files.filter(c => c === 0).length;
+  return openFiles / 8; // 0..1
+}
+
+function selectStyleAwareLine(lines, prof, phase, legalMoves, side, elo, fen) {
   if (!lines.length) return null;
 
   // Base weights similar to selectHumanLikeLine
@@ -253,6 +273,7 @@ function selectStyleAwareLine(lines, prof, phase, legalMoves, side, elo) {
 
   const baseWeights = [wBest, w2, w3];
   const style = styleForElo(elo);
+  const openness = boardOpennessFromFen(fen);
 
   const adjusted = top.map((line, i) => {
     const firstUci = String((line.pv || '').trim().split(/\s+/)[0] || '');
@@ -270,6 +291,20 @@ function selectStyleAwareLine(lines, prof, phase, legalMoves, side, elo) {
       const phaseBoost = phase === 'middlegame' ? 0.15 : 0.1;
       bias += (s.aggression + s.positional) * phaseBoost;
     }
+
+    // For elo > 1200, treat knight and bishop equal in base value, but
+    // n/b effectiveness depends on openness: knights better in closed, bishops in open
+    if (Number(elo) > 1200 && mv && mv.piece) {
+      if (mv.piece === 'n') {
+        // closed positions favor knights
+        bias += (1 - openness) * 0.25 * (style.intensity || 1);
+      }
+      if (mv.piece === 'b') {
+        // open positions favor bishops
+        bias += (openness) * 0.25 * (style.intensity || 1);
+      }
+    }
+
     const w = Math.max(0, baseWeights[i]) * (1 + bias);
     return { line, weight: w };
   });

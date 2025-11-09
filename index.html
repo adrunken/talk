@@ -2662,6 +2662,12 @@ function ready() {
                 lastMove: null,
                 over: false
             };
+            // If server indicates it's an AI game, preserve that metadata so client can handle AI-specific flows
+            if (data['isAiGame']) {
+                chessGame.isAiGame = true;
+                chessGame.aiElo = data['aiElo'] || 1600;
+                chessGame.playerColor = data['playerColor'] || (chessGame.color === 'white' ? 'w' : 'b');
+            }
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
             $('#chess-white').text(chessGame.white);
             $('#chess-black').text(chessGame.black);

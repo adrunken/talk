@@ -1504,7 +1504,21 @@ function sendMove(from, to, promotion) {
         try {
             ws.send(JSON.stringify(payload));
         } catch (e) {
-            // fall through to queue
+            // If send fails, perform optimistic update and queue the move
+            try {
+                var sim = new Chess();
+                sim.load(chessGame.fen);
+                var applied = sim.move({ from: from, to: to, promotion: promotion });
+                if (applied) {
+                    chessGame.fen = sim.fen();
+                    chessGame.lastMove = { from: applied.from, to: applied.to };
+                    chessGame.moveHistory = chessGame.moveHistory || [];
+                    chessGame.moveHistory.push({ fen: sim.fen(), from: applied.from, to: applied.to });
+                    chessGame.historyIndex = chessGame.moveHistory.length - 1;
+                    renderBoard();
+                }
+            } catch (err) { console.warn('Optimistic update failed', err); }
+
             outgoingMoveQueue.push(payload);
             flashStatus('Network issue: move queued');
         }

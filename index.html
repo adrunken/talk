@@ -1609,7 +1609,11 @@ function tryPlayPremoves(){
     if (__processingPremoves) return; // avoid re-entrancy
     __processingPremoves = true;
     try {
-        if (!chessGame || !premoveQueue.length) return;
+        console.log('[premove] tryPlayPremoves start, queueLen=', (premoveQueue && premoveQueue.length) || 0, 'chessGame.turn=', chessGame && chessGame.turn);
+        if (!chessGame || !premoveQueue.length) {
+            console.log('[premove] nothing to do (no game or empty queue)');
+            return;
+        }
 
         // Attempt to play as many premoves as possible while it's our turn
         while (premoveQueue.length && isMyTurn()) {

@@ -931,7 +931,8 @@ function handleStockfishMove(from, to, promotion) {
                 premoveQueue = premoveQueue || [];
                 premoveQueue.push({ from: tentativeCopy.from, to: tentativeCopy.to, promotion: tentativeCopy.promotion || null });
             }
-            tryPlayPremoves();
+            console.log('[stockfish] scheduling tryPlayPremoves shortly');
+            setTimeout(function() { try { tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves failed', e); } }, 40);
         } catch(e) { console.warn('tryPlayPremoves failed', e); }
         setTimeout(function() { makeStockfishMove(); }, 300);
     }

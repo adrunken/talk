@@ -869,8 +869,8 @@ function bestMoveFallback(fen, depth, elo) {
 
       // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
       if (m.captured) {
-        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.captured] || 0;
-        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.piece] || 0;
+        const victimValue = { p: 1, n: 3, b: 3.5, r: 5, q: 9, k: 100 }[m.captured] || 0;
+        const attackerValue = { p: 1, n: 3, b: 3.5, r: 5, q: 9, k: 100 }[m.piece] || 0;
         score += victimValue * 10 - attackerValue;
       }
 

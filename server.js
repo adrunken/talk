@@ -712,10 +712,41 @@ async function bestMoveWithStockfish(fen, depth, elo) {
   return bestMoveFallback(fen, depth, elo);
 }
 
-function evaluateBoardPositional(chess) {
-  // Increase bishop value relative to knight: bishops are more valuable than knights
-  const values = { p: 100, n: 300, b: 360, r: 500, q: 900, k: 0 };
+function boardOpennessFromChess(chess) {
+  const fen = chess.fen();
+  const placement = (fen || '').split(' ')[0] || '';
+  const rows = placement.split('/');
+  const files = Array.from({ length: 8 }, () => 0);
+  for (let r = 0; r < rows.length; r++) {
+    let file = 0;
+    for (const ch of rows[r]) {
+      if (/[1-8]/.test(ch)) {
+        file += Number(ch);
+      } else {
+        if (ch.toLowerCase() === 'p') files[file]++;
+        file++;
+      }
+    }
+  }
+  const openFiles = files.filter(c => c === 0).length;
+  return openFiles / 8; // 0..1
+}
+
+function evaluateBoardPositional(chess, elo = 1600) {
+  // Base piece values; may be adjusted per elo and position openness
+  const baseValues = { p: 100, n: 300, b: 360, r: 500, q: 900, k: 0 };
   const board = chess.board();
+  const openness = boardOpennessFromChess(chess);
+
+  // If elo > 1200 treat knight and bishop base values equally; their
+  // effectiveness will be modulated by openness (closed -> knight, open -> bishop)
+  let values = { ...baseValues };
+  if (Number(elo) > 1200) {
+    const equal = Math.round((baseValues.n + baseValues.b) / 2);
+    values.n = equal;
+    values.b = equal;
+  }
+
   let score = 0;
   let whiteAttacks = new Set();
   let blackAttacks = new Set();

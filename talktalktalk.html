@@ -896,15 +896,20 @@ function makeStockfishMove(bestmove, retries) {
 
 function handleStockfishMove(from, to, promotion) {
     if (!stockfishGame) return false;
+    console.log('[stockfish] handleStockfishMove applying', from, '->', to, 'promotion=', promotion, 'premoveQueueLen=', (premoveQueue && premoveQueue.length) || 0);
     var board = stockfishGame.board;
     var moveObj = board.move({ from: from, to: to, promotion: promotion });
-    if (!moveObj) return false;
+    if (!moveObj) {
+        console.warn('[stockfish] failed to apply move', from, to);
+        return false;
+    }
     stockfishGame.fen = board.fen();
     stockfishGame.turn = board.turn();
     chessGame.fen = board.fen();
     chessGame.turn = board.turn() === 'w' ? 'white' : 'black';
     chessGame.lastMove = { from: from, to: to };
     renderBoard();
+    console.log('[stockfish] applied move, premoveQueueLen now=', (premoveQueue && premoveQueue.length) || 0);
     if (board.in_checkmate() || board.in_stalemate()) {
         stockfishGame.over = true;
         hideStockfishRejoinPrompt();
@@ -915,7 +920,7 @@ function handleStockfishMove(from, to, promotion) {
     } else {
         updateChessStatus();
         // After engine moves, attempt to play any queued premoves (user may have queued while engine was thinking)
-        try { tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves failed', e); }
+        try { console.log('[stockfish] invoking tryPlayPremoves, premoveQueueLen=', (premoveQueue && premoveQueue.length) || 0); tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves failed', e); }
         setTimeout(function() { makeStockfishMove(); }, 300);
     }
     return true;

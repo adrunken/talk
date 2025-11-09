@@ -712,9 +712,41 @@ async function bestMoveWithStockfish(fen, depth, elo) {
   return bestMoveFallback(fen, depth, elo);
 }
 
-function evaluateBoardPositional(chess) {
-  const values = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+function boardOpennessFromChess(chess) {
+  const fen = chess.fen();
+  const placement = (fen || '').split(' ')[0] || '';
+  const rows = placement.split('/');
+  const files = Array.from({ length: 8 }, () => 0);
+  for (let r = 0; r < rows.length; r++) {
+    let file = 0;
+    for (const ch of rows[r]) {
+      if (/[1-8]/.test(ch)) {
+        file += Number(ch);
+      } else {
+        if (ch.toLowerCase() === 'p') files[file]++;
+        file++;
+      }
+    }
+  }
+  const openFiles = files.filter(c => c === 0).length;
+  return openFiles / 8; // 0..1
+}
+
+function evaluateBoardPositional(chess, elo = 1600) {
+  // Base piece values; may be adjusted per elo and position openness
+  const baseValues = { p: 100, n: 300, b: 360, r: 500, q: 900, k: 0 };
   const board = chess.board();
+  const openness = boardOpennessFromChess(chess);
+
+  // If elo > 1200 treat knight and bishop base values equally; their
+  // effectiveness will be modulated by openness (closed -> knight, open -> bishop)
+  let values = { ...baseValues };
+  if (Number(elo) > 1200) {
+    const equal = Math.round((baseValues.n + baseValues.b) / 2);
+    values.n = equal;
+    values.b = equal;
+  }
+
   let score = 0;
   let whiteAttacks = new Set();
   let blackAttacks = new Set();
@@ -778,10 +810,18 @@ function evaluateBoardPositional(chess) {
       } else if (piece.type === 'n') {
         // Use knight table
         posBonus = knightTable[piece.color === 'w' ? sqIndex : 63 - sqIndex];
+        // Closed positions favor knights for elo > 1200
+        if (Number(elo) > 1200) {
+          if (openness < 0.4) posBonus += Math.round((1 - openness) * 30);
+        }
       } else if (piece.type === 'b') {
         // Bishops prefer long diagonals and center
         const distToCenter = Math.abs(3.5 - j) + Math.abs(3.5 - i);
         posBonus = (7 - distToCenter) * 3;
+        // Open positions favor bishops for elo > 1200
+        if (Number(elo) > 1200) {
+          if (openness > 0.4) posBonus += Math.round(openness * 30);
+        }
       } else if (piece.type === 'r') {
         // Rooks on 7th rank are strong
         if ((piece.color === 'w' && i === 1) || (piece.color === 'b' && i === 6)) {
@@ -847,7 +887,19 @@ function bestMoveFallback(fen, depth, elo) {
     recentMovePattern.push({ from: m.from, to: m.to });
   }
 
-  function orderMoves(moves) {
+  function styleForElo(eloNum) {
+    const e = Number(eloNum) || 1600;
+    if (e === 800) return { kind: 'aggressive', intensity: 1.0 };
+    if (e === 1200) return { kind: 'aggressive', intensity: 0.9 };
+    if (e === 1600) return { kind: 'aggressive', intensity: 0.75 };
+    if (e === 2000) return { kind: 'positional', intensity: 0.8 };
+    if (e === 2400) return { kind: 'positional', intensity: 0.95 };
+    return { kind: 'balanced', intensity: 0.5 };
+  }
+
+  function orderMoves(moves, side, eloNum) {
+    const style = styleForElo(eloNum);
+
     const moveScores = moves.map((m) => {
       let score = 0;
 
@@ -856,8 +908,9 @@ function bestMoveFallback(fen, depth, elo) {
 
       // Captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
       if (m.captured) {
-        const victimValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.captured] || 0;
-        const attackerValue = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }[m.piece] || 0;
+        const mvv = Number(eloNum) > 1200 ? { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 } : { p: 1, n: 3, b: 3.5, r: 5, q: 9, k: 100 };
+        const victimValue = mvv[m.captured] || 0;
+        const attackerValue = mvv[m.piece] || 0;
         score += victimValue * 10 - attackerValue;
       }
 
@@ -874,6 +927,41 @@ function bestMoveFallback(fen, depth, elo) {
       const toRankCenter = Math.abs((parseInt(m.to[1]) - 4.5));
       score -= (toFileCenter + toRankCenter) * 2;
 
+      // Style-based biases
+      try {
+        // Use main board temporarily for check detection
+        chess.move(m);
+        const givesCheck = chess.in_check();
+        chess.undo();
+
+        if (style.kind === 'aggressive') {
+          if (m.captured) score += Math.round(40 * style.intensity);
+          if (givesCheck) score += Math.round(35 * style.intensity);
+          if (m.piece === 'p') {
+            const fr = parseInt(m.from[1],10), tr = parseInt(m.to[1],10);
+            const advance = side === 'w' ? (tr - fr) : (fr - tr);
+            if (advance >= 2) score += Math.round(10 * style.intensity);
+            if ((m.to[0] === 'g' || m.to[0] === 'h' || m.to[0] === 'a' || m.to[0] === 'b') && advance >= 1) score += Math.round(8 * style.intensity);
+          }
+        }
+        if (style.kind === 'positional') {
+          if (m.flags && (m.flags.indexOf('k') !== -1 || m.flags.indexOf('q') !== -1)) score += Math.round(50 * style.intensity); // castling
+          if (m.piece === 'n') {
+            const devSquares = ['c3','d2','e2','f3','c6','d7','e7','f6'];
+            if (devSquares.includes(m.to)) score += Math.round(25 * style.intensity);
+          }
+          if (m.piece === 'b') {
+            const devSquares = ['c4','d3','e2','f1','c5','d6','e7','f8'];
+            if (devSquares.includes(m.to)) score += Math.round(20 * style.intensity);
+          }
+          if (m.piece === 'p') {
+            const singleSteps = ['e3','e6','d3','d6','c3','c6'];
+            if (singleSteps.includes(m.to)) score += Math.round(18 * style.intensity);
+          }
+          if (m.piece === 'q' && (m.to === 'h5' || m.to === 'a4')) score -= Math.round(15 * style.intensity); // discourage early queen sortie
+        }
+      } catch(_) {}
+
       return { move: m, score };
     });
 
@@ -889,7 +977,7 @@ function bestMoveFallback(fen, depth, elo) {
     }
 
     if (d === 0 || chess.game_over()) {
-      const evalScore = evaluateBoardPositional(chess);
+      const evalScore = evaluateBoardPositional(chess, elo);
       return player === 'w' ? evalScore : -evalScore;
     }
 
@@ -897,7 +985,7 @@ function bestMoveFallback(fen, depth, elo) {
     let moves = chess.moves({ verbose: true });
 
     // Order moves for better pruning
-    moves = orderMoves(moves, null);
+    moves = orderMoves(moves, player, elo);
 
     for (const m of moves) {
       chess.move(m);
@@ -924,7 +1012,7 @@ function bestMoveFallback(fen, depth, elo) {
     bestMove = null;
     bestScore = -Infinity;
     const moveScores = [];
-    let orderedMoves = orderMoves(moves.slice());
+    let orderedMoves = orderMoves(moves.slice(), player, elo);
 
     for (const m of orderedMoves) {
       if (Date.now() - startTime > timeLimit) break;

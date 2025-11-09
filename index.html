@@ -1889,6 +1889,7 @@ function renderPremoveHighlights(){
 
 // Cancel all queued premoves and clear visuals
 function clearAllPremoves(){
+    console.log('[premove] clearAllPremoves called — clearing queue (len=' + (premoveQueue && premoveQueue.length || 0) + ')');
     premoveQueue = [];
     clearPremovePreviews();
     clearTentativeMoveVisuals();

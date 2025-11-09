@@ -2576,7 +2576,7 @@ function ready() {
         $('#chess-white').text(chessGame.white);
         $('#chess-black').text(chessGame.black);
         $('#chess-status').text('Your color: ' + chessGame.color + (data['isAiGame'] ? ' (vs AI ' + data['aiElo'] + ')' : ''));
-        pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+        pendingUserMove = null; console.log('[premove] cleared premoves (len before clear=' + (premoveQueue && premoveQueue.length || 0) + ')'); premoveQueue = []; updateConfirmButton();
 
         if (data['isAiGame']) {
             loadPlayerElo();
@@ -2705,7 +2705,7 @@ function ready() {
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
             $('#chess-white').text(chessGame.white);
             $('#chess-black').text(chessGame.black);
-            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+            pendingUserMove = null; console.log('[premove] cleared premoves (len before clear=' + (premoveQueue && premoveQueue.length || 0) + ')'); premoveQueue = []; updateConfirmButton();
             showRejoinPrompt();
         }
         else if (data['type'] === 'chess_start') {

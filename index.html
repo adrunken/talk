@@ -1665,6 +1665,26 @@ function tryPlayPremoves(){
         }
 
         // Attempt to play as many premoves as possible while it's our turn
+        // If we have queued premoves but it's not our turn yet, schedule a short retry because this
+        // can happen when the engine's move hasn't been fully applied yet (race condition vs Stockfish).
+        if (premoveQueue.length && !isMyTurn()) {
+            try {
+                __premoveRetryCount = __premoveRetryCount || 0;
+                if (__premoveRetryCount < 10) {
+                    __premoveRetryCount++;
+                    console.log('[premove] have queued premove but not our turn yet, scheduling retry', __premoveRetryCount);
+                    setTimeout(function(){ try { tryPlayPremoves(); } catch(e){ console.warn('tryPlayPremoves retry failed', e); } }, 80);
+                } else {
+                    console.log('[premove] premove retry limit reached, giving up');
+                    __premoveRetryCount = 0;
+                }
+            } catch(e){ console.warn('[premove] scheduling retry failed', e); }
+            return;
+        }
+
+        // Reset retry counter when about to process premoves
+        __premoveRetryCount = 0;
+
         while (premoveQueue.length && isMyTurn()) {
             console.log('[premove] entering loop, queueLen=', premoveQueue.length, 'isMyTurn=', isMyTurn());
             var mv = premoveQueue.shift();

@@ -2776,6 +2776,7 @@ function ready() {
                 renderBoard();
                 updateChessStatus();
                 clearPendingMove();
+                try { console.log('[premove] invoking tryPlayPremoves after AI move, premoveQueueLen=', (premoveQueue && premoveQueue.length) || 0); tryPlayPremoves(); } catch(e) { console.warn('tryPlayPremoves after AI move failed', e); }
             }
         }
         else if (data['type'] === 'chess_move') {

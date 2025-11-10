@@ -1611,9 +1611,52 @@ function tryPlayPremoves(){
     __processingPremoves = true;
     try {
         console.log('[premove] tryPlayPremoves start, queueLen=', (premoveQueue && premoveQueue.length) || 0, 'chessGame.turn=', chessGame && chessGame.turn);
+        // If there's no game or no queued premoves, try to infer a pending premove from the UI
         if (!chessGame || !premoveQueue.length) {
-            console.log('[premove] nothing to do (no game or empty queue)');
-            return;
+            try {
+                if (!chessGame) {
+                    console.log('[premove] nothing to do (no game)');
+                    return;
+                }
+
+                // If there is a visible tentative premove captured in currentTentative, enqueue it now
+                if ((!premoveQueue || !premoveQueue.length) && currentTentative && currentTentative.isPremove) {
+                    console.log('[premove] inferring premove from currentTentative', currentTentative.from, '->', currentTentative.to);
+                    premoveQueue = premoveQueue || [];
+                    premoveQueue.push({ from: currentTentative.from, to: currentTentative.to, promotion: currentTentative.promotion || null });
+                }
+
+                // If still empty, try to infer from DOM ghost/indicator squares
+                if ((!premoveQueue || !premoveQueue.length)) {
+                    try {
+                        var $cand = $('#chess-board .chess-square.premove, #chess-board .chess-square.tentative-target').first();
+                        if ($cand && $cand.length) {
+                            var toSq = $cand.data('square');
+                            if (toSq) {
+                                console.log('[premove] found DOM premove candidate to=', toSq);
+                                var sim2 = new Chess();
+                                sim2.load(chessGame.fen);
+                                var moves = sim2.moves({ verbose: true });
+                                var playerColorLetter = chessGame.color === 'white' ? 'w' : 'b';
+                                var candidate = moves.find(function(m) { return m.to === toSq && m.color === playerColorLetter; });
+                                if (candidate) {
+                                    console.log('[premove] inferred premove from DOM: ', candidate.from, '->', candidate.to);
+                                    premoveQueue.push({ from: candidate.from, to: candidate.to, promotion: candidate.promotion || null });
+                                }
+                            }
+                        }
+                    } catch (e) { console.warn('[premove] DOM inference failed', e); }
+                }
+
+                if (!premoveQueue || !premoveQueue.length) {
+                    console.log('[premove] nothing to do (no queued premove after inference)');
+                    return;
+                }
+
+            } catch (e) {
+                console.warn('[premove] inference failed', e);
+                return;
+            }
         }
 
         // Attempt to play as many premoves as possible while it's our turn

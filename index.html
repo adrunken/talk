@@ -1601,9 +1601,6 @@ function enqueuePremove(from, to, promotion){
     currentTentative = { from: mv.from, to: mv.to, isPremove: true };
     showTentativeMove(mv.from, mv.to, true);
     renderPremoveHighlights();
-    // Ensure premoves are attempted shortly after enqueue — covers race where tryPlayPremoves
-    // ran just before the enqueue occurred (e.g., after an AI move).
-    try { setTimeout(function(){ try { tryPlayPremoves(); } catch(e){ console.warn('tryPlayPremoves after enqueue failed', e); } }, 30); } catch(e){}
 }
 
 function isMyTurn(){

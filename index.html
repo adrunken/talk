@@ -1613,7 +1613,7 @@ function tryPlayPremoves(){
     if (__processingPremoves) return; // avoid re-entrancy
     __processingPremoves = true;
     try {
-        console.log('[premove] tryPlayPremoves start, queueLen=', (premoveQueue && premoveQueue.length) || 0, 'chessGame.turn=', chessGame && chessGame.turn);
+        console.log('[premove] tryPlayPremoves start, queueLen=', (premoveQueue && premoveQueue.length) || 0, 'chessGame.turn=', chessGame && chessGame.turn, 'chessGame.color=', chessGame && chessGame.color, 'isMyTurn=', (typeof isMyTurn === 'function' ? isMyTurn() : 'no-fn'));
         // If there's no game or no queued premoves, try to infer a pending premove from the UI
         if (!chessGame || !premoveQueue.length) {
             try {
@@ -1664,7 +1664,9 @@ function tryPlayPremoves(){
 
         // Attempt to play as many premoves as possible while it's our turn
         while (premoveQueue.length && isMyTurn()) {
+            console.log('[premove] entering loop, queueLen=', premoveQueue.length, 'isMyTurn=', isMyTurn());
             var mv = premoveQueue.shift();
+            console.log('[premove] processing premove', mv.from, '->', mv.to, 'promotion=', mv.promotion);
             // Clear tentative visuals for premoves (we are about to play one)
             clearTentativeMoveVisuals();
             renderPremoveHighlights();
@@ -1672,14 +1674,19 @@ function tryPlayPremoves(){
             if (stockfishGame) {
                 // validate against current board
                 var b = stockfishGame.board;
-                var ok = b.move({ from: mv.from, to: mv.to, promotion: mv.promotion });
+                try { console.log('[premove] stockfish board fen before move=', b.fen()); } catch(e){}
+                var ok = false;
+                try { ok = b.move({ from: mv.from, to: mv.to, promotion: mv.promotion }); } catch(e){ console.warn('[premove] stockfish simulate move threw', e); }
+                console.log('[premove] stockfish simulate result=', !!ok, 'from=', mv.from, 'to=', mv.to);
                 if (ok) {
                     // we applied locally; roll back and send through existing flow which will apply the move
-                    b.undo();
+                    try { b.undo(); } catch(e){}
+                    console.log('[premove] sending premove to engine via sendMove', mv.from, '->', mv.to);
                     sendMove(mv.from, mv.to, mv.promotion);
                     // After sendMove in stockfish mode, the move is applied immediately by handleStockfishMove and turn changes,
                     // so continue loop will re-check isMyTurn() to decide whether to proceed to next premove.
                 } else {
+                    console.log('[premove] premove illegal on current engine board, skipping', mv.from, '->', mv.to);
                     flashStatus('Premove illegal, skipped');
                     // continue to next queued premove without recursion
                     continue;

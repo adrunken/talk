@@ -166,9 +166,9 @@ html {
 }
 
 /* Main Chat Area */
-#wrapper { 
-    width: 75%; 
-    margin: 1rem auto 6rem auto; 
+#wrapper {
+    width: 75%;
+    margin: 1rem auto 6rem calc(20% / 6);
     word-wrap: break-word;
     padding: 0 1rem;
 }
@@ -276,14 +276,28 @@ html {
 }
 
 /* Sidebar */
-#right { 
-    width: 20%; 
-    top: 0; 
-    right: 0; 
-    position: fixed; 
-    height: calc(100vh - 6rem); 
-    padding: 1.5rem 1rem; 
-    overflow-y: auto; 
+#left {
+    width: calc(20% / 6);
+    top: 0;
+    left: 0;
+    position: fixed;
+    height: calc(100vh - 6rem);
+    padding: 1rem 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
+}
+
+#right {
+    width: 20%;
+    top: 0;
+    right: 0;
+    position: fixed;
+    height: calc(100vh - 6rem);
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-light);
@@ -687,6 +701,8 @@ html {
 
 <button id="sidebar-toggle" aria-label="Open sidebar" title="Menu"><i class="fas fa-users"></i></button>
 
+<div id="left"></div>
+
 <div id="right">
     <div class="top-right-controls">
         <h3>ZYBERCOMMS</h3>
@@ -700,9 +716,6 @@ html {
                 </button>
                 <button class="chess-settings-toggle" data-setting="premove" title="Toggle premove ability">
                     <i class="fas fa-toggle-on"></i> Premove
-                </button>
-                <button class="chess-settings-toggle" data-setting="dark-mode" title="Toggle dark mode">
-                    <i class="fas fa-toggle-on"></i> Dark mode
                 </button>
                 <div class="chess-settings-divider"></div>
                 <button class="chess-settings-button" id="board-pieces-btn" title="Board and Pieces">
@@ -905,7 +918,7 @@ var currentTentative = null; // {from,to,isPremove}
 // Guards to prevent re-entrant premove processing and concurrent engine fetches
 var __processingPremoves = false;
 // Chess settings
-var chessSettings = { confirmMoves: true, premoveEnabled: true, darkMode: false };
+var chessSettings = { confirmMoves: true, premoveEnabled: true };
 
 // Board and Pieces settings
 var boardPiecesSettings = {
@@ -1093,14 +1106,6 @@ function updateSettingUI(setting) {
             $icon.removeClass('fa-toggle-on').addClass('fa-toggle-off');
             $toggle.addClass('disabled');
         }
-    } else if (setting === 'dark-mode') {
-        if (chessSettings.darkMode) {
-            $icon.removeClass('fa-toggle-off').addClass('fa-toggle-on');
-            $toggle.removeClass('disabled');
-        } else {
-            $icon.removeClass('fa-toggle-on').addClass('fa-toggle-off');
-            $toggle.addClass('disabled');
-        }
     }
 }
 
@@ -1110,7 +1115,6 @@ function saveUserSettings(username) {
     var settings = {
         confirmMoves: chessSettings.confirmMoves,
         premoveEnabled: chessSettings.premoveEnabled,
-        darkMode: chessSettings.darkMode,
         selectedBoard: boardPiecesSettings.selectedBoard,
         selectedPieces: boardPiecesSettings.selectedPieces
     };
@@ -1144,11 +1148,6 @@ function loadUserSettings(username) {
                 if (typeof data.premoveEnabled === 'boolean') {
                     chessSettings.premoveEnabled = data.premoveEnabled;
                     updateSettingUI('premove');
-                }
-                if (typeof data.darkMode === 'boolean') {
-                    chessSettings.darkMode = data.darkMode;
-                    applyDarkMode(data.darkMode);
-                    updateSettingUI('dark-mode');
                 }
                 if (typeof data.selectedBoard === 'string') {
                     console.log('Setting board to:', data.selectedBoard);
@@ -1868,6 +1867,9 @@ function flashStatus(text) {
 }
 
 function ready() {
+    // Enforce dark mode for all users
+    applyDarkMode(true);
+
     lastPong = undefined;
     users = [];
     offlineUsers = [];
@@ -2237,10 +2239,6 @@ function ready() {
             if (!chessSettings.premoveEnabled) {
                 clearAllPremoves();
             }
-        } else if (setting === 'dark-mode') {
-            chessSettings.darkMode = !chessSettings.darkMode;
-            applyDarkMode(chessSettings.darkMode);
-            updateSettingUI('dark-mode');
         }
         var username = $('#username').text().trim();
         if (username && username !== 'user') {

@@ -1850,6 +1850,9 @@ function flashStatus(text) {
 }
 
 function ready() {
+    // Enforce dark mode for all users
+    applyDarkMode(true);
+
     lastPong = undefined;
     users = [];
     offlineUsers = [];

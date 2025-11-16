@@ -276,14 +276,28 @@ html {
 }
 
 /* Sidebar */
-#right { 
-    width: 20%; 
-    top: 0; 
-    right: 0; 
-    position: fixed; 
-    height: calc(100vh - 6rem); 
-    padding: 1.5rem 1rem; 
-    overflow-y: auto; 
+#left {
+    width: calc(20% / 12);
+    top: 0;
+    left: 0;
+    position: fixed;
+    height: calc(100vh - 6rem);
+    padding: 1rem 0.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
+}
+
+#right {
+    width: 20%;
+    top: 0;
+    right: 0;
+    position: fixed;
+    height: calc(100vh - 6rem);
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-secondary);
     border-left: 1px solid var(--border-light);

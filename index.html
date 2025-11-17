@@ -2850,9 +2850,78 @@ function ready() {
     };
 }
 
+// Games data
+var gamesData = [
+    {
+        id: 'wild-west-clash',
+        title: 'Wild West Clash',
+        image: 'https://cdn.builder.io/api/v1/image/assets%2F72fc22b25412494682876c04830ac969%2F81a1075ff2a54797b490044361b5f828?format=webp&width=800',
+        url: 'https://adrunken.github.io/wild-west-clash/'
+    }
+];
+
+function initializeGames() {
+    var gamesList = document.getElementById('games-list');
+    if (!gamesList) return;
+
+    gamesData.forEach(function(game) {
+        var card = document.createElement('div');
+        card.className = 'game-card';
+        card.setAttribute('data-game-id', game.id);
+
+        var img = document.createElement('img');
+        img.src = game.image;
+        img.alt = game.title;
+        img.className = 'game-card-image';
+
+        var title = document.createElement('div');
+        title.className = 'game-card-title';
+        title.textContent = game.title;
+
+        card.appendChild(img);
+        card.appendChild(title);
+
+        card.addEventListener('click', function() {
+            openGameModal(game);
+        });
+
+        gamesList.appendChild(card);
+    });
+}
+
+function openGameModal(game) {
+    var modal = document.getElementById('game-modal');
+    var modalTitle = document.getElementById('game-modal-title');
+    var iframe = document.getElementById('game-iframe');
+
+    if (!modal || !iframe) return;
+
+    modalTitle.textContent = game.title;
+    iframe.src = game.url;
+    modal.classList.remove('hidden');
+}
+
+function closeGameModal() {
+    var modal = document.getElementById('game-modal');
+    var iframe = document.getElementById('game-iframe');
+
+    if (!modal || !iframe) return;
+
+    modal.classList.add('hidden');
+    iframe.src = '';
+}
+
 $(document).ready(function() {
     ready();
     loadBoardPiecesData();
+    initializeGames();
+
+    document.getElementById('game-modal-close').addEventListener('click', closeGameModal);
+    document.getElementById('game-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeGameModal();
+        }
+    });
 });
 
 </script>

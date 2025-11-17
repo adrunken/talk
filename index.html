@@ -2866,13 +2866,20 @@ var gamesData = [
 ];
 
 function initializeGames() {
+    console.log('[games] Initializing games...');
     var gamesList = document.getElementById('games-list');
-    if (!gamesList) return;
+    if (!gamesList) {
+        console.error('[games] games-list element not found');
+        return;
+    }
+
+    console.log('[games] Found games-list, adding', gamesData.length, 'games');
 
     gamesData.forEach(function(game) {
         var card = document.createElement('div');
         card.className = 'game-card';
         card.setAttribute('data-game-id', game.id);
+        card.style.cursor = 'pointer';
 
         var img = document.createElement('img');
         img.src = game.image;
@@ -2887,10 +2894,12 @@ function initializeGames() {
         card.appendChild(title);
 
         card.addEventListener('click', function() {
+            console.log('[games] Card clicked for game:', game.id);
             openGameModal(game);
         });
 
         gamesList.appendChild(card);
+        console.log('[games] Added game card:', game.id);
     });
 }
 

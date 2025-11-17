@@ -2890,15 +2890,22 @@ function initializeGames() {
 }
 
 function openGameModal(game) {
+    console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');
     var modalTitle = document.getElementById('game-modal-title');
     var iframe = document.getElementById('game-iframe');
 
-    if (!modal || !iframe) return;
+    console.log('[game-modal] Modal found:', !!modal, 'Title found:', !!modalTitle, 'Iframe found:', !!iframe);
+
+    if (!modal || !iframe) {
+        console.error('[game-modal] Missing modal or iframe elements');
+        return;
+    }
 
     modalTitle.textContent = game.title;
     iframe.src = game.url;
     modal.classList.remove('hidden');
+    console.log('[game-modal] Modal should now be visible');
 }
 
 function closeGameModal() {

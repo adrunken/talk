@@ -247,19 +247,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve games with proper MIME types and headers
-app.use('/games/wild-west-clash', express.static(path.join(__dirname, 'public/games/wild-west-clash'), {
-  setHeaders: function(res, filePath) {
-    if (filePath.endsWith('.wasm')) {
-      res.setHeader('Content-Type', 'application/wasm');
-    } else if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    }
-  }
-}));
-
+// Redirect to external Wild West Clash game
 app.get('/games/wild-west-clash/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/games/wild-west-clash/index.html'));
+  res.redirect('https://wild-west-cla.onrender.com/');
 });
 
 app.get('/popsound.mp3', (req, res) => {

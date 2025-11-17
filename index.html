@@ -617,9 +617,16 @@ html {
 .piece-preview-icon { width: 90px; height: 90px; background: white; border-radius: var(--radius-sm); }
 .chess-status { min-height: 1.5rem; color: var(--text-secondary); }
 .chess-actions { margin-top: auto; display: flex; gap: 0.5rem; }
-.chess-button { padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer; }
+.chess-button { padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer; flex: 1; }
 .chess-button:hover { background: var(--accent-secondary); color: var(--accent-primary); }
 .chess-button.hidden { display: none; }
+#chess-fullscreen { flex: 0 0 auto; }
+/* Fullscreen mode styles */
+#chess-modal.fullscreen { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; transform: none !important; left: auto !important; top: auto !important; border-radius: 0 !important; padding: 0 !important; }
+#chess-modal.fullscreen .chess-layout { height: 100vh; grid-template-columns: 1fr 250px; }
+#chess-modal.fullscreen .chess-board { width: 100%; height: 100%; }
+#chess-modal.fullscreen #chess-fullscreen i::before { content: '\f066'; }
+#chess-modal.fullscreen #chess-fullscreen { background: var(--accent-secondary); color: var(--accent-primary); }
 /* Confirm move button (neon green) */
 .confirm-move-button { background: #39ff14; border: 1px solid #39ff14; color: #000; font-weight: 600; }
 .confirm-move-button:hover { filter: brightness(1.1); }

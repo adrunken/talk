@@ -247,8 +247,16 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve games
-app.use('/games/wild-west-clash', express.static('/public/games/wild-west-clash'));
+// Serve games with proper MIME types and headers
+app.use('/games/wild-west-clash', express.static('/public/games/wild-west-clash', {
+  setHeaders: function(res, path) {
+    if (path.endsWith('.wasm')) {
+      res.setHeader('Content-Type', 'application/wasm');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 app.get('/games/wild-west-clash/', (req, res) => {
   res.sendFile('/public/games/wild-west-clash/index.html');

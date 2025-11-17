@@ -248,10 +248,10 @@ app.get('/', (req, res) => {
 });
 
 // Serve games
-app.use('/games/wild-west-clash', express.static(path.join(__dirname, 'public/games/wild-west-clash')));
+app.use('/games/wild-west-clash', express.static('/public/games/wild-west-clash'));
 
 app.get('/games/wild-west-clash/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/games/wild-west-clash/index.html'));
+  res.sendFile('/public/games/wild-west-clash/index.html');
 });
 
 app.get('/popsound.mp3', (req, res) => {

@@ -617,9 +617,16 @@ html {
 .piece-preview-icon { width: 90px; height: 90px; background: white; border-radius: var(--radius-sm); }
 .chess-status { min-height: 1.5rem; color: var(--text-secondary); }
 .chess-actions { margin-top: auto; display: flex; gap: 0.5rem; }
-.chess-button { padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer; }
+.chess-button { padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); cursor: pointer; flex: 1; }
 .chess-button:hover { background: var(--accent-secondary); color: var(--accent-primary); }
 .chess-button.hidden { display: none; }
+#chess-fullscreen { flex: 0 0 auto; }
+/* Fullscreen mode styles */
+#chess-modal.fullscreen { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; max-width: none !important; transform: none !important; left: auto !important; top: auto !important; border-radius: 0 !important; padding: 0 !important; }
+#chess-modal.fullscreen .chess-layout { height: 100vh; grid-template-columns: 1fr 250px; }
+#chess-modal.fullscreen .chess-board { width: 100%; height: 100%; }
+#chess-modal.fullscreen #chess-fullscreen i::before { content: '\f066'; }
+#chess-modal.fullscreen #chess-fullscreen { background: var(--accent-secondary); color: var(--accent-primary); }
 /* Confirm move button (neon green) */
 .confirm-move-button { background: #39ff14; border: 1px solid #39ff14; color: #000; font-weight: 600; }
 .confirm-move-button:hover { filter: brightness(1.1); }
@@ -784,6 +791,50 @@ html {
     color: var(--accent-primary);
 }
 
+.game-modal-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.game-modal-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.game-modal-button:hover {
+    color: var(--accent-primary);
+}
+
+/* Fullscreen mode styles */
+.game-modal.fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+}
+
+.game-modal.fullscreen .game-modal-content {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+}
+
+.game-modal.fullscreen #game-modal-fullscreen i::before {
+    content: '\f066';
+}
+
 .game-modal-iframe {
     flex: 1;
     border: none;
@@ -918,6 +969,7 @@ html {
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
         <button class="chess-button" id="chess-resign">Resign</button>
         <button class="chess-button" id="chess-ai-game">Play AI</button>
+        <button class="chess-button" id="chess-fullscreen" title="Fullscreen"><i class="fas fa-expand"></i></button>
         <button class="chess-button" id="chess-close">Close</button>
       </div>
     </div>
@@ -962,9 +1014,14 @@ html {
   <div class="game-modal-content">
     <div class="game-modal-header">
       <h2 id="game-modal-title">Game</h2>
-      <button class="game-modal-close" id="game-modal-close" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
+      <div class="game-modal-controls">
+        <button class="game-modal-button" id="game-modal-fullscreen" title="Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
+        <button class="game-modal-close" id="game-modal-close" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </div>
     <iframe id="game-iframe" class="game-modal-iframe"></iframe>
   </div>
@@ -2460,6 +2517,18 @@ function ready() {
         startAIGame();
     });
 
+    $('#chess-fullscreen').on('click', function(){
+        var modal = $('#chess-modal');
+        modal.toggleClass('fullscreen');
+        var isFullscreen = modal.hasClass('fullscreen');
+        var icon = $(this).find('i');
+        if (isFullscreen) {
+            icon.removeClass('fa-expand').addClass('fa-compress');
+        } else {
+            icon.removeClass('fa-compress').addClass('fa-expand');
+        }
+    });
+
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)
         .on('dragstart', '.chess-piece', onPieceDragStart)
@@ -2935,7 +3004,26 @@ function closeGameModal() {
     if (!modal || !iframe) return;
 
     modal.classList.add('hidden');
+    modal.classList.remove('fullscreen');
     iframe.src = '';
+}
+
+function toggleGameFullscreen() {
+    var modal = document.getElementById('game-modal');
+    var button = document.getElementById('game-modal-fullscreen');
+
+    if (!modal || !button) return;
+
+    var isFullscreen = modal.classList.toggle('fullscreen');
+    var icon = button.querySelector('i');
+
+    if (isFullscreen) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+    } else {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+    }
 }
 
 $(document).ready(function() {
@@ -2952,6 +3040,12 @@ $(document).ready(function() {
     if (closeBtn) {
         closeBtn.addEventListener('click', closeGameModal);
     }
+
+    var fullscreenBtn = document.getElementById('game-modal-fullscreen');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', toggleGameFullscreen);
+    }
+
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {

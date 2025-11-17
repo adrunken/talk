@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wild West Clash</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+        }
+
+        h1 {
+            color: #8B4513;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+            color: #555;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .features {
+            text-align: left;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .features h3 {
+            color: #8B4513;
+            margin-bottom: 15px;
+        }
+
+        .features ul {
+            list-style: none;
+            color: #666;
+        }
+
+        .features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .features li:last-child {
+            border-bottom: none;
+        }
+
+        .features li:before {
+            content: "🤠 ";
+            margin-right: 10px;
+        }
+
+        .status {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #8B4513;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .back-link:hover {
+            background: #A0522D;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤠 Wild West Clash 🤠</h1>
+        
+        <p class="description">
+            Welcome to Wild West Clash! A thrilling game where strategic thinking meets wild west adventure.
+        </p>
+
+        <div class="features">
+            <h3>Game Features</h3>
+            <ul>
+                <li>Strategic gameplay mechanics</li>
+                <li>Challenging AI opponents</li>
+                <li>Multiple difficulty levels</li>
+                <li>Immersive wild west theme</li>
+            </ul>
+        </div>
+
+        <div class="status">
+            <strong>⚠️ Status:</strong> Game is being loaded. Please wait...
+        </div>
+
+        <a href="/" class="back-link">← Back to Main</a>
+    </div>
+</body>
+</html>

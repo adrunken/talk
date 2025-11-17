@@ -2468,6 +2468,18 @@ function ready() {
         startAIGame();
     });
 
+    $('#chess-fullscreen').on('click', function(){
+        var modal = $('#chess-modal');
+        modal.toggleClass('fullscreen');
+        var isFullscreen = modal.hasClass('fullscreen');
+        var icon = $(this).find('i');
+        if (isFullscreen) {
+            icon.removeClass('fa-expand').addClass('fa-compress');
+        } else {
+            icon.removeClass('fa-compress').addClass('fa-expand');
+        }
+    });
+
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)
         .on('dragstart', '.chess-piece', onPieceDragStart)

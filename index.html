@@ -3103,6 +3103,24 @@ window.addEventListener('error', function(ev) {
     }
   } catch (e) { /* ignore */ }
 });
+
+// Pointer lock event listeners
+document.addEventListener('pointerlockchange', function() {
+    var modal = document.getElementById('game-modal');
+    if (!modal) return;
+
+    if (document.pointerLockElement) {
+        console.log('[pointer-lock] Pointer lock acquired');
+        modal.classList.add('pointer-locked');
+    } else {
+        console.log('[pointer-lock] Pointer lock released');
+        modal.classList.remove('pointer-locked');
+    }
+}, false);
+
+document.addEventListener('pointerlockerror', function() {
+    console.warn('[pointer-lock] Pointer lock request denied');
+}, false);
 </script>
 </body>
 </html>

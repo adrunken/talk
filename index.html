@@ -3011,6 +3011,12 @@ function closeGameModal() {
 
     if (!modal || !iframe) return;
 
+    // Exit pointer lock when game modal closes
+    if (document.pointerLockElement) {
+        document.exitPointerLock();
+        console.log('[game-modal] Exiting pointer lock');
+    }
+
     modal.classList.add('hidden');
     modal.classList.remove('fullscreen');
     iframe.src = '';

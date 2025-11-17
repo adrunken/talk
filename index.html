@@ -2995,6 +2995,14 @@ function openGameModal(game) {
     iframe.src = game.url;
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
+
+    // Request pointer lock when game modal opens
+    setTimeout(function() {
+        if (iframe.requestPointerLock) {
+            iframe.requestPointerLock();
+            console.log('[game-modal] Requesting pointer lock for game');
+        }
+    }, 500);
 }
 
 function closeGameModal() {

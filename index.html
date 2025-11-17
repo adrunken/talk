@@ -687,7 +687,7 @@ html {
 
 /* Game Card Styles */
 .game-card {
-    border: 1px solid var(--border-light);
+    border: 2px solid var(--border-light);
     border-radius: var(--radius-md);
     overflow: hidden;
     cursor: pointer;
@@ -695,12 +695,18 @@ html {
     background: var(--bg-tertiary);
     display: flex;
     flex-direction: column;
+    user-select: none;
 }
 
 .game-card:hover {
     border-color: var(--accent-primary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
+    background: var(--accent-secondary);
+}
+
+.game-card:active {
+    transform: translateY(0);
 }
 
 .game-card-image {

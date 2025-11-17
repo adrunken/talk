@@ -3040,6 +3040,12 @@ $(document).ready(function() {
     if (closeBtn) {
         closeBtn.addEventListener('click', closeGameModal);
     }
+
+    var fullscreenBtn = document.getElementById('game-modal-fullscreen');
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', toggleGameFullscreen);
+    }
+
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {

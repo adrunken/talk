@@ -970,9 +970,14 @@ html {
   <div class="game-modal-content">
     <div class="game-modal-header">
       <h2 id="game-modal-title">Game</h2>
-      <button class="game-modal-close" id="game-modal-close" title="Close">
-        <i class="fas fa-times"></i>
-      </button>
+      <div class="game-modal-controls">
+        <button class="game-modal-button" id="game-modal-fullscreen" title="Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
+        <button class="game-modal-close" id="game-modal-close" title="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </div>
     <iframe id="game-iframe" class="game-modal-iframe"></iframe>
   </div>

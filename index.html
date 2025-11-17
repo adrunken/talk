@@ -2933,16 +2933,28 @@ function closeGameModal() {
 }
 
 $(document).ready(function() {
+    console.log('[app] Document ready, initializing...');
     ready();
     loadBoardPiecesData();
     initializeGames();
 
-    document.getElementById('game-modal-close').addEventListener('click', closeGameModal);
-    document.getElementById('game-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeGameModal();
-        }
-    });
+    var closeBtn = document.getElementById('game-modal-close');
+    var modal = document.getElementById('game-modal');
+
+    console.log('[app] Close button found:', !!closeBtn, 'Modal found:', !!modal);
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeGameModal);
+    }
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeGameModal();
+            }
+        });
+    }
+
+    console.log('[app] Initialization complete');
 });
 
 </script>

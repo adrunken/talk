@@ -3004,7 +3004,26 @@ function closeGameModal() {
     if (!modal || !iframe) return;
 
     modal.classList.add('hidden');
+    modal.classList.remove('fullscreen');
     iframe.src = '';
+}
+
+function toggleGameFullscreen() {
+    var modal = document.getElementById('game-modal');
+    var button = document.getElementById('game-modal-fullscreen');
+
+    if (!modal || !button) return;
+
+    var isFullscreen = modal.classList.toggle('fullscreen');
+    var icon = button.querySelector('i');
+
+    if (isFullscreen) {
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+    } else {
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+    }
 }
 
 $(document).ready(function() {

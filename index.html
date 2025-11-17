@@ -168,7 +168,7 @@ html {
 /* Main Chat Area */
 #wrapper {
     width: 75%;
-    margin: 1rem auto 6rem calc(20% / 6);
+    margin: 1rem auto 6rem auto;
     word-wrap: break-word;
     padding: 0 1rem;
 }
@@ -277,17 +277,7 @@ html {
 
 /* Sidebar */
 #left {
-    width: calc(20% / 6);
-    top: 0;
-    left: 0;
-    position: fixed;
-    height: calc(100vh - 6rem);
-    padding: 1rem 0.5rem;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-light);
-    box-shadow: var(--shadow-md);
+    display: none;
 }
 
 #right {
@@ -694,6 +684,112 @@ html {
 .delete-account-btn:hover { background: #dc2626; }
 .danger-btn { background: #ef4444 !important; color: #fff; }
 .danger-btn:hover { background: #dc2626 !important; }
+
+/* Game Card Styles */
+.game-card {
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-tertiary);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+}
+
+.game-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background: var(--accent-secondary);
+}
+
+.game-card:active {
+    transform: translateY(0);
+}
+
+.game-card-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+.game-card-title {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* Game Modal Styles */
+.game-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.game-modal.hidden {
+    display: none !important;
+}
+
+.game-modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    height: 90vh;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.game-modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.game-modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.game-modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.game-modal-close:hover {
+    color: var(--accent-primary);
+}
+
+.game-modal-iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    height: 100%;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
@@ -753,6 +849,9 @@ html {
             <option value="3200">3200 (GM)</option>
         </select>
     </div>
+
+    <h3 style="margin-top: 1.5rem;">GAMES</h3>
+    <div id="games-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
 
 </div>
 
@@ -855,6 +954,19 @@ html {
         <div class="pieces-grid" id="pieces-grid"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Game Modal -->
+<div id="game-modal" class="game-modal hidden">
+  <div class="game-modal-content">
+    <div class="game-modal-header">
+      <h2 id="game-modal-title">Game</h2>
+      <button class="game-modal-close" id="game-modal-close" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <iframe id="game-iframe" class="game-modal-iframe"></iframe>
   </div>
 </div>
 
@@ -2749,9 +2861,106 @@ function ready() {
     };
 }
 
+// Games data
+var gamesData = [
+    {
+        id: 'wild-west-clash',
+        title: 'Wild West Clash',
+        image: 'https://cdn.builder.io/api/v1/image/assets%2F72fc22b25412494682876c04830ac969%2F81a1075ff2a54797b490044361b5f828?format=webp&width=800',
+        url: '/games/wild-west-clash/'
+    }
+];
+
+function initializeGames() {
+    console.log('[games] Initializing games...');
+    var gamesList = document.getElementById('games-list');
+    if (!gamesList) {
+        console.error('[games] games-list element not found');
+        return;
+    }
+
+    console.log('[games] Found games-list, adding', gamesData.length, 'games');
+
+    gamesData.forEach(function(game) {
+        var card = document.createElement('div');
+        card.className = 'game-card';
+        card.setAttribute('data-game-id', game.id);
+        card.style.cursor = 'pointer';
+
+        var img = document.createElement('img');
+        img.src = game.image;
+        img.alt = game.title;
+        img.className = 'game-card-image';
+
+        var title = document.createElement('div');
+        title.className = 'game-card-title';
+        title.textContent = game.title;
+
+        card.appendChild(img);
+        card.appendChild(title);
+
+        card.addEventListener('click', function() {
+            console.log('[games] Card clicked for game:', game.id);
+            openGameModal(game);
+        });
+
+        gamesList.appendChild(card);
+        console.log('[games] Added game card:', game.id);
+    });
+}
+
+function openGameModal(game) {
+    console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
+    var modal = document.getElementById('game-modal');
+    var modalTitle = document.getElementById('game-modal-title');
+    var iframe = document.getElementById('game-iframe');
+
+    console.log('[game-modal] Modal found:', !!modal, 'Title found:', !!modalTitle, 'Iframe found:', !!iframe);
+
+    if (!modal || !iframe) {
+        console.error('[game-modal] Missing modal or iframe elements');
+        return;
+    }
+
+    modalTitle.textContent = game.title;
+    iframe.src = game.url;
+    modal.classList.remove('hidden');
+    console.log('[game-modal] Modal should now be visible');
+}
+
+function closeGameModal() {
+    var modal = document.getElementById('game-modal');
+    var iframe = document.getElementById('game-iframe');
+
+    if (!modal || !iframe) return;
+
+    modal.classList.add('hidden');
+    iframe.src = '';
+}
+
 $(document).ready(function() {
+    console.log('[app] Document ready, initializing...');
     ready();
     loadBoardPiecesData();
+    initializeGames();
+
+    var closeBtn = document.getElementById('game-modal-close');
+    var modal = document.getElementById('game-modal');
+
+    console.log('[app] Close button found:', !!closeBtn, 'Modal found:', !!modal);
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeGameModal);
+    }
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeGameModal();
+            }
+        });
+    }
+
+    console.log('[app] Initialization complete');
 });
 
 </script>

@@ -946,6 +946,19 @@ html {
   </div>
 </div>
 
+<!-- Game Modal -->
+<div id="game-modal" class="game-modal hidden">
+  <div class="game-modal-content">
+    <div class="game-modal-header">
+      <h2 id="game-modal-title">Game</h2>
+      <button class="game-modal-close" id="game-modal-close" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <iframe id="game-iframe" class="game-modal-iframe"></iframe>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies

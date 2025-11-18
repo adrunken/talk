@@ -3069,6 +3069,18 @@ function closeGameModal() {
     document.body.classList.remove('game-modal-open');
     console.log('[game-modal] Parent page pointer events restored');
 
+    // Remove event suppression listeners
+    if (gameModalEventHandler) {
+        document.removeEventListener('mousemove', gameModalEventHandler, true);
+        document.removeEventListener('mousedown', gameModalEventHandler, true);
+        document.removeEventListener('mouseup', gameModalEventHandler, true);
+        document.removeEventListener('mouseover', gameModalEventHandler, true);
+        document.removeEventListener('mouseout', gameModalEventHandler, true);
+        document.removeEventListener('click', gameModalEventHandler, true);
+        document.removeEventListener('contextmenu', gameModalEventHandler, true);
+        console.log('[game-modal] Event suppression disabled');
+    }
+
     // Restore popup windows
     window.open = originalWindowOpen;
     console.log('[game-modal] Popup blocking disabled');

@@ -3036,6 +3036,10 @@ function closeGameModal() {
 
     if (!modal || !iframe) return;
 
+    // Restore pointer events on parent page
+    document.body.classList.remove('game-modal-open');
+    console.log('[game-modal] Parent page pointer events restored');
+
     attachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners re-enabled');
 

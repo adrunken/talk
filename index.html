@@ -3063,18 +3063,19 @@ function toggleGameFullscreen() {
 
 function requestGamePointerLock() {
     var modal = document.getElementById('game-modal');
-    var iframe = document.getElementById('game-iframe');
 
-    if (!modal || !iframe) return;
+    if (!modal) return;
 
-    // Try to request pointer lock on the iframe
-    if (iframe.requestPointerLock) {
-        iframe.requestPointerLock();
-        console.log('[pointer-lock] Requesting pointer lock for game');
+    // Request pointer lock on the modal container
+    if (modal.requestPointerLock) {
+        modal.requestPointerLock();
+        console.log('[pointer-lock] Requesting pointer lock for game modal');
     } else if (document.body.requestPointerLock) {
         // Fallback: request pointer lock on the entire document
         document.body.requestPointerLock();
         console.log('[pointer-lock] Requesting pointer lock on document body');
+    } else {
+        console.warn('[pointer-lock] Pointer lock not supported');
     }
 }
 

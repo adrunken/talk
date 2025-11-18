@@ -3002,25 +3002,8 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
 
-    // Set up global interaction listener for pointer lock
-    var handleInteraction = function(event) {
-        // Only process if the modal is still visible and interaction is within modal bounds
-        if (!modal.classList.contains('hidden')) {
-            var rect = modal.getBoundingClientRect();
-            if (event.clientX >= rect.left && event.clientX <= rect.right &&
-                event.clientY >= rect.top && event.clientY <= rect.bottom) {
-                console.log('[game-modal] Interaction detected inside game modal, requesting pointer lock');
-                requestGamePointerLock();
-                // Remove listeners after first interaction
-                document.removeEventListener('mousedown', handleInteraction, true);
-                document.removeEventListener('keydown', handleInteraction, true);
-            }
-        }
-    };
-
-    // Listen in capture phase to catch events even from nested elements
-    document.addEventListener('mousedown', handleInteraction, true);
-    document.addEventListener('keydown', handleInteraction, true);
+    // Don't try to request pointer lock from parent page
+    // The game will handle pointer lock naturally when user clicks inside it
 }
 
 function closeGameModal() {

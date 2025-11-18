@@ -751,6 +751,15 @@ html {
     display: none !important;
 }
 
+/* When game modal is open, block all pointer events on parent content */
+body.game-modal-open {
+    pointer-events: none;
+}
+
+body.game-modal-open #game-modal {
+    pointer-events: auto;
+}
+
 .game-modal-content {
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);

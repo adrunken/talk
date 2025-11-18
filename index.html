@@ -2984,6 +2984,8 @@ function initializeGames() {
     });
 }
 
+var _gameModalClickHandler = null;
+
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');
@@ -3002,23 +3004,19 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
 
-    // Wait for iframe to load, then add click listener for pointer lock
-    var handleIframeLoad = function() {
-        console.log('[game-modal] Game iframe loaded');
-
-        // Add click listener to iframe container to request pointer lock
-        var handleClick = function() {
-            console.log('[game-modal] Click detected in game, requesting pointer lock');
+    // Set up click listener for the modal to detect clicks inside the game
+    _gameModalClickHandler = function(event) {
+        if (!modal.classList.contains('hidden')) {
+            console.log('[game-modal] Click detected, requesting pointer lock');
             requestGamePointerLock();
-        };
-
-        iframe.addEventListener('click', handleClick, false);
-
-        // Store listener for cleanup
-        iframe._pointerLockClickHandler = handleClick;
+            // Remove listener after first successful attempt
+            document.removeEventListener('click', _gameModalClickHandler, true);
+            _gameModalClickHandler = null;
+        }
     };
 
-    iframe.addEventListener('load', handleIframeLoad, false);
+    // Use capture phase to detect clicks even if they're in the iframe
+    document.addEventListener('click', _gameModalClickHandler, true);
 }
 
 function closeGameModal() {

@@ -2978,6 +2978,36 @@ function initializeGames() {
     });
 }
 
+function handleChessKeydown(e) {
+    // ignore when focus is in chat input or any text input
+    var active = document.activeElement;
+    if ($(active).is('textarea, input') || $(active).closest('#promotion-overlay').length) return;
+    if (!$('#chess-modal').length || $('#chess-modal').hasClass('hidden')) return;
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+        if (pendingUserMove && !$('#chess-confirm-move').prop('disabled')) {
+            e.preventDefault();
+            $('#chess-confirm-move').trigger('click');
+        }
+        return;
+    }
+
+    // Cancel all premoves on Left Arrow or Backspace
+    if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+        e.preventDefault();
+        clearAllPremoves();
+        return;
+    }
+}
+
+function attachChessKeyboardListener() {
+    $(document).on('keydown.chessconfirm', handleChessKeydown);
+}
+
+function detachChessKeyboardListener() {
+    $(document).off('keydown.chessconfirm', handleChessKeydown);
+}
+
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');

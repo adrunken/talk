@@ -3014,6 +3014,17 @@ function openGameModal(game) {
     modalTitle.textContent = game.title;
     iframe.src = game.url;
     modal.classList.remove('hidden');
+
+    // Ensure iframe gets focus and pointer lock can work properly
+    setTimeout(function() {
+        try {
+            iframe.focus();
+            console.log('[game-modal] Iframe focused for pointer lock');
+        } catch(e) {
+            console.error('[game-modal] Failed to focus iframe:', e);
+        }
+    }, 100);
+
     console.log('[game-modal] Modal should now be visible');
 }
 

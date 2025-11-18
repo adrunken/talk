@@ -851,14 +851,23 @@ html {
 
 /* Prevent layout shift when modal is open */
 body.game-modal-open {
-    overflow: hidden;
-    scrollbar-gutter: stable;
-    padding-right: 0 !important;
-    margin-right: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 html.game-modal-open {
-    overflow: hidden;
+    overflow: hidden !important;
+    scrollbar-gutter: stable;
+}
+
+body.game-modal-open #wrapper {
+    width: 75% !important;
+    margin: 1rem auto 6rem auto !important;
+}
+
+body.game-modal-open #right {
+    width: 20% !important;
 }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>

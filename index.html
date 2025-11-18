@@ -2476,15 +2476,7 @@ function ready() {
     });
 
     // Keyboard: Enter confirms staged move (unless typing in inputs)
-    function attachChessKeyboardListener() {
-        $(document).on('keydown.chessconfirm', handleChessKeydown);
-    }
-
-    function detachChessKeyboardListener() {
-        $(document).off('keydown.chessconfirm', handleChessKeydown);
-    }
-
-    function handleChessKeydown(e) {
+    $(document).on('keydown.chessconfirm', function(e){
         // ignore when focus is in chat input or any text input
         var active = document.activeElement;
         if ($(active).is('textarea, input') || $(active).closest('#promotion-overlay').length) return;
@@ -2504,9 +2496,7 @@ function ready() {
             clearAllPremoves();
             return;
         }
-    }
-
-    attachChessKeyboardListener();
+    });
     $('#chess-resign').on('click', function(){
         if (stockfishGame) {
             stockfishGame.over = true;

@@ -3001,16 +3001,23 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
 
-    // Listen for when user joins a room (iframe will post a message)
-    var handleRoomJoined = function(event) {
-        if (event.source === iframe.contentWindow && event.data && event.data.type === 'game-room-joined') {
-            console.log('[game-modal] User joined game room, enabling pointer lock');
+    // Wait for iframe to load, then add click listener for pointer lock
+    var handleIframeLoad = function() {
+        console.log('[game-modal] Game iframe loaded');
+
+        // Add click listener to iframe container to request pointer lock
+        var handleClick = function() {
+            console.log('[game-modal] Click detected in game, requesting pointer lock');
             requestGamePointerLock();
-            window.removeEventListener('message', handleRoomJoined);
-        }
+        };
+
+        iframe.addEventListener('click', handleClick, false);
+
+        // Store listener for cleanup
+        iframe._pointerLockClickHandler = handleClick;
     };
 
-    window.addEventListener('message', handleRoomJoined, false);
+    iframe.addEventListener('load', handleIframeLoad, false);
 }
 
 function closeGameModal() {

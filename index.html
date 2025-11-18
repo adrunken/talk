@@ -3015,6 +3015,7 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     // Prevent body scrollbar from appearing
     document.body.classList.add('game-modal-open');
+    document.documentElement.classList.add('game-modal-open');
     console.log('[game-modal] Modal should now be visible');
 
     // Don't try to request pointer lock from parent page

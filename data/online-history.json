@@ -132,5 +132,12 @@
       "timestamp": 1763442394,
       "time": "05:06"
     }
+  ],
+  "fsd": [
+    {
+      "action": "online",
+      "timestamp": 1763442563,
+      "time": "05:09"
+    }
   ]
 }

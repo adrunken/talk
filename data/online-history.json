@@ -145,5 +145,12 @@
       "timestamp": 1763440005,
       "time": "04:26"
     }
+  ],
+  "eda": [
+    {
+      "action": "online",
+      "timestamp": 1763440111,
+      "time": "04:28"
+    }
   ]
 }

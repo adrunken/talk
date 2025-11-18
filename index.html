@@ -2508,6 +2508,8 @@ function ready() {
         // ignore when focus is in chat input or any text input
         var active = document.activeElement;
         if ($(active).is('textarea, input') || $(active).closest('#promotion-overlay').length) return;
+        // Don't handle chess keyboard when game modal is open
+        if ($('#game-modal').length && !$('#game-modal').hasClass('hidden')) return;
         if (!$('#chess-modal').length || $('#chess-modal').hasClass('hidden')) return;
 
         if (e.key === 'Enter' && !e.shiftKey) {

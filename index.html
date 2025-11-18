@@ -742,10 +742,6 @@ html {
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
     z-index: 2000;
-    padding: 5vh 5%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
 }
 
 .game-modal.hidden {
@@ -753,13 +749,16 @@ html {
 }
 
 .game-modal-content {
+    position: absolute;
+    top: 5vh;
+    left: 50%;
+    transform: translateX(-50%);
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    width: 100%;
-    height: 100%;
+    width: 90%;
+    height: 90vh;
     max-width: 1000px;
-    align-self: center;
     display: flex;
     flex-direction: column;
     overflow: hidden;

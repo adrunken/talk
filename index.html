@@ -734,21 +734,12 @@ html {
 /* Game Modal Styles */
 .game-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
+    top: 5vh;
+    left: 5%;
+    right: 5%;
+    bottom: 5vh;
     background: rgba(0, 0, 0, 0.7);
     z-index: 2000;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    grid-template-areas: "content";
-    justify-items: center;
-    align-items: start;
-    padding-top: 5vh;
 }
 
 .game-modal.hidden {
@@ -756,12 +747,11 @@ html {
 }
 
 .game-modal-content {
-    grid-area: content;
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    width: 90%;
-    height: 90vh;
+    width: 100%;
+    height: 100%;
     max-width: 1000px;
     display: flex;
     flex-direction: column;

@@ -3004,19 +3004,19 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
 
-    // Set up click listener for the modal to detect clicks inside the game
+    // Set up mousedown listener on the modal element itself to detect any interaction
     _gameModalClickHandler = function(event) {
         if (!modal.classList.contains('hidden')) {
-            console.log('[game-modal] Click detected, requesting pointer lock');
+            console.log('[game-modal] Interaction detected, requesting pointer lock');
             requestGamePointerLock();
             // Remove listener after first successful attempt
-            document.removeEventListener('click', _gameModalClickHandler, true);
+            modal.removeEventListener('mousedown', _gameModalClickHandler);
             _gameModalClickHandler = null;
         }
     };
 
-    // Use capture phase to detect clicks even if they're in the iframe
-    document.addEventListener('click', _gameModalClickHandler, true);
+    // Listen on the modal for mouse interactions
+    modal.addEventListener('mousedown', _gameModalClickHandler, false);
 }
 
 function closeGameModal() {

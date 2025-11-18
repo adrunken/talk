@@ -751,13 +751,9 @@ html {
     display: none !important;
 }
 
-/* When game modal is open, block all pointer events on parent content */
-body.game-modal-open {
+/* When game modal is open, block pointer events on parent content but keep modal interactive */
+body.game-modal-open > *:not(#game-modal) {
     pointer-events: none;
-}
-
-body.game-modal-open #game-modal {
-    pointer-events: auto;
 }
 
 .game-modal-content {

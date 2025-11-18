@@ -3015,10 +3015,6 @@ function openGameModal(game) {
     detachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners disabled');
 
-    // Block pointer events on parent page to prevent interference with game's pointer lock
-    document.body.classList.add('game-modal-open');
-    console.log('[game-modal] Parent page pointer events blocked');
-
     // Suppress all mouse/keyboard events outside the modal at the capture phase
     gameModalEventHandler = suppressGameModalEvents;
     document.addEventListener('mousemove', gameModalEventHandler, true);

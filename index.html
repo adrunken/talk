@@ -2984,8 +2984,6 @@ function initializeGames() {
     });
 }
 
-var _gameModalClickHandler = null;
-
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');
@@ -3004,19 +3002,24 @@ function openGameModal(game) {
     modal.classList.remove('hidden');
     console.log('[game-modal] Modal should now be visible');
 
-    // Set up mousedown listener on the modal element itself to detect any interaction
-    _gameModalClickHandler = function(event) {
-        if (!modal.classList.contains('hidden')) {
-            console.log('[game-modal] Interaction detected, requesting pointer lock');
+    // Set up a listener for focus events on the iframe
+    var onIframeFocus = function() {
+        console.log('[game-modal] Game iframe focused, enabling pointer lock on next interaction');
+
+        // Set up a one-time listener for any mouse movement or key press when iframe has focus
+        var enablePointerLock = function() {
+            console.log('[game-modal] First interaction in game detected, requesting pointer lock');
             requestGamePointerLock();
-            // Remove listener after first successful attempt
-            modal.removeEventListener('mousedown', _gameModalClickHandler);
-            _gameModalClickHandler = null;
-        }
+            window.removeEventListener('mousemove', enablePointerLock);
+            window.removeEventListener('keydown', enablePointerLock);
+        };
+
+        window.addEventListener('mousemove', enablePointerLock, { once: true });
+        window.addEventListener('keydown', enablePointerLock, { once: true });
+        iframe.removeEventListener('focus', onIframeFocus);
     };
 
-    // Listen on the modal for mouse interactions
-    modal.addEventListener('mousedown', _gameModalClickHandler, false);
+    iframe.addEventListener('focus', onIframeFocus, false);
 }
 
 function closeGameModal() {

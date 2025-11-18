@@ -3029,12 +3029,6 @@ function closeGameModal() {
 
     if (!modal || !iframe) return;
 
-    // Clean up click listener
-    if (iframe._pointerLockClickHandler) {
-        iframe.removeEventListener('click', iframe._pointerLockClickHandler);
-        iframe._pointerLockClickHandler = null;
-    }
-
     // Exit pointer lock when game modal closes
     if (document.pointerLockElement) {
         document.exitPointerLock();

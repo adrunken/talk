@@ -3037,13 +3037,6 @@ function closeGameModal() {
 
     if (!modal || !iframe) return;
 
-    // Restore parent page mouse events
-    window.removeEventListener('mousemove', suppressMouseEvent, true);
-    window.removeEventListener('mousedown', suppressMouseEvent, true);
-    window.removeEventListener('mouseup', suppressMouseEvent, true);
-    window.removeEventListener('contextmenu', suppressMouseEvent, true);
-    console.log('[game-modal] Parent page mouse events restored');
-
     attachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners re-enabled');
 

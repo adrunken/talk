@@ -3001,6 +3001,9 @@ function openGameModal(game) {
         return;
     }
 
+    detachChessKeyboardListener();
+    console.log('[game-modal] Chess keyboard listeners disabled');
+
     modalTitle.textContent = game.title;
     iframe.src = game.url;
     modal.classList.remove('hidden');

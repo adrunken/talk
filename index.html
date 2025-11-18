@@ -3037,6 +3037,7 @@ function closeGameModal() {
     modal.classList.add('hidden');
     modal.classList.remove('fullscreen');
     document.body.classList.remove('game-modal-open');
+    document.documentElement.classList.remove('game-modal-open');
     iframe.src = '';
 }
 

@@ -3018,10 +3018,12 @@ function openGameModal(game) {
 }
 
 function suppressMouseEvent(e) {
-    // Only suppress if not targeting the game modal
-    if (!e.target.closest('#game-modal')) {
+    // Only suppress if not targeting the game modal or its contents
+    var gameModal = document.getElementById('game-modal');
+    if (!gameModal || !gameModal.contains(e.target)) {
         e.preventDefault();
         e.stopPropagation();
+        return false;
     }
 }
 

@@ -3058,7 +3058,9 @@ function closeGameModal() {
 
     modal.classList.add('hidden');
     modal.classList.remove('fullscreen');
-    iframe.src = '';
+
+    // Do NOT clear iframe.src - keep game loaded to prevent serialization errors on reload
+    console.log('[game-modal] Game kept loaded in memory to prevent reinitialization issues');
 }
 
 function toggleGameFullscreen() {

@@ -2475,28 +2475,8 @@ function ready() {
         sendMove(m.from, m.to, m.promotion);
     });
 
-    // Keyboard: Enter confirms staged move (unless typing in inputs)
-    $(document).on('keydown.chessconfirm', function(e){
-        // ignore when focus is in chat input or any text input
-        var active = document.activeElement;
-        if ($(active).is('textarea, input') || $(active).closest('#promotion-overlay').length) return;
-        if (!$('#chess-modal').length || $('#chess-modal').hasClass('hidden')) return;
-
-        if (e.key === 'Enter' && !e.shiftKey) {
-            if (pendingUserMove && !$('#chess-confirm-move').prop('disabled')) {
-                e.preventDefault();
-                $('#chess-confirm-move').trigger('click');
-            }
-            return;
-        }
-
-        // Cancel all premoves on Left Arrow or Backspace
-        if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
-            e.preventDefault();
-            clearAllPremoves();
-            return;
-        }
-    });
+    // Initialize chess keyboard listener
+    attachChessKeyboardListener();
     $('#chess-resign').on('click', function(){
         if (stockfishGame) {
             stockfishGame.over = true;

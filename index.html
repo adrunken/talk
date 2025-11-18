@@ -3004,13 +3004,6 @@ function openGameModal(game) {
     detachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners disabled');
 
-    // Suppress parent page mouse events to prevent interference with game's pointer lock
-    window.addEventListener('mousemove', suppressMouseEvent, true);
-    window.addEventListener('mousedown', suppressMouseEvent, true);
-    window.addEventListener('mouseup', suppressMouseEvent, true);
-    window.addEventListener('contextmenu', suppressMouseEvent, true);
-    console.log('[game-modal] Parent page mouse events suppressed');
-
     modalTitle.textContent = game.title;
     iframe.src = game.url;
     modal.classList.remove('hidden');

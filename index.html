@@ -2993,6 +2993,8 @@ function detachChessKeyboardListener() {
     $(document).off('keydown.chessconfirm', handleChessKeydown);
 }
 
+var originalWindowOpen = window.open;
+
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');
@@ -3012,6 +3014,13 @@ function openGameModal(game) {
     // Block pointer events on parent page to prevent interference with game's pointer lock
     document.body.classList.add('game-modal-open');
     console.log('[game-modal] Parent page pointer events blocked');
+
+    // Block popup windows during game
+    window.open = function() {
+        console.log('[game-modal] Popup blocked');
+        return null;
+    };
+    console.log('[game-modal] Popup blocking enabled');
 
     modalTitle.textContent = game.title;
     iframe.src = game.url;

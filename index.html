@@ -2994,6 +2994,15 @@ function detachChessKeyboardListener() {
 }
 
 var originalWindowOpen = window.open;
+var gameModalEventHandler = null;
+
+function suppressGameModalEvents(e) {
+    // Only suppress for parent page, not for modal or iframe
+    if (e.target && e.target.closest && !e.target.closest('#game-modal')) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
+}
 
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
@@ -3014,6 +3023,17 @@ function openGameModal(game) {
     // Block pointer events on parent page to prevent interference with game's pointer lock
     document.body.classList.add('game-modal-open');
     console.log('[game-modal] Parent page pointer events blocked');
+
+    // Suppress all mouse/keyboard events outside the modal at the capture phase
+    gameModalEventHandler = suppressGameModalEvents;
+    document.addEventListener('mousemove', gameModalEventHandler, true);
+    document.addEventListener('mousedown', gameModalEventHandler, true);
+    document.addEventListener('mouseup', gameModalEventHandler, true);
+    document.addEventListener('mouseover', gameModalEventHandler, true);
+    document.addEventListener('mouseout', gameModalEventHandler, true);
+    document.addEventListener('click', gameModalEventHandler, true);
+    document.addEventListener('contextmenu', gameModalEventHandler, true);
+    console.log('[game-modal] Event suppression enabled');
 
     // Block popup windows during game
     window.open = function() {

@@ -3041,20 +3041,6 @@ function toggleGameFullscreen() {
     }
 }
 
-function requestGamePointerLock() {
-    var iframe = document.getElementById('game-iframe');
-    var modal = document.getElementById('game-modal');
-
-    if (!iframe || !modal) return;
-
-    // For cross-origin iframes, we can't directly request pointer lock
-    // Instead, let the game request it when the user clicks
-    // We'll remove our interaction listener to let the game handle pointer lock itself
-    document.removeEventListener('mousedown', window._gameInteractionHandler, true);
-    document.removeEventListener('keydown', window._gameInteractionHandler, true);
-
-    console.log('[pointer-lock] Game interaction detected - allowing game to handle pointer lock');
-}
 
 $(document).ready(function() {
     console.log('[app] Document ready, initializing...');

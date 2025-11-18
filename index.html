@@ -3049,6 +3049,10 @@ function closeGameModal() {
     document.body.classList.remove('game-modal-open');
     console.log('[game-modal] Parent page pointer events restored');
 
+    // Restore popup windows
+    window.open = originalWindowOpen;
+    console.log('[game-modal] Popup blocking disabled');
+
     attachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners re-enabled');
 

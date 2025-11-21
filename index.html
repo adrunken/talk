@@ -3072,16 +3072,32 @@ function openGameModal(game) {
     }
 
     // Request storage access for third-party iframes
-    // Storage Access API requires user interaction, so do it after modal is visible
-    setTimeout(function() {
-        if (document.requestStorageAccess) {
+    // Storage Access API requires user interaction
+    var storageAccessRequested = false;
+    var requestStorageAccessOnce = function() {
+        if (!storageAccessRequested && document.requestStorageAccess) {
+            storageAccessRequested = true;
             console.log('[game-modal] Requesting storage access for:', game.id);
             document.requestStorageAccess().then(function() {
                 console.log('[game-modal] Storage access granted for:', game.id);
             }).catch(function(err) {
-                console.log('[game-modal] Storage access not available:', err.message);
+                console.log('[game-modal] Storage access request result:', err.message);
             });
         }
+    };
+
+    // Request storage access on first user interaction with the game
+    var storageAccessHandler = function() {
+        requestStorageAccessOnce();
+        // Remove listener after first interaction
+        document.removeEventListener('click', storageAccessHandler, true);
+        document.removeEventListener('keydown', storageAccessHandler, true);
+    };
+
+    setTimeout(function() {
+        document.addEventListener('click', storageAccessHandler, true);
+        document.addEventListener('keydown', storageAccessHandler, true);
+        console.log('[game-modal] Storage access listeners installed');
     }, 100);
 
     // Hide all other game iframes

@@ -3035,10 +3035,15 @@ function createGameIframe(game) {
     var iframe = document.createElement('iframe');
     iframe.id = 'game-iframe-' + game.id;
     iframe.className = 'game-modal-iframe';
-    iframe.src = game.url;
-    iframe.style.display = 'none';
-    // Allow iframe to access storage and other features
     iframe.setAttribute('allow', 'storage-access-api; autoplay; clipboard-read; clipboard-write');
+    iframe.setAttribute('crossorigin', 'use-credentials');
+    iframe.style.display = 'none';
+
+    // Load the game with a slight delay to ensure the iframe is properly initialized
+    setTimeout(function() {
+        iframe.src = game.url;
+        console.log('[game-modal] Game URL set after initialization:', game.id);
+    }, 100);
 
     var container = document.getElementById('game-iframes-container');
     if (container) {

@@ -3003,6 +3003,7 @@ function detachChessKeyboardListener() {
 
 var originalWindowOpen = window.open;
 var gameModalEventHandler = null;
+var currentLoadedGameId = null;
 
 function suppressGameModalEvents(e) {
     // Only suppress for parent page, not for modal or iframe
@@ -3047,7 +3048,16 @@ function openGameModal(game) {
     console.log('[game-modal] Popup blocking enabled');
 
     modalTitle.textContent = game.title;
-    iframe.src = game.url;
+
+    // Only load the game if it's not already loaded or if we're switching to a different game
+    if (currentLoadedGameId !== game.id) {
+        console.log('[game-modal] Loading game for first time:', game.id);
+        iframe.src = game.url;
+        currentLoadedGameId = game.id;
+    } else {
+        console.log('[game-modal] Game already loaded:', game.id, '- resuming from saved state');
+    }
+
     modal.classList.remove('hidden');
 
     // Ensure iframe gets focus and pointer lock can work properly

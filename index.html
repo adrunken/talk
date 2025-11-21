@@ -3077,9 +3077,17 @@ function openGameModal(game) {
         document.requestStorageAccess().then(function() {
             console.log('[game-modal] Storage access granted for:', game.id);
         }).catch(function(err) {
-            console.log('[game-modal] Storage access not available:', err);
-            // Continue anyway - some games might work without it
+            console.log('[game-modal] Storage access not available (expected):', err.message);
+            // Inject storage bridge into iframe as fallback
+            setTimeout(function() {
+                injectStorageBridge(iframe);
+            }, 500);
         });
+    } else {
+        // If Storage Access API not available, inject bridge
+        setTimeout(function() {
+            injectStorageBridge(iframe);
+        }, 500);
     }
 
     // Hide all other game iframes

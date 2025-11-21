@@ -3037,6 +3037,8 @@ function createGameIframe(game) {
     iframe.className = 'game-modal-iframe';
     iframe.src = game.url;
     iframe.style.display = 'none';
+    // Allow iframe to access storage and other features
+    iframe.setAttribute('allow', 'storage-access-api; autoplay; clipboard-read; clipboard-write');
 
     var container = document.getElementById('game-iframes-container');
     if (container) {

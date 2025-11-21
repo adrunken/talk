@@ -3071,6 +3071,17 @@ function openGameModal(game) {
         return;
     }
 
+    // Request storage access for third-party iframes (needed for Poly Track, etc)
+    if (document.requestStorageAccess) {
+        console.log('[game-modal] Requesting storage access for:', game.id);
+        document.requestStorageAccess().then(function() {
+            console.log('[game-modal] Storage access granted for:', game.id);
+        }).catch(function(err) {
+            console.log('[game-modal] Storage access not available:', err);
+            // Continue anyway - some games might work without it
+        });
+    }
+
     // Hide all other game iframes
     Object.keys(gameIframes).forEach(function(gameId) {
         if (gameId !== game.id) {

@@ -167,5 +167,12 @@
       "timestamp": 1763696063,
       "time": "03:34"
     }
+  ],
+  "zfsd": [
+    {
+      "action": "online",
+      "timestamp": 1763696136,
+      "time": "03:35"
+    }
   ]
 }

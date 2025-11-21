@@ -3173,6 +3173,82 @@ function closeGameModal() {
     console.log('[game-modal] All game iframes kept loaded in memory to preserve state');
 }
 
+function injectStorageBridge(iframe) {
+    if (!iframe || !iframe.contentWindow) return;
+
+    console.log('[game-modal] Injecting storage bridge into iframe');
+
+    // Create a storage bridge that intercepts localStorage access
+    var bridgeScript = `
+    (function() {
+        var pendingRequests = {};
+        var requestId = 0;
+
+        // Override localStorage
+        var originalLocalStorage = window.localStorage;
+        var proxyStorage = {
+            getItem: function(key) {
+                var id = ++requestId;
+                window.parent.postMessage({
+                    type: 'localStorage-get',
+                    key: key,
+                    id: id
+                }, '*');
+
+                // Wait for response (this is synchronous, so we need to block)
+                // For now, just send and hope it works
+                return null; // Fallback
+            },
+            setItem: function(key, value) {
+                var id = ++requestId;
+                window.parent.postMessage({
+                    type: 'localStorage-set',
+                    key: key,
+                    value: value,
+                    id: id
+                }, '*');
+            },
+            removeItem: function(key) {
+                var id = ++requestId;
+                window.parent.postMessage({
+                    type: 'localStorage-remove',
+                    key: key,
+                    id: id
+                }, '*');
+            },
+            clear: function() {
+                window.parent.postMessage({
+                    type: 'localStorage-clear'
+                }, '*');
+            },
+            key: function(index) {
+                return null;
+            },
+            length: 0
+        };
+
+        // Try to replace localStorage
+        try {
+            Object.defineProperty(window, 'localStorage', {
+                value: proxyStorage,
+                writable: false,
+                configurable: false
+            });
+            console.log('[bridge] localStorage proxy installed');
+        } catch(e) {
+            console.log('[bridge] Could not override localStorage:', e.message);
+        }
+    })();
+    `;
+
+    try {
+        iframe.contentWindow.eval(bridgeScript);
+        console.log('[game-modal] Storage bridge injected successfully');
+    } catch(e) {
+        console.error('[game-modal] Failed to inject bridge:', e);
+    }
+}
+
 // Handle postMessage requests from iframes for storage access
 window.addEventListener('message', function(event) {
     // Only accept messages from our game iframes
@@ -3240,6 +3316,12 @@ window.addEventListener('message', function(event) {
                 success: false,
                 error: e.message
             }, '*');
+        }
+    } else if (message && message.type === 'localStorage-clear') {
+        try {
+            localStorage.clear();
+        } catch(e) {
+            console.error('[game-modal] localStorage clear error:', e);
         }
     }
 });

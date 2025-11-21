@@ -253,6 +253,22 @@ app.get('/games/wild-west-clash/', (req, res) => {
   res.redirect('https://wild-west-cla.onrender.com/');
 });
 
+// Proxy Poly Track from same domain to allow localStorage access
+app.use('/games/poly-track/', createProxyMiddleware({
+  target: 'https://polytrack-k76h.onrender.com',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/games/poly-track/': '/'
+  },
+  ws: true,
+  onProxyRes: function(proxyRes, req, res) {
+    // Allow CORS and storage access
+    proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+    proxyRes.headers['Cross-Origin-Resource-Policy'] = 'cross-origin';
+    proxyRes.headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+  }
+}));
+
 app.get('/popsound.mp3', (req, res) => {
   res.sendFile(path.join(__dirname, 'popsound.mp3'));
 });

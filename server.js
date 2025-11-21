@@ -262,10 +262,16 @@ app.use('/games/poly-track/', createProxyMiddleware({
   },
   ws: true,
   onProxyRes: function(proxyRes, req, res) {
-    // Allow CORS and storage access
-    proxyRes.headers['Access-Control-Allow-Origin'] = '*';
-    proxyRes.headers['Cross-Origin-Resource-Policy'] = 'cross-origin';
-    proxyRes.headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+    // Remove headers that might block storage access
+    delete proxyRes.headers['x-frame-options'];
+    delete proxyRes.headers['content-security-policy'];
+    delete proxyRes.headers['cross-origin-opener-policy'];
+    delete proxyRes.headers['cross-origin-embedder-policy'];
+    delete proxyRes.headers['cross-origin-resource-policy'];
+
+    // Set permissive headers for storage
+    proxyRes.headers['access-control-allow-origin'] = '*';
+    proxyRes.headers['access-control-allow-credentials'] = 'true';
   }
 }));
 

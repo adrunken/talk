@@ -3004,6 +3004,7 @@ function detachChessKeyboardListener() {
 var originalWindowOpen = window.open;
 var gameModalEventHandler = null;
 var currentLoadedGameId = null;
+var gameIframes = {};
 
 function suppressGameModalEvents(e) {
     // Only suppress for parent page, not for modal or iframe
@@ -3013,18 +3014,59 @@ function suppressGameModalEvents(e) {
     }
 }
 
+function createGameIframe(game) {
+    if (gameIframes[game.id]) {
+        console.log('[game-modal] Iframe already exists for game:', game.id);
+        return gameIframes[game.id];
+    }
+
+    console.log('[game-modal] Creating new iframe for game:', game.id);
+    var iframe = document.createElement('iframe');
+    iframe.id = 'game-iframe-' + game.id;
+    iframe.className = 'game-modal-iframe';
+    iframe.src = game.url;
+    iframe.style.display = 'none';
+
+    var container = document.getElementById('game-iframes-container');
+    if (container) {
+        container.appendChild(iframe);
+        gameIframes[game.id] = iframe;
+        console.log('[game-modal] Iframe created and appended for game:', game.id);
+    } else {
+        console.error('[game-modal] Game iframes container not found');
+    }
+
+    return iframe;
+}
+
 function openGameModal(game) {
     console.log('[game-modal] Opening game:', game.title, 'URL:', game.url);
     var modal = document.getElementById('game-modal');
     var modalTitle = document.getElementById('game-modal-title');
-    var iframe = document.getElementById('game-iframe');
 
-    console.log('[game-modal] Modal found:', !!modal, 'Title found:', !!modalTitle, 'Iframe found:', !!iframe);
+    console.log('[game-modal] Modal found:', !!modal, 'Title found:', !!modalTitle);
 
-    if (!modal || !iframe) {
-        console.error('[game-modal] Missing modal or iframe elements');
+    if (!modal) {
+        console.error('[game-modal] Missing modal element');
         return;
     }
+
+    // Create or get the iframe for this game
+    var iframe = createGameIframe(game);
+    if (!iframe) {
+        console.error('[game-modal] Failed to create or get iframe');
+        return;
+    }
+
+    // Hide all other game iframes
+    Object.keys(gameIframes).forEach(function(gameId) {
+        if (gameId !== game.id) {
+            gameIframes[gameId].style.display = 'none';
+        }
+    });
+
+    // Show this game's iframe
+    iframe.style.display = 'block';
 
     detachChessKeyboardListener();
     console.log('[game-modal] Chess keyboard listeners disabled');
@@ -3048,16 +3090,7 @@ function openGameModal(game) {
     console.log('[game-modal] Popup blocking enabled');
 
     modalTitle.textContent = game.title;
-
-    // Only load the game if it's not already loaded or if we're switching to a different game
-    if (currentLoadedGameId !== game.id) {
-        console.log('[game-modal] Loading game for first time:', game.id);
-        iframe.src = game.url;
-        currentLoadedGameId = game.id;
-    } else {
-        console.log('[game-modal] Game already loaded:', game.id, '- resuming from saved state');
-    }
-
+    currentLoadedGameId = game.id;
     modal.classList.remove('hidden');
 
     // Ensure iframe gets focus and pointer lock can work properly
@@ -3075,9 +3108,13 @@ function openGameModal(game) {
 
 function closeGameModal() {
     var modal = document.getElementById('game-modal');
-    var iframe = document.getElementById('game-iframe');
 
-    if (!modal || !iframe) return;
+    if (!modal) return;
+
+    // Hide the currently displayed iframe
+    if (currentLoadedGameId && gameIframes[currentLoadedGameId]) {
+        gameIframes[currentLoadedGameId].style.display = 'none';
+    }
 
     // Remove event suppression listeners
     if (gameModalEventHandler) {
@@ -3101,8 +3138,7 @@ function closeGameModal() {
     modal.classList.add('hidden');
     modal.classList.remove('fullscreen');
 
-    // Do NOT clear iframe.src - keep game loaded to prevent serialization errors on reload
-    console.log('[game-modal] Game kept loaded in memory to prevent reinitialization issues');
+    console.log('[game-modal] All game iframes kept loaded in memory to preserve state');
 }
 
 function toggleGameFullscreen() {

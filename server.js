@@ -1324,6 +1324,16 @@ wss.on('connection', (ws, req) => {
             send(ws, s);
             idx += 1;
           }
+        } else if (message.toLowerCase() === '/delete users') {
+          const uname = String(username || '').toLowerCase();
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            const obj = { type: 'message', message: 'Permission denied. Only admin can delete users.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+          } else {
+            const userList = Array.from(knownUsers).sort();
+            send(ws, JSON.stringify({ type: 'admin_delete_users_modal', users: userList }));
+          }
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
           const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();

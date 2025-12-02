@@ -539,7 +539,11 @@ html {
 .invite-actions { display: inline-flex; gap: 0.5rem; margin-left: 0.5rem; }
 .invite-btn { padding: 0.125rem 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); cursor: pointer; font-size: 0.75rem; }
 .invite-btn:hover { background: var(--accent-secondary); color: var(--accent-primary); }
-#connected .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
+#connected .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; position: relative; }
+#connected .user-row .user-name { display: flex; align-items: center; }
+#connected .user-row .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: 0.5rem; flex-shrink: 0; }
+#connected .user-row .status-dot.online { background: #22c55e; }
+#connected .user-row .status-dot.offline { background: #9ca3af; }
 #rejoin-wrapper { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
 #invites .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
 .invite-user-btn { padding: 0.125rem 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--accent-primary); cursor: pointer; font-size: 0.75rem; }
@@ -716,7 +720,7 @@ html {
     </div>
 
     <div>
-        <h3>Online Users</h3>
+        <h3>Users</h3>
         <div id="connected"></div>
     </div>
 
@@ -2359,11 +2363,28 @@ function ready() {
 
     function renderUserLists() {
         var me = $('#username').text();
-        var onlineHtml = users.map(function(u){
-            if (u === me) return '<div class="user-row"><span>' + u + '</span></div>';
-            return '<div class="user-row"><span>' + u + '</span><button class="invite-user-btn" data-user="' + u + '">Invite</button></div>';
+        var allUsers = [];
+
+        // Add online users first
+        users.forEach(function(u) {
+            allUsers.push({ name: u, online: true });
+        });
+
+        // Add offline users
+        (offlineUsers || []).forEach(function(u) {
+            if (u !== me && !users.includes(u)) {
+                allUsers.push({ name: u, online: false });
+            }
+        });
+
+        var html = allUsers.map(function(user){
+            var dotClass = user.online ? 'status-dot online' : 'status-dot offline';
+            if (user.name === me) {
+                return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div>';
+            }
+            return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
         }).join('');
-        $('#connected').html(onlineHtml);
+        $('#connected').html(html);
     }
 
     function addInvite(fromUser) {

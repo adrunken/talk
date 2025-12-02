@@ -2428,35 +2428,19 @@ function ready() {
             turn: data['turn'],
             lastMove: null,
             over: false,
-            isAiGame: data['isAiGame'] || false,
-            aiElo: data['aiElo'] || 1600,
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
             historyIndex: 0
         };
         hideRejoinPrompt();
         $('#chess-white').text(chessGame.white);
         $('#chess-black').text(chessGame.black);
-        $('#chess-status').text('Your color: ' + chessGame.color + (data['isAiGame'] ? ' (vs AI ' + data['aiElo'] + ')' : ''));
+        $('#chess-status').text('Your color: ' + chessGame.color);
         pendingUserMove = null; premoveQueue = []; updateConfirmButton();
-
-        if (data['isAiGame']) {
-            loadPlayerElo();
-            $('#chess-elo-change').hide();
-        } else {
-            loadPlayerElo();
-            $('#chess-elo-change').hide();
-        }
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
         $('#chess-modal').removeClass('hidden');
         updateSettingUI('confirm-moves');
-
-        if (data['isAiGame'] && chessGame.turn !== chessGame.color) {
-            setTimeout(function() {
-                requestAIMove();
-            }, 500);
-        }
     }
 
 

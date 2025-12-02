@@ -398,27 +398,6 @@ html {
     color: var(--text-secondary);
 }
 
-.play-ai-button {
-    background: var(--accent-primary);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.play-ai-button:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
-.play-ai-button:active {
-    transform: translateY(0);
-}
 
 /* Previous messages link */
 #previous { 
@@ -741,18 +720,6 @@ html {
         <div id="connected"></div>
     </div>
 
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <button id="play-ai-btn" class="play-ai-button" style="flex: 1; padding: 0.5rem;">Play AI</button>
-        <select id="ai-elo-dropdown" style="padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; font-family: inherit;">
-            <option value="800">800 (Easy)</option>
-            <option value="1200">1200 (Medium)</option>
-            <option value="1600" selected>1600 (Hard)</option>
-            <option value="2000">2000 (Expert)</option>
-            <option value="2400">2400 (Master)</option>
-            <option value="2800">2800 (IM)</option>
-            <option value="3200">3200 (GM)</option>
-        </select>
-    </div>
 
 </div>
 
@@ -818,7 +785,6 @@ html {
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
         <button class="chess-button" id="chess-resign">Resign</button>
-        <button class="chess-button" id="chess-ai-game">Play AI</button>
         <button class="chess-button" id="chess-close">Close</button>
       </div>
     </div>
@@ -2340,13 +2306,6 @@ function ready() {
         }
     });
 
-    $('#play-ai-btn').on('click', function(){
-        startAIGame();
-    });
-
-    $('#chess-ai-game').on('click', function(){
-        startAIGame();
-    });
 
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)

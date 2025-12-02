@@ -2415,20 +2415,6 @@ function ready() {
             .catch(function(err) { console.log('Failed to load ELO:', err); });
     }
 
-    function startAIGame() {
-        var me = $('#username').text();
-        if (!me || !ws || ws.readyState !== 1) {
-            flashStatus('Cannot start AI game');
-            return;
-        }
-        var playerElo = parseInt($('#chess-player-elo').text()) || 1200;
-        var aiElo = parseInt($('#ai-elo-dropdown').val()) || 1600;
-        chessGame = null;
-        pendingUserMove = null;
-        premoveQueue = [];
-        ws.send(JSON.stringify({ type: 'chess_ai_start', playerElo: playerElo, aiElo: aiElo }));
-        flashStatus('Starting AI game vs ' + aiElo + ' Elo...');
-    }
 
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
@@ -2473,11 +2459,6 @@ function ready() {
         }
     }
 
-    function requestAIMove() {
-        if (!chessGame || !chessGame.isAiGame || !ws || ws.readyState !== 1) return;
-        if (chessGame.turn === chessGame.color) return;
-        ws.send(JSON.stringify({ type: 'chess_request_ai_move', game_id: chessGame.id }));
-    }
 
     // WebSocket message handler
     function handleWsMessage(e) { 

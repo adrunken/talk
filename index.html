@@ -2401,19 +2401,6 @@ function ready() {
         $('#rejoin-wrapper').remove();
     }
 
-    function loadPlayerElo() {
-        var me = $('#username').text();
-        if (!me) return;
-        fetch(API_BASE + '/api/elo/' + encodeURIComponent(me))
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data && data.elo) {
-                    $('#chess-player-elo').text(Math.round(data.elo));
-                    $('#chess-elo-display').show();
-                }
-            })
-            .catch(function(err) { console.log('Failed to load ELO:', err); });
-    }
 
 
     function startChessGame(data) {

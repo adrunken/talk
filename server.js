@@ -1898,6 +1898,26 @@ wss.on('connection', (ws, req) => {
         }
       }, delayBeforeAiMove);
     }
+    else if (msg.type === 'admin_delete_user') {
+      const uname = users.get(ws);
+      const targetUser = String(msg.user || '').trim();
+      const unameStr = String(uname || '').toLowerCase();
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can delete users.', username: 'System' });
+        return;
+      }
+      if (!targetUser || !knownUsers.has(targetUser)) {
+        send(ws, { type: 'message', message: 'User not found: ' + targetUser, username: 'System' });
+        return;
+      }
+      knownUsers.delete(targetUser);
+      delete userSettings[targetUser];
+      persistKnownUsers();
+      const settingsStr = JSON.stringify(userSettings, null, 2);
+      fs.writeFile(SETTINGS_FILE, settingsStr, () => {});
+      send(ws, { type: 'message', message: 'User deleted: ' + targetUser, username: 'System' });
+      sendUserList();
+    }
   });
 
   ws.on('close', () => {

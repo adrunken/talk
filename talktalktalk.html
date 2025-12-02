@@ -1818,6 +1818,9 @@ function ready() {
             addInvite(data['from']);
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
         }
+        else if (data['type'] === 'admin_delete_users_modal') {
+            showAdminDeleteUsersModal(data['users'] || []);
+        }
         else if (data['type'] === 'chess_resume') {
             var me = $('#username').text();
             chessGame = {

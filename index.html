@@ -570,8 +570,8 @@ html {
 }
 
 .n-gon-card {
-    width: 120px;
-    height: 120px;
+    width: 240px;
+    height: 240px;
     padding: 0;
     flex-direction: column;
     gap: 0.5rem;
@@ -2993,7 +2993,12 @@ function initializeRouting() {
         handleRoute(window.location.pathname);
     });
 
-    handleRoute(window.location.pathname);
+    var currentPath = window.location.pathname;
+    if (currentPath === '/' || currentPath === '') {
+        showHome();
+    } else {
+        handleRoute(currentPath);
+    }
 }
 
 if (document.readyState === 'loading') {

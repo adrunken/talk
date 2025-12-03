@@ -2770,17 +2770,20 @@ function initializeRouting() {
     var wrapper = document.getElementById('wrapper');
     var gamesPage = document.getElementById('games-page');
     var inputContainer = document.getElementById('input-container');
+    var rightSidebar = document.getElementById('right');
 
     function showHome() {
         if (wrapper) wrapper.classList.remove('hidden');
         if (gamesPage) gamesPage.classList.add('hidden');
         if (inputContainer) inputContainer.classList.remove('hidden');
+        if (rightSidebar) rightSidebar.classList.remove('hidden');
     }
 
     function showGamesPage() {
         if (wrapper) wrapper.classList.add('hidden');
         if (gamesPage) gamesPage.classList.remove('hidden');
         if (inputContainer) inputContainer.classList.add('hidden');
+        if (rightSidebar) rightSidebar.classList.add('hidden');
     }
 
     function handleRoute(pathname) {

@@ -1,9 +1,1 @@
-{
-  "zahir": {
-    "confirmMoves": true,
-    "premoveEnabled": true,
-    "darkMode": true,
-    "selectedBoard": "dark_wood",
-    "selectedPieces": "8_bit"
-  }
-}
+{}

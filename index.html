@@ -332,11 +332,12 @@ html {
 .page-container {
     width: calc(100% - calc(20% / 6));
     margin: 0 0 0 calc(20% / 6);
-    padding: 2rem;
+    padding: 1rem;
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
-    min-height: 100vh;
+    height: 100vh;
 }
 
 .page-container.hidden {

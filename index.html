@@ -3127,12 +3127,7 @@ function initializeRouting() {
         handleRoute(window.location.pathname);
     });
 
-    var currentPath = window.location.pathname;
-    if (currentPath === '/' || currentPath === '') {
-        showHome();
-    } else {
-        handleRoute(currentPath);
-    }
+    showHome();
 }
 
 if (document.readyState === 'loading') {

@@ -1145,7 +1145,18 @@ function connectedUsernames() {
 function sendUserList() {
   const connected = connectedUsernames();
   const offline = Array.from(knownUsers).filter((u) => !connected.includes(u));
-  const payload = { type: 'userlist', connected, offline };
+  const offlineWithTimes = offline.map(username => {
+    const history = onlineHistory[username] || [];
+    let lastSeen = null;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].action === 'offline') {
+        lastSeen = { time: history[i].time, timestamp: history[i].timestamp };
+        break;
+      }
+    }
+    return { username, lastSeen };
+  });
+  const payload = { type: 'userlist', connected, offline: offlineWithTimes };
   for (const [ws] of users) send(ws, payload);
 }
 

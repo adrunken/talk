@@ -251,6 +251,10 @@ app.get('/games', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/:gameName', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.get('/popsound.mp3', (req, res) => {
   res.sendFile(path.join(__dirname, 'popsound.mp3'));
 });

@@ -1702,6 +1702,31 @@ function ready() {
         $('#rejoin-wrapper').remove();
     }
 
+    function showAdminDeleteUsersModal(users) {
+        var usersList = $('#admin-users-list');
+        usersList.empty();
+
+        if (!users || users.length === 0) {
+            usersList.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No users found</div>');
+        } else {
+            users.forEach(function(user) {
+                var item = $('<div class="admin-user-item" />');
+                var nameSpan = $('<span class="admin-user-name" />').text(user);
+                var deleteBtn = $('<button class="admin-delete-btn" />').text('Delete').attr('data-user', user);
+                item.append(nameSpan);
+                item.append(deleteBtn);
+                usersList.append(item);
+            });
+        }
+
+        $('#admin-delete-users-modal').removeClass('hidden');
+    }
+
+    function hideAdminDeleteUsersModal() {
+        $('#admin-delete-users-modal').addClass('hidden');
+        $('#admin-users-list').empty();
+    }
+
     function showStockfishRejoinPrompt() {
         if (!$('#invites #rejoin-stockfish-game').length) {
             var wrap = $('<div class="user-row" id="rejoin-stockfish-wrapper" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-light);" />');

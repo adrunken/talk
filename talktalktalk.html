@@ -1674,22 +1674,31 @@ function ready() {
 
         // Add online users first
         users.forEach(function(u) {
-            allUsers.push({ name: u, online: true });
+            allUsers.push({ name: u, online: true, lastSeen: null });
         });
 
         // Add offline users
         (offlineUsers || []).forEach(function(u) {
-            if (u !== me && !users.includes(u)) {
-                allUsers.push({ name: u, online: false });
+            var offlineUser = u;
+            if (typeof u === 'string') {
+                offlineUser = { username: u, lastSeen: null };
+            }
+            var username = offlineUser.username || u;
+            if (username !== me && !users.includes(username)) {
+                allUsers.push({ name: username, online: false, lastSeen: offlineUser.lastSeen });
             }
         });
 
         var html = allUsers.map(function(user){
             var dotClass = user.online ? 'status-dot online' : 'status-dot offline';
-            if (user.name === me) {
-                return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div>';
+            var tooltip = '';
+            if (!user.online && user.lastSeen) {
+                tooltip = ' title="Last seen: ' + user.lastSeen.time + '"';
             }
-            return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
+            if (user.name === me) {
+                return '<div class="user-row"' + tooltip + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div>';
+            }
+            return '<div class="user-row"' + tooltip + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
         }).join('');
         $('#connected').html(html);
     }

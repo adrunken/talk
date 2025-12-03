@@ -584,6 +584,21 @@ html {
     border-radius: calc(var(--radius-lg) - 4px);
 }
 
+.shell-shockers-card {
+    width: 240px;
+    height: 160px;
+    padding: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shell-shockers-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: calc(var(--radius-lg) - 4px);
+}
+
 .game-detail {
     width: 100%;
     height: 100%;
@@ -940,6 +955,10 @@ html {
             <button class="game-card n-gon-card" data-game-id="n-gon" data-game-title="N-Gon" data-game-url="https://n-gon-n8ri.onrender.com">
                 <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F8e9be0716abd4ede97819ee63aae1956?format=webp&width=800" alt="N-Gon" class="n-gon-image">
                 <div class="game-card-title">N-Gon</div>
+            </button>
+            <button class="game-card shell-shockers-card" data-game-id="shell-shockers" data-game-title="Shell Shockers" data-game-url="https://shell-shockers-io-0x72.onrender.com/">
+                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F7fa9e512060d46c3b42d49ebf3372ac9?format=webp&width=800" alt="Shell Shockers" class="shell-shockers-image">
+                <div class="game-card-title">Shell Shockers</div>
             </button>
         </div>
     </div>
@@ -2914,7 +2933,8 @@ function initializeRouting() {
     var gameContainer = document.getElementById('game-container');
 
     var gamesList = {
-        'n-gon': { title: 'N-Gon', url: 'https://n-gon-n8ri.onrender.com' }
+        'n-gon': { title: 'N-Gon', url: 'https://n-gon-n8ri.onrender.com' },
+        'shell-shockers': { title: 'Shell Shockers', url: 'https://shell-shockers-io-0x72.onrender.com/' }
     };
 
     function showHome() {

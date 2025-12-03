@@ -2755,6 +2755,61 @@ $(document).ready(function() {
     loadBoardPiecesData();
 });
 
+// ===== Routing Logic =====
+function initializeRouting() {
+    var navHome = document.getElementById('nav-home');
+    var navController = document.getElementById('nav-controller');
+    var wrapper = document.getElementById('wrapper');
+    var gamesPage = document.getElementById('games-page');
+    var inputContainer = document.getElementById('input-container');
+
+    function showHome() {
+        if (wrapper) wrapper.classList.remove('hidden');
+        if (gamesPage) gamesPage.classList.add('hidden');
+        if (inputContainer) inputContainer.classList.remove('hidden');
+    }
+
+    function showGamesPage() {
+        if (wrapper) wrapper.classList.add('hidden');
+        if (gamesPage) gamesPage.classList.remove('hidden');
+        if (inputContainer) inputContainer.classList.add('hidden');
+    }
+
+    function handleRoute(pathname) {
+        if (pathname === '/games') {
+            showGamesPage();
+        } else {
+            showHome();
+        }
+    }
+
+    if (navHome) {
+        navHome.addEventListener('click', function() {
+            window.history.pushState({}, '', '/');
+            handleRoute('/');
+        });
+    }
+
+    if (navController) {
+        navController.addEventListener('click', function() {
+            window.history.pushState({}, '', '/games');
+            handleRoute('/games');
+        });
+    }
+
+    window.addEventListener('popstate', function() {
+        handleRoute(window.location.pathname);
+    });
+
+    handleRoute(window.location.pathname);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeRouting);
+} else {
+    initializeRouting();
+}
+
 </script>
 <script>
 // Global handlers to suppress/handle external iframe evaluation timeouts (e.g. from builder.io CDN)

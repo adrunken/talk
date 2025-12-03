@@ -629,6 +629,21 @@ html {
     border-radius: calc(var(--radius-lg) - 4px);
 }
 
+.basket-random-card {
+    width: 240px;
+    height: 160px;
+    padding: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.basket-random-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: calc(var(--radius-lg) - 4px);
+}
+
 .game-detail {
     width: 100%;
     height: 100%;
@@ -997,6 +1012,10 @@ html {
             <button class="game-card ovo-card" data-game-id="ovo" data-game-title="OVO" data-game-url="https://ovok.onrender.com/">
                 <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2Fb4040e88f2e74f66a9fc73f22ad9daf3?format=webp&width=800" alt="OVO" class="ovo-image">
                 <div class="game-card-title">OVO</div>
+            </button>
+            <button class="game-card basket-random-card" data-game-id="basket-random" data-game-title="Basket Random" data-game-url="https://basket-random-rbdi.onrender.com">
+                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F3cf85fbea24a4a5a9b312cd524cf8563?format=webp&width=800" alt="Basket Random" class="basket-random-image">
+                <div class="game-card-title">Basket Random</div>
             </button>
         </div>
     </div>
@@ -2974,7 +2993,8 @@ function initializeRouting() {
         'n-gon': { title: 'N-Gon', url: 'https://n-gon-n8ri.onrender.com' },
         'shell-shockers': { title: 'Shell Shockers', url: 'https://shell-shockers-io-0x72.onrender.com/' },
         'eaglercraft': { title: 'Eaglercraft', url: 'https://eaglercrafthtmlsd.onrender.com' },
-        'ovo': { title: 'OVO', url: 'https://ovok.onrender.com/' }
+        'ovo': { title: 'OVO', url: 'https://ovok.onrender.com/' },
+        'basket-random': { title: 'Basket Random', url: 'https://basket-random-rbdi.onrender.com' }
     };
 
     function showHome() {

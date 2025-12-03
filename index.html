@@ -513,6 +513,8 @@ html {
 .games-list {
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .games-list h2 {
@@ -527,7 +529,7 @@ html {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 2rem;
     width: 100%;
-    height: 100%;
+    flex: 1;
 }
 
 .game-card {

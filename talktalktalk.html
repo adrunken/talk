@@ -1694,14 +1694,14 @@ function ready() {
 
         var html = allUsers.map(function(user){
             var dotClass = user.online ? 'status-dot online' : 'status-dot offline';
-            var lastSeenText = '';
+            var lastSeenAttr = '';
             if (!user.online && user.lastSeen) {
-                lastSeenText = '<div class="last-seen-text">Last Seen: ' + user.lastSeen.time + '</div>';
+                lastSeenAttr = ' data-last-seen="Last Seen: ' + user.lastSeen.time + '"';
             }
             if (user.name === me) {
-                return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div>' + lastSeenText + '</div>';
+                return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
             }
-            return '<div class="user-row"><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div>' + lastSeenText + '<button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
+            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
         }).join('');
         $('#connected').html(html);
     }

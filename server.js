@@ -1156,11 +1156,16 @@ function sendUserList() {
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];
     let lastSeen = null;
+    // Look for the most recent offline event
     for (let i = history.length - 1; i >= 0; i--) {
       if (history[i].action === 'offline') {
         lastSeen = { time: history[i].time, timestamp: history[i].timestamp };
         break;
       }
+    }
+    // If no offline event found, use the last online event
+    if (!lastSeen && history.length > 0) {
+      lastSeen = { time: history[history.length - 1].time, timestamp: history[history.length - 1].timestamp };
     }
     return { username, lastSeen };
   });

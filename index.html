@@ -3080,7 +3080,23 @@ function initializeRouting() {
         if (gameDetailView) gameDetailView.classList.remove('hidden');
 
         if (gameContainer) {
-            gameContainer.innerHTML = '<iframe src="' + game.url + '" title="' + game.title + '"></iframe>';
+            var iframe = document.createElement('iframe');
+            iframe.src = game.url;
+            iframe.title = game.title;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            gameContainer.innerHTML = '';
+            gameContainer.appendChild(iframe);
+
+            setTimeout(function() {
+                try {
+                    if (iframe.contentWindow) {
+                        iframe.contentWindow.open = function() { return null; };
+                    }
+                } catch (e) {
+                }
+            }, 100);
         }
     }
 

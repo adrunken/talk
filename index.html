@@ -829,7 +829,8 @@ html {
 .invite-actions { display: inline-flex; gap: 0.5rem; margin-left: 0.5rem; }
 .invite-btn { padding: 0.125rem 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); cursor: pointer; font-size: 0.75rem; }
 .invite-btn:hover { background: var(--accent-secondary); color: var(--accent-primary); }
-#connected .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; position: relative; }
+#connected .user-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 0.25rem 0; position: relative; gap: 0.5rem; }
+#connected .user-info { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; }
 #connected .user-row .user-name { display: flex; align-items: center; }
 #connected .user-row .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: 0.5rem; flex-shrink: 0; }
 #connected .user-row .status-dot.online { background: #22c55e; }

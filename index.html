@@ -3080,7 +3080,7 @@ function initializeRouting() {
         if (gameDetailView) gameDetailView.classList.remove('hidden');
 
         if (gameContainer) {
-            gameContainer.innerHTML = '<iframe src="' + game.url + '" title="' + game.title + '" sandbox="allow-scripts allow-pointer-lock allow-forms"></iframe>';
+            gameContainer.innerHTML = '<iframe src="' + game.url + '" title="' + game.title + '" sandbox="allow-same-origin allow-scripts allow-pointer-lock allow-forms"></iframe>';
         }
     }
 

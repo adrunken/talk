@@ -95,11 +95,14 @@ class LichessAPI {
   }
 
   /**
-   * Get list of incoming challenges (challenges sent to the current user)
+   * Get incoming events stream (challenges, games, etc)
+   * Note: Lichess doesn't have a "browse all public challenges" endpoint.
+   * This returns the user's incoming challenges only.
    */
-  async getOpenChallenges() {
-    const result = await this._request('GET', '/challenges');
-    return result.data || { in: [], out: [] };
+  async getIncomingChallenges() {
+    // The /challenges endpoint doesn't exist in Lichess API
+    // Instead, return empty arrays and guide user to create/accept specific challenges
+    return { in: [], out: [] };
   }
 
   /**

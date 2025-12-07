@@ -2747,7 +2747,10 @@ function ready() {
         var clockIncrement = parseInt(parts[1]);
         var rated = $('#lichess-rated').is(':checked');
 
+        console.log('[lichess] Creating challenge:', { timeControl, clockLimit, clockIncrement, rated });
+
         if (ws && ws.readyState === 1) {
+            $('#lichess-token-status').text('Creating...').removeClass('error').removeClass('success');
             ws.send(JSON.stringify({
                 type: 'lichess_create_challenge',
                 clockLimit: clockLimit,
@@ -2755,8 +2758,10 @@ function ready() {
                 rated: rated,
                 color: 'random'
             }));
+        } else {
+            console.error('[lichess] WebSocket not ready');
+            $('#lichess-token-status').text('✗ Connection error').addClass('error').removeClass('success');
         }
-        $('#lichess-create-challenge-form').addClass('hidden');
     });
 
     $('#lichess-cancel-challenge-btn').on('click', function() {

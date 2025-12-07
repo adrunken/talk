@@ -2707,16 +2707,22 @@ function ready() {
     // Lichess Integration Handlers
     $('#lichess-token-save').on('click', function() {
         var token = $('#lichess-token-input').val().trim();
+        var username = $('#username').text().trim();
+
         if (!token) {
-            $('#lichess-token-status').text('✗ Token required').addClass('error');
+            $('#lichess-token-status').text('✗ Token required').addClass('error').removeClass('success');
+            return;
+        }
+        if (!username || username === 'user') {
+            $('#lichess-token-status').text('✗ Set username first').addClass('error').removeClass('success');
             return;
         }
         if (!ws || ws.readyState !== 1) {
-            $('#lichess-token-status').text('✗ Connection not ready').addClass('error');
+            $('#lichess-token-status').text('✗ Connection not ready').addClass('error').removeClass('success');
             console.error('WebSocket not ready. State:', ws ? ws.readyState : 'undefined');
             return;
         }
-        console.log('Sending lichess token to server');
+        console.log('[lichess] Saving token for user:', username);
         ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
         $('#lichess-token-status').text('Saving...').removeClass('error').removeClass('success');
     });

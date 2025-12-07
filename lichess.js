@@ -89,6 +89,7 @@ class LichessAPI {
     formBody.append('clock.increment', options.clockIncrement || 0);
     formBody.append('variant', options.variant || 'standard');
     formBody.append('color', options.color || 'random');
+    formBody.append('acceptByMode', 'all');
 
     const result = await this._request('POST', '/challenge/open', formBody.toString(), true);
     return result.data;

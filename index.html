@@ -3156,9 +3156,15 @@ function ready() {
         }
         else if (data['type'] === 'lichess_challenge_created') {
             var challenge = data['challenge'];
-            flashStatus('Challenge created! ID: ' + challenge.id);
-            $('#lichess-create-challenge-form').addClass('hidden');
-            $('#lichess-controls-wrapper').removeClass('hidden');
+            console.log('[lichess] Challenge created:', challenge);
+            var challengeUrl = challenge.url || ('https://lichess.org/' + challenge.id);
+            flashStatus('Challenge created! Share this link: ' + challengeUrl);
+            $('#lichess-token-status').text('✓ Challenge created').addClass('success').removeClass('error');
+            setTimeout(function() {
+                $('#lichess-token-status').text('');
+                $('#lichess-create-challenge-form').addClass('hidden');
+                $('#lichess-controls-wrapper').removeClass('hidden');
+            }, 2000);
         }
         else if (data['type'] === 'lichess_challenges_list') {
             var incomingChallenges = data['incoming'] || [];

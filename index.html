@@ -2704,6 +2704,63 @@ function ready() {
         sendMove(m.from, m.to, m.promotion);
     });
 
+    // Lichess Integration Handlers
+    $('#lichess-token-save').on('click', function() {
+        var token = $('#lichess-token-input').val().trim();
+        if (!token) {
+            $('#lichess-token-status').text('✗ Token required').addClass('error');
+            return;
+        }
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
+        }
+    });
+
+    $('#lichess-create-challenge-btn').on('click', function() {
+        $('#lichess-create-challenge-form').removeClass('hidden');
+        $('#lichess-challenges-list').addClass('hidden');
+        $('#lichess-controls-wrapper').addClass('hidden');
+    });
+
+    $('#lichess-list-challenges-btn').on('click', function() {
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({ type: 'lichess_list_challenges' }));
+        }
+    });
+
+    $('#lichess-create-btn').on('click', function() {
+        var timeControl = $('#lichess-time-control').val();
+        var parts = timeControl.split('+');
+        var clockLimit = parseInt(parts[0]) * 60;
+        var clockIncrement = parseInt(parts[1]);
+        var rated = $('#lichess-rated').is(':checked');
+
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'lichess_create_challenge',
+                clockLimit: clockLimit,
+                clockIncrement: clockIncrement,
+                rated: rated,
+                color: 'random'
+            }));
+        }
+        $('#lichess-create-challenge-form').addClass('hidden');
+    });
+
+    $('#lichess-cancel-challenge-btn').on('click', function() {
+        $('#lichess-create-challenge-form').addClass('hidden');
+        $('#lichess-controls-wrapper').removeClass('hidden');
+    });
+
+    // Check Lichess token status on load
+    $(window).on('load', function() {
+        setTimeout(function() {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
+            }
+        }, 500);
+    });
+
     // Keyboard: Enter confirms staged move (unless typing in inputs)
     $(document).on('keydown.chessconfirm', function(e){
         // ignore when focus is in chat input or any text input

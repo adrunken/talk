@@ -94,11 +94,11 @@ class LichessAPI {
   }
 
   /**
-   * Get list of open challenges
+   * Get list of incoming challenges (challenges sent to the current user)
    */
   async getOpenChallenges() {
     const result = await this._request('GET', '/challenges');
-    return result.data;
+    return result.data || { in: [], out: [] };
   }
 
   /**

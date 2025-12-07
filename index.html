@@ -2735,6 +2735,7 @@ function ready() {
 
     $('#lichess-list-challenges-btn').on('click', function() {
         if (ws && ws.readyState === 1) {
+            $('#lichess-controls-wrapper').addClass('hidden');
             ws.send(JSON.stringify({ type: 'lichess_list_challenges' }));
         }
     });
@@ -3182,6 +3183,12 @@ function ready() {
                     listContainer.append(challengeDiv);
                 });
             }
+            var backBtn = $('<button class="lichess-back-btn chess-button" style="margin-top: 0.5rem;">Back</button>');
+            backBtn.on('click', function() {
+                $('#lichess-challenges-list').addClass('hidden');
+                $('#lichess-controls-wrapper').removeClass('hidden');
+            });
+            listContainer.append(backBtn);
             $('#lichess-challenges-list').removeClass('hidden');
         }
         else if (data['type'] === 'lichess_challenge_accepted') {

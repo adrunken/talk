@@ -2711,9 +2711,14 @@ function ready() {
             $('#lichess-token-status').text('✗ Token required').addClass('error');
             return;
         }
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
+        if (!ws || ws.readyState !== 1) {
+            $('#lichess-token-status').text('✗ Connection not ready').addClass('error');
+            console.error('WebSocket not ready. State:', ws ? ws.readyState : 'undefined');
+            return;
         }
+        console.log('Sending lichess token to server');
+        ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
+        $('#lichess-token-status').text('Saving...').removeClass('error').removeClass('success');
     });
 
     $('#lichess-create-challenge-btn').on('click', function() {

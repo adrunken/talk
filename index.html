@@ -3238,6 +3238,16 @@ function ready() {
         else if (data['type'] === 'lichess_challenge_created') {
             var challenge = data['challenge'];
             console.log('[lichess] Challenge created:', challenge);
+
+            // Validate challenge has required fields
+            if (!challenge || (!challenge.id && !challenge.url)) {
+                console.error('[lichess] Invalid challenge response:', challenge);
+                var errorMsg = challenge && challenge.error ? challenge.error : 'Invalid response from Lichess';
+                $('#lichess-token-status').text('✗ ' + errorMsg).addClass('error').removeClass('success');
+                flashStatus('Error: ' + errorMsg);
+                return;
+            }
+
             var challengeUrl = challenge.url || ('https://lichess.org/' + challenge.id);
             flashStatus('Challenge created! Share this link: ' + challengeUrl);
             $('#lichess-token-status').text('✓ Challenge created').addClass('success').removeClass('error');

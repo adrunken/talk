@@ -3209,6 +3209,18 @@ function ready() {
             $('#lichess-token-input').val('');
             $('#lichess-controls-wrapper').removeClass('hidden');
             $('#lichess-token-input-wrapper').addClass('hidden');
+
+            // Also update modal status if it's open
+            if (!$('#lichess-token-modal').hasClass('hidden')) {
+                var $modalStatus = $('#lichess-token-modal-status');
+                $modalStatus.text('✓ Token saved').addClass('success').removeClass('error');
+                setTimeout(function() {
+                    $('#lichess-token-modal').addClass('hidden').removeClass('show');
+                    $('body > *:not(#lichess-token-modal)').removeClass('opaque');
+                    $modalStatus.text('').removeClass('success');
+                }, 1500);
+            }
+
             setTimeout(function() {
                 $('#lichess-token-status').text('').removeClass('success');
             }, 3000);

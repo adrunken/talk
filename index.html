@@ -3251,7 +3251,12 @@ function ready() {
         }
         else if (data['type'] === 'lichess_error') {
             flashStatus('Lichess error: ' + data['message']);
+            console.error('[lichess] Error:', data['message']);
             $('#lichess-token-status').text('✗ ' + data['message']).addClass('error').removeClass('success');
+            // If we were showing the challenges list, show the error there too
+            if (!$('#lichess-challenges-list').hasClass('hidden')) {
+                $('#lichess-challenges-items').html('<div style="padding: 1rem; text-align: center; color: var(--text-error);"><strong>Error:</strong> ' + data['message'] + '</div>');
+            }
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

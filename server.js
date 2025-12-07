@@ -1970,6 +1970,8 @@ wss.on('connection', (ws, req) => {
       const rated = msg.rated === true;
       const color = msg.color || 'random';
 
+      console.log('[lichess] Creating challenge for user:', username, 'with options:', { clockLimit, clockIncrement, rated, color });
+
       const lichess = new LichessAPI(token);
       lichess.createOpenChallenge({
         clockLimit: clockLimit,
@@ -1977,6 +1979,7 @@ wss.on('connection', (ws, req) => {
         rated: rated,
         color: color
       }).then(challenge => {
+        console.log('[lichess] Challenge created successfully:', challenge);
         send(ws, { type: 'lichess_challenge_created', challenge: challenge });
       }).catch(err => {
         console.error('[lichess] Challenge creation error:', err.message);

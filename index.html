@@ -3232,7 +3232,8 @@ function ready() {
             }
 
             if (!hasContent) {
-                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No challenges.<br><br>Create a new challenge to invite an opponent!</div>');
+                var infoMsg = data['info'] || 'No challenges.';
+                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">' + infoMsg + '<br><br><strong>Create a new challenge</strong> to invite an opponent!</div>');
             }
 
             var backBtn = $('<button class="lichess-back-btn chess-button" style="margin-top: 0.5rem; width: 100%;">Back</button>');

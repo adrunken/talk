@@ -15,7 +15,7 @@ class LichessAPI {
   /**
    * Helper to make authenticated HTTPS requests to Lichess API
    */
-  _request(method, path, body = null) {
+  _request(method, path, body = null, isFormData = false) {
     return new Promise((resolve, reject) => {
       const options = {
         hostname: 'lichess.org',
@@ -28,9 +28,14 @@ class LichessAPI {
         }
       };
 
+      let bodyStr = '';
       if (body) {
-        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
-        options.headers['Content-Type'] = 'application/json';
+        bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+        if (isFormData) {
+          options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        } else {
+          options.headers['Content-Type'] = 'application/json';
+        }
         options.headers['Content-Length'] = Buffer.byteLength(bodyStr);
       }
 
@@ -52,8 +57,7 @@ class LichessAPI {
 
       req.on('error', reject);
 
-      if (body) {
-        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+      if (bodyStr) {
         req.write(bodyStr);
       }
 
@@ -72,33 +76,33 @@ class LichessAPI {
   /**
    * Create an open challenge
    * @param {Object} options - Challenge options
-   * @param {string} options.rated - true or false
-   * @param {string} options.clock.limit - time in seconds (e.g., 300 for 5 min)
-   * @param {string} options.clock.increment - increment in seconds (e.g., 0)
+   * @param {boolean} options.rated - true or false
+   * @param {number} options.clockLimit - time in seconds (e.g., 300 for 5 min)
+   * @param {number} options.clockIncrement - increment in seconds (e.g., 0)
    * @param {string} options.variant - chess variant (default: 'standard')
    * @param {string} options.color - 'white', 'black', or 'random'
    */
   async createOpenChallenge(options = {}) {
-    const body = {
-      rated: options.rated === true ? 'true' : 'false',
-      clock: {
-        limit: options.clockLimit || 300,
-        increment: options.clockIncrement || 0
-      },
-      variant: options.variant || 'standard',
-      color: options.color || 'random'
-    };
+    const formBody = new URLSearchParams();
+    formBody.append('rated', options.rated === true ? 'true' : 'false');
+    formBody.append('clock.limit', options.clockLimit || 300);
+    formBody.append('clock.increment', options.clockIncrement || 0);
+    formBody.append('variant', options.variant || 'standard');
+    formBody.append('color', options.color || 'random');
 
-    const result = await this._request('POST', '/challenge/open', body);
+    const result = await this._request('POST', '/challenge/open', formBody.toString(), true);
     return result.data;
   }
 
   /**
-   * Get list of open challenges
+   * Get incoming events stream (challenges, games, etc)
+   * Note: Lichess doesn't have a "browse all public challenges" endpoint.
+   * This returns the user's incoming challenges only.
    */
-  async getOpenChallenges() {
-    const result = await this._request('GET', '/challenges');
-    return result.data;
+  async getIncomingChallenges() {
+    // The /challenges endpoint doesn't exist in Lichess API
+    // Instead, return empty arrays and guide user to create/accept specific challenges
+    return { in: [], out: [] };
   }
 
   /**

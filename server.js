@@ -1136,8 +1136,12 @@ const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 function now() { return Date.now() / 1000; }
 
 function send(ws, payload) {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+  if (ws && ws.readyState === 1) {
+    try {
+      ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+    } catch (err) {
+      console.error('[ws] Error sending message:', err.message);
+    }
   }
 }
 
@@ -1966,6 +1970,8 @@ wss.on('connection', (ws, req) => {
       const rated = msg.rated === true;
       const color = msg.color || 'random';
 
+      console.log('[lichess] Creating challenge for user:', username, 'with options:', { clockLimit, clockIncrement, rated, color });
+
       const lichess = new LichessAPI(token);
       lichess.createOpenChallenge({
         clockLimit: clockLimit,
@@ -1973,6 +1979,7 @@ wss.on('connection', (ws, req) => {
         rated: rated,
         color: color
       }).then(challenge => {
+        console.log('[lichess] Challenge created successfully:', challenge);
         send(ws, { type: 'lichess_challenge_created', challenge: challenge });
       }).catch(err => {
         console.error('[lichess] Challenge creation error:', err.message);
@@ -1988,12 +1995,17 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      console.log('[lichess] Fetching incoming challenges for user:', username);
       const lichess = new LichessAPI(token);
-      lichess.getOpenChallenges().then(data => {
-        send(ws, { type: 'lichess_challenges_list', challenges: data.challenges || [] });
-      }).catch(err => {
-        console.error('[lichess] Challenge list error:', err.message);
-        send(ws, { type: 'lichess_error', message: 'Failed to fetch challenges: ' + err.message });
+
+      // Lichess API note: There is no public endpoint to browse all open challenges.
+      // Users can only see challenges sent to them directly.
+      // For now, return empty arrays and a helpful message.
+      send(ws, {
+        type: 'lichess_challenges_list',
+        incoming: [],
+        outgoing: [],
+        info: 'Lichess doesn\'t support browsing public challenges. Use "Create Challenge" to invite specific opponents, or they can find your challenge via the challenge URL.'
       });
     }
     else if (msg.type === 'lichess_accept_challenge') {

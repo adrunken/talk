@@ -1190,6 +1190,20 @@ html {
   </div>
 </div>
 
+<!-- Lichess API Token modal -->
+<div id="lichess-token-modal" class="first-login-overlay hidden">
+  <div class="first-login-panel">
+    <div class="first-login-title">Lichess API Token</div>
+    <div style="margin: 0.5rem 0 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">Get your token from <a href="https://lichess.org/account/oauth/token" target="_blank" style="color: var(--accent-primary);">lichess.org/account/oauth/token</a></div>
+    <input id="lichess-token-modal-input" class="first-login-input" type="password" maxlength="100" autocomplete="off" placeholder="Paste your Lichess API token" />
+    <div id="lichess-token-modal-status" style="margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2rem;"></div>
+    <div class="first-login-actions">
+      <button id="lichess-token-modal-cancel" class="first-login-save">Cancel</button>
+      <button id="lichess-token-modal-save" class="first-login-save">Save Token</button>
+    </div>
+  </div>
+</div>
+
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
     <div class="chess-board" id="chess-board"></div>

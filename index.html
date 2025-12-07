@@ -3050,6 +3050,66 @@ function ready() {
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
         }
+        else if (data['type'] === 'lichess_token_saved') {
+            $('#lichess-token-status').text('✓ Saved').addClass('success').removeClass('error');
+            $('#lichess-token-input').val('');
+            $('#lichess-controls-wrapper').removeClass('hidden');
+            setTimeout(function() {
+                $('#lichess-token-status').text('').removeClass('success');
+            }, 3000);
+        }
+        else if (data['type'] === 'lichess_token_status') {
+            if (data['hasToken']) {
+                $('#lichess-controls-wrapper').removeClass('hidden');
+                $('#lichess-token-input-wrapper').addClass('hidden');
+            }
+        }
+        else if (data['type'] === 'lichess_challenge_created') {
+            var challenge = data['challenge'];
+            flashStatus('Challenge created! ID: ' + challenge.id);
+            $('#lichess-create-challenge-form').addClass('hidden');
+            $('#lichess-controls-wrapper').removeClass('hidden');
+        }
+        else if (data['type'] === 'lichess_challenges_list') {
+            var challenges = data['challenges'] || [];
+            var listContainer = $('#lichess-challenges-items');
+            listContainer.empty();
+            if (challenges.length === 0) {
+                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No open challenges available</div>');
+            } else {
+                challenges.forEach(function(ch) {
+                    var challengeDiv = $('<div class="lichess-challenge-item" />');
+                    var infoDiv = $('<div class="lichess-challenge-info" />');
+                    var nameDiv = $('<div class="lichess-challenge-name" />').text(ch.challenger ? ch.challenger.name : 'Anonymous');
+                    var detailsDiv = $('<div class="lichess-challenge-details" />').text(
+                        (ch.timeControl ? ch.timeControl.show : 'No time control') + ' • ' +
+                        (ch.rated ? 'Rated' : 'Casual')
+                    );
+                    infoDiv.append(nameDiv);
+                    infoDiv.append(detailsDiv);
+                    var acceptBtn = $('<button class="lichess-challenge-accept-btn" />').text('Accept');
+                    acceptBtn.on('click', function() {
+                        if (ws && ws.readyState === 1) {
+                            ws.send(JSON.stringify({ type: 'lichess_accept_challenge', challengeId: ch.id }));
+                        }
+                    });
+                    challengeDiv.append(infoDiv);
+                    challengeDiv.append(acceptBtn);
+                    listContainer.append(challengeDiv);
+                });
+            }
+            $('#lichess-challenges-list').removeClass('hidden');
+        }
+        else if (data['type'] === 'lichess_challenge_accepted') {
+            var game = data['game'];
+            flashStatus('Challenge accepted! Game ID: ' + game.id);
+            $('#lichess-challenges-list').addClass('hidden');
+            $('#lichess-controls-wrapper').removeClass('hidden');
+        }
+        else if (data['type'] === 'lichess_error') {
+            flashStatus('Lichess error: ' + data['message']);
+            $('#lichess-token-status').text('✗ ' + data['message']).addClass('error').removeClass('success');
+        }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
             firstId = Infinity;

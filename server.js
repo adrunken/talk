@@ -1995,19 +1995,17 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      console.log('[lichess] Fetching challenges for user:', username);
+      console.log('[lichess] Fetching incoming challenges for user:', username);
       const lichess = new LichessAPI(token);
-      lichess.getOpenChallenges().then(data => {
-        console.log('[lichess] Challenges fetched successfully:', data);
-        const incomingChallenges = (data && data.in) ? data.in : [];
-        const outgoingChallenges = (data && data.out) ? data.out : [];
-        send(ws, { type: 'lichess_challenges_list', incoming: incomingChallenges, outgoing: outgoingChallenges });
-      }).catch(err => {
-        console.error('[lichess] Challenge list error:', err.message);
-        const errorMsg = err.message.includes('404')
-          ? 'Token may be invalid. Check your Lichess API token.'
-          : err.message;
-        send(ws, { type: 'lichess_error', message: errorMsg });
+
+      // Lichess API note: There is no public endpoint to browse all open challenges.
+      // Users can only see challenges sent to them directly.
+      // For now, return empty arrays and a helpful message.
+      send(ws, {
+        type: 'lichess_challenges_list',
+        incoming: [],
+        outgoing: [],
+        info: 'Lichess doesn\'t support browsing public challenges. Use "Create Challenge" to invite specific opponents, or they can find your challenge via the challenge URL.'
       });
     }
     else if (msg.type === 'lichess_accept_challenge') {

@@ -1035,6 +1035,41 @@ html {
         <div id="connected"></div>
     </div>
 
+    <div id="lichess-section">
+        <h3>Lichess</h3>
+        <div id="lichess-token-input-wrapper" class="lichess-setting">
+            <input type="password" id="lichess-token-input" placeholder="Paste Lichess API token" maxlength="100" />
+            <button id="lichess-token-save" class="chess-button">Save Token</button>
+            <span id="lichess-token-status" class="lichess-status-indicator"></span>
+        </div>
+        <div id="lichess-controls-wrapper" class="lichess-setting hidden">
+            <button id="lichess-create-challenge-btn" class="chess-button">Create Challenge</button>
+            <button id="lichess-list-challenges-btn" class="chess-button">Browse Challenges</button>
+        </div>
+        <div id="lichess-challenges-list" class="lichess-challenges-container hidden">
+            <div id="lichess-challenges-items"></div>
+        </div>
+        <div id="lichess-create-challenge-form" class="lichess-form hidden">
+            <div class="lichess-form-group">
+                <label>Time Control</label>
+                <select id="lichess-time-control">
+                    <option value="1+0">Bullet 1+0</option>
+                    <option value="2+1">Bullet 2+1</option>
+                    <option value="3+0">Blitz 3+0</option>
+                    <option value="3+2">Blitz 3+2</option>
+                    <option value="5+3">Blitz 5+3</option>
+                    <option value="10+0">Rapid 10+0</option>
+                </select>
+            </div>
+            <div class="lichess-form-group">
+                <label>
+                    <input type="checkbox" id="lichess-rated" /> Rated
+                </label>
+            </div>
+            <button id="lichess-create-btn" class="chess-button">Create</button>
+            <button id="lichess-cancel-challenge-btn" class="chess-button">Cancel</button>
+        </div>
+    </div>
 
 </div>
 

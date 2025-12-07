@@ -3156,26 +3156,33 @@ function ready() {
             $('#lichess-controls-wrapper').removeClass('hidden');
         }
         else if (data['type'] === 'lichess_challenges_list') {
-            var challenges = data['challenges'] || [];
+            var incomingChallenges = data['incoming'] || [];
+            var outgoingChallenges = data['outgoing'] || [];
             var listContainer = $('#lichess-challenges-items');
             listContainer.empty();
-            if (challenges.length === 0) {
-                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No open challenges available</div>');
-            } else {
-                challenges.forEach(function(ch) {
-                    var challengeDiv = $('<div class="lichess-challenge-item" />');
-                    var infoDiv = $('<div class="lichess-challenge-info" />');
-                    var nameDiv = $('<div class="lichess-challenge-name" />').text(ch.challenger ? ch.challenger.name : 'Anonymous');
-                    var detailsDiv = $('<div class="lichess-challenge-details" />').text(
+
+            var hasContent = false;
+
+            if (incomingChallenges.length > 0) {
+                hasContent = true;
+                var incomingHeader = $('<div style="margin-bottom: 0.5rem; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Challenges to You:</div>');
+                listContainer.append(incomingHeader);
+
+                incomingChallenges.forEach(function(ch) {
+                    var challengeDiv = $('<div class="lichess-challenge-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border: 1px solid var(--border-light); border-radius: 4px; margin-bottom: 0.5rem;" />');
+                    var infoDiv = $('<div class="lichess-challenge-info" style="flex: 1;" />');
+                    var nameDiv = $('<div class="lichess-challenge-name" style="font-weight: bold;" />').text(ch.challenger ? ch.challenger.name : 'Anonymous');
+                    var detailsDiv = $('<div class="lichess-challenge-details" style="font-size: 0.85rem; color: var(--text-secondary);" />').text(
                         (ch.timeControl ? ch.timeControl.show : 'No time control') + ' • ' +
                         (ch.rated ? 'Rated' : 'Casual')
                     );
                     infoDiv.append(nameDiv);
                     infoDiv.append(detailsDiv);
-                    var acceptBtn = $('<button class="lichess-challenge-accept-btn" />').text('Accept');
+                    var acceptBtn = $('<button class="lichess-challenge-accept-btn chess-button" style="margin-left: 0.5rem;" />').text('Accept');
+                    acceptBtn.data('challenge-id', ch.id);
                     acceptBtn.on('click', function() {
                         if (ws && ws.readyState === 1) {
-                            ws.send(JSON.stringify({ type: 'lichess_accept_challenge', challengeId: ch.id }));
+                            ws.send(JSON.stringify({ type: 'lichess_accept_challenge', challengeId: $(this).data('challenge-id') }));
                         }
                     });
                     challengeDiv.append(infoDiv);
@@ -3183,7 +3190,35 @@ function ready() {
                     listContainer.append(challengeDiv);
                 });
             }
-            var backBtn = $('<button class="lichess-back-btn chess-button" style="margin-top: 0.5rem;">Back</button>');
+
+            if (outgoingChallenges.length > 0) {
+                hasContent = true;
+                if (incomingChallenges.length > 0) {
+                    listContainer.append('<div style="margin: 1rem 0 0.5rem 0; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Your Challenges:</div>');
+                } else {
+                    listContainer.append('<div style="margin-bottom: 0.5rem; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Your Challenges:</div>');
+                }
+
+                outgoingChallenges.forEach(function(ch) {
+                    var challengeDiv = $('<div class="lichess-challenge-item" style="padding: 0.5rem; border: 1px solid var(--border-light); border-radius: 4px; margin-bottom: 0.5rem;" />');
+                    var infoDiv = $('<div class="lichess-challenge-info" />');
+                    var nameDiv = $('<div class="lichess-challenge-name" style="font-weight: bold;" />').text('Awaiting ' + (ch.destUser ? ch.destUser.name : 'opponent'));
+                    var detailsDiv = $('<div class="lichess-challenge-details" style="font-size: 0.85rem; color: var(--text-secondary);" />').text(
+                        (ch.timeControl ? ch.timeControl.show : 'No time control') + ' • ' +
+                        (ch.rated ? 'Rated' : 'Casual')
+                    );
+                    infoDiv.append(nameDiv);
+                    infoDiv.append(detailsDiv);
+                    challengeDiv.append(infoDiv);
+                    listContainer.append(challengeDiv);
+                });
+            }
+
+            if (!hasContent) {
+                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No challenges.<br><br>Create a new challenge to invite an opponent!</div>');
+            }
+
+            var backBtn = $('<button class="lichess-back-btn chess-button" style="margin-top: 0.5rem; width: 100%;">Back</button>');
             backBtn.on('click', function() {
                 $('#lichess-challenges-list').addClass('hidden');
                 $('#lichess-controls-wrapper').removeClass('hidden');

@@ -3113,9 +3113,11 @@ function ready() {
             flashStatus(data['message'] || 'Error');
         }
         else if (data['type'] === 'lichess_token_saved') {
+            console.log('[lichess] Token saved response received');
             $('#lichess-token-status').text('✓ Saved').addClass('success').removeClass('error');
             $('#lichess-token-input').val('');
             $('#lichess-controls-wrapper').removeClass('hidden');
+            $('#lichess-token-input-wrapper').addClass('hidden');
             setTimeout(function() {
                 $('#lichess-token-status').text('').removeClass('success');
             }, 3000);

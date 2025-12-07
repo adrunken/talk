@@ -90,7 +90,7 @@ class LichessAPI {
     formBody.append('variant', options.variant || 'standard');
     formBody.append('color', options.color || 'random');
 
-    const result = await this._request('POST', '/challenge/open', formBody.toString());
+    const result = await this._request('POST', '/challenge/open', formBody.toString(), true);
     return result.data;
   }
 

@@ -3139,9 +3139,13 @@ function ready() {
             }, 3000);
         }
         else if (data['type'] === 'lichess_token_status') {
+            console.log('[lichess] Token status:', data['hasToken'] ? 'has token' : 'no token');
             if (data['hasToken']) {
-                $('#lichess-controls-wrapper').removeClass('hidden');
                 $('#lichess-token-input-wrapper').addClass('hidden');
+                $('#lichess-controls-wrapper').removeClass('hidden');
+            } else {
+                $('#lichess-token-input-wrapper').removeClass('hidden');
+                $('#lichess-controls-wrapper').addClass('hidden');
             }
         }
         else if (data['type'] === 'lichess_challenge_created') {

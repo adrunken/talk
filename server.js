@@ -1995,14 +1995,19 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      console.log('[lichess] Fetching challenges for user:', username);
       const lichess = new LichessAPI(token);
       lichess.getOpenChallenges().then(data => {
+        console.log('[lichess] Challenges fetched successfully:', data);
         const incomingChallenges = (data && data.in) ? data.in : [];
         const outgoingChallenges = (data && data.out) ? data.out : [];
         send(ws, { type: 'lichess_challenges_list', incoming: incomingChallenges, outgoing: outgoingChallenges });
       }).catch(err => {
         console.error('[lichess] Challenge list error:', err.message);
-        send(ws, { type: 'lichess_error', message: 'Lichess tip: Use "Create Challenge" to invite opponents. Browse shows challenges sent to you.' });
+        const errorMsg = err.message.includes('404')
+          ? 'Token may be invalid. Check your Lichess API token.'
+          : err.message;
+        send(ws, { type: 'lichess_error', message: errorMsg });
       });
     }
     else if (msg.type === 'lichess_accept_challenge') {

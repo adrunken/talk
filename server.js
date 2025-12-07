@@ -1926,13 +1926,21 @@ wss.on('connection', (ws, req) => {
     else if (msg.type === 'lichess_set_token') {
       const username = users.get(ws);
       const token = String(msg.token || '').trim();
+      console.log('[lichess] Set token request for user:', username, 'token length:', token.length);
       if (!username) {
+        console.log('[lichess] Error: No username');
         send(ws, { type: 'lichess_error', message: 'Username required' });
+        return;
+      }
+      if (!token) {
+        console.log('[lichess] Error: No token provided');
+        send(ws, { type: 'lichess_error', message: 'Token required' });
         return;
       }
       const settings = getUserSettings(username) || {};
       settings.lichessToken = token;
       saveUserSettings(username, settings);
+      console.log('[lichess] Token saved for user:', username);
       send(ws, { type: 'lichess_token_saved', message: 'Lichess token saved' });
     }
     else if (msg.type === 'lichess_get_token_status') {

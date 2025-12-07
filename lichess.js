@@ -99,7 +99,21 @@ class LichessAPI {
     });
 
     const result = await this._request('POST', '/challenge/open', formBody.toString(), true);
-    return result.data;
+
+    // Validate the response has required fields
+    if (!result.data || (!result.data.id && !result.data.challenge)) {
+      console.error('[lichess] Invalid challenge response - missing id/challenge:', result);
+      throw new Error('Invalid response from Lichess: missing challenge ID');
+    }
+
+    // Lichess returns challenge data with various formats
+    const challengeData = result.data.challenge || result.data;
+    if (!challengeData.id) {
+      console.error('[lichess] Challenge response has no id field:', challengeData);
+      throw new Error('Lichess challenge response missing ID field');
+    }
+
+    return challengeData;
   }
 
   /**

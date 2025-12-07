@@ -3227,6 +3227,13 @@ function ready() {
     connectWS = function(){
         if (__connectCalled) return; __connectCalled = true; _origOpen();
         if (ws) ws.onmessage = handleWsMessage;
+        // Check Lichess token status after connection
+        setTimeout(function() {
+            if (ws && ws.readyState === 1) {
+                console.log('[lichess] Connection established, checking token status');
+                ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
+            }
+        }, 500);
     };
 }
 

@@ -1923,6 +1923,89 @@ wss.on('connection', (ws, req) => {
         }
       }, delayBeforeAiMove);
     }
+    else if (msg.type === 'lichess_set_token') {
+      const username = users.get(ws);
+      const token = String(msg.token || '').trim();
+      if (!username) {
+        send(ws, { type: 'lichess_error', message: 'Username required' });
+        return;
+      }
+      const settings = getUserSettings(username) || {};
+      settings.lichessToken = token;
+      saveUserSettings(username, settings);
+      send(ws, { type: 'lichess_token_saved', message: 'Lichess token saved' });
+    }
+    else if (msg.type === 'lichess_get_token_status') {
+      const username = users.get(ws);
+      if (!username) {
+        send(ws, { type: 'lichess_error', message: 'Username required' });
+        return;
+      }
+      const settings = getUserSettings(username) || {};
+      const hasToken = !!settings.lichessToken;
+      send(ws, { type: 'lichess_token_status', hasToken: hasToken });
+    }
+    else if (msg.type === 'lichess_create_challenge') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      if (!username || !token) {
+        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
+        return;
+      }
+      const clockLimit = msg.clockLimit || 300;
+      const clockIncrement = msg.clockIncrement || 0;
+      const rated = msg.rated === true;
+      const color = msg.color || 'random';
+
+      const lichess = new LichessAPI(token);
+      lichess.createOpenChallenge({
+        clockLimit: clockLimit,
+        clockIncrement: clockIncrement,
+        rated: rated,
+        color: color
+      }).then(challenge => {
+        send(ws, { type: 'lichess_challenge_created', challenge: challenge });
+      }).catch(err => {
+        console.error('[lichess] Challenge creation error:', err.message);
+        send(ws, { type: 'lichess_error', message: 'Failed to create challenge: ' + err.message });
+      });
+    }
+    else if (msg.type === 'lichess_list_challenges') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      if (!username || !token) {
+        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
+        return;
+      }
+
+      const lichess = new LichessAPI(token);
+      lichess.getOpenChallenges().then(data => {
+        send(ws, { type: 'lichess_challenges_list', challenges: data.challenges || [] });
+      }).catch(err => {
+        console.error('[lichess] Challenge list error:', err.message);
+        send(ws, { type: 'lichess_error', message: 'Failed to fetch challenges: ' + err.message });
+      });
+    }
+    else if (msg.type === 'lichess_accept_challenge') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      const challengeId = String(msg.challengeId || '').trim();
+      if (!username || !token || !challengeId) {
+        send(ws, { type: 'lichess_error', message: 'Invalid accept challenge request' });
+        return;
+      }
+
+      const lichess = new LichessAPI(token);
+      lichess.acceptChallenge(challengeId).then(game => {
+        send(ws, { type: 'lichess_challenge_accepted', game: game });
+      }).catch(err => {
+        console.error('[lichess] Accept challenge error:', err.message);
+        send(ws, { type: 'lichess_error', message: 'Failed to accept challenge: ' + err.message });
+      });
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

@@ -2763,13 +2763,23 @@ function ready() {
         $('#lichess-controls-wrapper').removeClass('hidden');
     });
 
-    // Check Lichess token status on load
+    // Check Lichess token status when username is available
+    function checkLichessTokenStatus() {
+        var username = $('#username').text().trim();
+        if (username && username !== 'user' && ws && ws.readyState === 1) {
+            console.log('[lichess] Checking token status for user:', username);
+            ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
+        }
+    }
+
+    // Check on page load
     $(window).on('load', function() {
-        setTimeout(function() {
-            if (ws && ws.readyState === 1) {
-                ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
-            }
-        }, 500);
+        setTimeout(checkLichessTokenStatus, 1000);
+    });
+
+    // Check when username changes
+    $(document).on('change', '#usernameinput', function() {
+        setTimeout(checkLichessTokenStatus, 500);
     });
 
     // Keyboard: Enter confirms staged move (unless typing in inputs)

@@ -2686,6 +2686,52 @@ function ready() {
         }
     });
 
+    // Lichess token modal handlers
+    $('#lichess-token-btn').on('click', function(e) {
+        e.stopPropagation();
+        $('#chess-settings-dropdown').addClass('hidden');
+        $('#lichess-token-modal').removeClass('hidden').addClass('show');
+        $('body > *:not(#lichess-token-modal)').addClass('opaque');
+        $('#lichess-token-modal-input').val('').focus();
+        $('#lichess-token-modal-status').text('').removeClass('error').removeClass('success');
+    });
+
+    $('#lichess-token-modal-cancel').on('click', function() {
+        $('#lichess-token-modal').addClass('hidden').removeClass('show');
+        $('body > *:not(#lichess-token-modal)').removeClass('opaque');
+    });
+
+    $('#lichess-token-modal-save').on('click', function() {
+        var token = $('#lichess-token-modal-input').val().trim();
+        var username = $('#username').text().trim();
+        var $status = $('#lichess-token-modal-status');
+
+        if (!token) {
+            $status.text('✗ Token required').addClass('error').removeClass('success');
+            return;
+        }
+        if (!username || username === 'user') {
+            $status.text('✗ Set username first').addClass('error').removeClass('success');
+            return;
+        }
+        if (!ws || ws.readyState !== 1) {
+            $status.text('✗ Connection not ready').addClass('error').removeClass('success');
+            return;
+        }
+
+        console.log('[lichess] Saving token from modal for user:', username);
+        $status.text('Saving...').removeClass('error').removeClass('success');
+        ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
+    });
+
+    // Close lichess token modal when clicking outside
+    $('#lichess-token-modal').on('click', function(e) {
+        if (e.target.id === 'lichess-token-modal') {
+            $(this).addClass('hidden').removeClass('show');
+            $('body > *:not(#lichess-token-modal)').removeClass('opaque');
+        }
+    });
+
     // Board and Pieces tab switching
     $('.board-pieces-tab').on('click', function() {
         var tabName = $(this).data('tab');

@@ -1979,10 +1979,13 @@ wss.on('connection', (ws, req) => {
         rated: rated,
         color: color
       }).then(challenge => {
-        console.log('[lichess] Challenge created successfully:', challenge);
+        console.log('[lichess] Challenge created successfully:', JSON.stringify(challenge, null, 2));
+        console.log('[lichess] Challenge URL:', challenge && challenge.url ? challenge.url : 'No URL in response');
+        console.log('[lichess] Challenge ID:', challenge && challenge.id ? challenge.id : 'No ID in response');
         send(ws, { type: 'lichess_challenge_created', challenge: challenge });
       }).catch(err => {
         console.error('[lichess] Challenge creation error:', err.message);
+        console.error('[lichess] Full error:', err);
         send(ws, { type: 'lichess_error', message: 'Failed to create challenge: ' + err.message });
       });
     }

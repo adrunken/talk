@@ -2736,7 +2736,13 @@ function ready() {
     $('#lichess-list-challenges-btn').on('click', function() {
         if (ws && ws.readyState === 1) {
             $('#lichess-controls-wrapper').addClass('hidden');
+            $('#lichess-challenges-items').html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">Loading challenges...</div>');
+            $('#lichess-challenges-list').removeClass('hidden');
+            console.log('[lichess] Requesting challenges list');
             ws.send(JSON.stringify({ type: 'lichess_list_challenges' }));
+        } else {
+            flashStatus('Connection not ready. Please wait and try again.');
+            console.error('[lichess] WebSocket not ready for browse challenges:', ws ? ws.readyState : 'no ws');
         }
     });
 

@@ -1136,8 +1136,12 @@ const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 function now() { return Date.now() / 1000; }
 
 function send(ws, payload) {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+  if (ws && ws.readyState === 1) {
+    try {
+      ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+    } catch (err) {
+      console.error('[ws] Error sending message:', err.message);
+    }
   }
 }
 

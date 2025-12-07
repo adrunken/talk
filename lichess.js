@@ -89,7 +89,14 @@ class LichessAPI {
     formBody.append('clock.increment', options.clockIncrement || 0);
     formBody.append('variant', options.variant || 'standard');
     formBody.append('color', options.color || 'random');
-    formBody.append('acceptByMode', 'all');
+
+    console.log('[lichess] Creating open challenge with params:', {
+      rated: options.rated === true ? 'true' : 'false',
+      clockLimit: options.clockLimit || 300,
+      clockIncrement: options.clockIncrement || 0,
+      variant: options.variant || 'standard',
+      color: options.color || 'random'
+    });
 
     const result = await this._request('POST', '/challenge/open', formBody.toString(), true);
     return result.data;

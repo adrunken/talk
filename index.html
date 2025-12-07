@@ -979,6 +979,28 @@ html {
 .admin-user-name { flex: 1; font-weight: 500; color: var(--text-primary); }
 .admin-delete-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-delete-btn:hover { background: #ef4444; color: white; }
+/* Lichess Styles */
+#lichess-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light); }
+#lichess-section h3 { margin-bottom: 0.75rem; }
+.lichess-setting { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+#lichess-token-input { padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.875rem; }
+#lichess-token-input:focus { outline: none; border-color: var(--accent-primary); }
+.lichess-status-indicator { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+.lichess-status-indicator.success { color: #22c55e; }
+.lichess-status-indicator.error { color: #ef4444; }
+.lichess-form { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); }
+.lichess-form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.lichess-form-group label { font-size: 0.875rem; color: var(--text-secondary); }
+.lichess-form-group select { padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); }
+.lichess-challenges-container { max-height: 300px; overflow-y: auto; padding: 0.5rem 0; }
+.lichess-challenge-item { padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+.lichess-challenge-info { flex: 1; }
+.lichess-challenge-name { font-weight: 500; color: var(--text-primary); font-size: 0.875rem; }
+.lichess-challenge-details { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
+.lichess-challenge-accept-btn { padding: 0.5rem 0.75rem; background: var(--accent-primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-size: 0.75rem; }
+.lichess-challenge-accept-btn:hover { background: var(--accent-hover); }
+#lichess-controls-wrapper { display: flex; gap: 0.5rem; }
+#lichess-controls-wrapper .chess-button { flex: 1; }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>

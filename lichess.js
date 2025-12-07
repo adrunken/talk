@@ -15,7 +15,7 @@ class LichessAPI {
   /**
    * Helper to make authenticated HTTPS requests to Lichess API
    */
-  _request(method, path, body = null) {
+  _request(method, path, body = null, isFormData = false) {
     return new Promise((resolve, reject) => {
       const options = {
         hostname: 'lichess.org',
@@ -28,9 +28,14 @@ class LichessAPI {
         }
       };
 
+      let bodyStr = '';
       if (body) {
-        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
-        options.headers['Content-Type'] = 'application/json';
+        bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+        if (isFormData) {
+          options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        } else {
+          options.headers['Content-Type'] = 'application/json';
+        }
         options.headers['Content-Length'] = Buffer.byteLength(bodyStr);
       }
 
@@ -52,8 +57,7 @@ class LichessAPI {
 
       req.on('error', reject);
 
-      if (body) {
-        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+      if (bodyStr) {
         req.write(bodyStr);
       }
 

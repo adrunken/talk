@@ -2233,7 +2233,16 @@ wss.on('connection', (ws, req) => {
       // Remove all messages from this user to prevent duplication
       const originalMessageCount = messages.length;
       messages = messages.filter(m => m.username !== targetUser);
-      console.log(`[admin] Deleted user ${targetUser} and ${originalMessageCount - messages.length} messages`);
+
+      // Recalculate idx to be the next ID after the highest existing message
+      // This is critical because filtering breaks the assumption that messages[i].id === i
+      if (messages.length > 0) {
+        idx = Math.max(...messages.map(m => m.id || 0)) + 1;
+      } else {
+        idx = 0;
+      }
+
+      console.log(`[admin] Deleted user ${targetUser} and ${originalMessageCount - messages.length} messages, idx reset to ${idx}`);
 
       // Rewrite the messages file without deleted user's messages
       const messageLines = messages.map(m => JSON.stringify(m)).join('\n');

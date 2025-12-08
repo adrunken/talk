@@ -2206,8 +2206,20 @@ wss.on('connection', (ws, req) => {
         send(ws, { type: 'message', message: 'User not found: ' + targetUser, username: 'System' });
         return;
       }
+
+      // Delete the user
       knownUsers.delete(targetUser);
       delete userSettings[targetUser];
+
+      // Remove all messages from this user to prevent duplication
+      const originalMessageCount = messages.length;
+      messages = messages.filter(m => m.username !== targetUser);
+      console.log(`[admin] Deleted user ${targetUser} and ${originalMessageCount - messages.length} messages`);
+
+      // Rewrite the messages file without deleted user's messages
+      const messageLines = messages.map(m => JSON.stringify(m)).join('\n');
+      fs.writeFile(MSG_FILE, messageLines + (messageLines.length > 0 ? '\n' : ''), () => {});
+
       persistKnownUsers();
       const settingsStr = JSON.stringify(userSettings, null, 2);
       fs.writeFile(SETTINGS_FILE, settingsStr, () => {});

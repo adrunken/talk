@@ -3354,6 +3354,40 @@ function ready() {
                 $('#lichess-challenges-items').html('<div style="padding: 1rem; text-align: center; color: #ef4444;"><strong>Error:</strong> ' + data['message'] + '</div>');
             }
         }
+        else if (data['type'] === 'lichess_event_stream_connected') {
+            console.log('[lichess] Event stream connected - now listening for challenges');
+            flashStatus('Lichess event stream connected - listening for challenges');
+        }
+        else if (data['type'] === 'lichess_game_started') {
+            console.log('[lichess] Challenge accepted! Game started:', data['game']);
+            var game = data['game'];
+            if (game && game.id) {
+                // Store current game ID and prepare to stream it
+                var gameId = game.id;
+                lichessCurrentGameId = gameId;
+                console.log('[lichess] Loading game into modal:', gameId);
+                flashStatus('Challenge accepted! Game starting...');
+
+                // Initialize board for Lichess game
+                openLichessGame(gameId, game);
+            }
+        }
+        else if (data['type'] === 'lichess_game_stream_connected') {
+            console.log('[lichess] Game stream connected:', data['gameId']);
+        }
+        else if (data['type'] === 'lichess_game_update') {
+            console.log('[lichess] Game update:', data['update']);
+            var gameId = data['gameId'];
+            var update = data['update'];
+
+            if (update.type === 'gameFull') {
+                // Initial full game state
+                loadLichessGameState(gameId, update.game);
+            } else if (update.type === 'gameState') {
+                // Incremental game state update
+                updateLichessGameState(gameId, update);
+            }
+        }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
             firstId = Infinity;

@@ -2456,11 +2456,60 @@ function ready() {
             chessGame.fen = update.fen;
             chessGame.squareMap = {};
             drawBoard();
+
+            // Check if it's our turn now
+            updateLichessTurnStatus(update);
         }
 
         if (update.status && (update.status === 'mate' || update.status === 'resign' || update.status === 'timeout' || update.status === 'draw')) {
             console.log('[lichess] Game ended:', update.status);
             flashStatus('Game ended: ' + update.status);
+        }
+    };
+
+    /**
+     * Update turn status for Lichess game
+     */
+    window.updateLichessTurnStatus = function(update) {
+        if (!chessGame || chessGame.source !== 'lichess') return;
+
+        var isMyturn = false;
+        if (update.fen) {
+            // FEN format: ... w ... means white to move, b means black
+            var parts = update.fen.split(' ');
+            var turnColor = parts[1];
+            isMyturn = (turnColor === 'w' && chessGame.color === 'white') || (turnColor === 'b' && chessGame.color === 'black');
+        }
+
+        $('#chess-confirm-move').prop('disabled', !isMyturn);
+        if (isMyturn) {
+            flashStatus('Your turn!');
+        }
+    };
+
+    /**
+     * Send move to Lichess
+     */
+    window.sendLichessMove = function(from, to, promotion) {
+        if (!chessGame || chessGame.source !== 'lichess' || !lichessCurrentGameId) {
+            console.error('[lichess] Cannot send move - not a Lichess game');
+            return;
+        }
+
+        // Convert algebraic notation to UCI format
+        var move = from + to;
+        if (promotion) {
+            move += promotion.toLowerCase();
+        }
+
+        console.log('[lichess] Sending move to Lichess:', move);
+
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'lichess_make_move',
+                gameId: lichessCurrentGameId,
+                move: move
+            }));
         }
     };
 

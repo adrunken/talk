@@ -2256,7 +2256,15 @@ wss.on('connection', (ws, req) => {
       persistKnownUsers();
       const settingsStr = JSON.stringify(userSettings, null, 2);
       fs.writeFile(SETTINGS_FILE, settingsStr, () => {});
-      send(ws, { type: 'message', message: 'User deleted: ' + targetUser, username: 'System' });
+
+      // Send system message with proper id and timestamp so client doesn't get confused
+      const systemMsg = { type: 'message', message: 'User deleted: ' + targetUser, username: 'System', id: idx, datetime: Math.floor(now()) };
+      messages.push(systemMsg);
+      appendMessage(systemMsg);
+      idx += 1;
+      const msgStr = JSON.stringify(systemMsg);
+      for (const [u] of users) send(u, msgStr);
+
       sendUserList();
     }
   });

@@ -2032,6 +2032,31 @@ wss.on('connection', (ws, req) => {
         send(ws, { type: 'lichess_error', message: 'Failed to accept challenge: ' + err.message });
       });
     }
+    else if (msg.type === 'lichess_start_event_stream') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      if (!username || !token) {
+        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
+        return;
+      }
+
+      console.log('[lichess] Starting event stream for user:', username);
+      startLichessEventStream(username, token, ws);
+    }
+    else if (msg.type === 'lichess_stream_game') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      const gameId = String(msg.gameId || '').trim();
+      if (!username || !token || !gameId) {
+        send(ws, { type: 'lichess_error', message: 'Invalid stream game request' });
+        return;
+      }
+
+      console.log('[lichess] Starting game stream for:', gameId);
+      streamLichessGame(gameId, token, ws);
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

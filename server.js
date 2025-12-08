@@ -87,10 +87,17 @@ let userSettings = {}; // username -> {confirmMoves, premoveEnabled, selectedBoa
 function loadMessages() {
   if (!fs.existsSync(MSG_FILE)) return;
   const lines = fs.readFileSync(MSG_FILE, 'utf8').split('\n').filter(Boolean);
+  const seenIds = new Set(); // Track seen message IDs to prevent duplicates
   for (const line of lines) {
     try {
       const obj = JSON.parse(line);
       if (obj && typeof obj.id === 'number') {
+        // Skip if we've already seen this message ID (prevents duplicates)
+        if (seenIds.has(obj.id)) {
+          console.log('[warn] Skipping duplicate message ID:', obj.id);
+          continue;
+        }
+        seenIds.add(obj.id);
         messages.push(obj);
         idx = Math.max(idx, obj.id + 1);
       }

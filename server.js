@@ -1522,7 +1522,9 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'messagesafter') {
       const idafter = Number(msg.id) || 0;
-      send(ws, { type: 'messages', before: 0, messages: messagesRange(idafter, idx) });
+      const result = messagesRange(idafter, idx);
+      console.log(`[debug] messagesafter: client requested id>${idafter}, returning ${result.length} messages (idx=${idx})`);
+      send(ws, { type: 'messages', before: 0, messages: result });
     }
     else if (msg.type === 'clear_history') {
       const username = users.get(ws);

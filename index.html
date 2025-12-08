@@ -1325,6 +1325,9 @@ var premoveQueue = [];
 var currentTentative = null; // {from,to,isPremove}
 // Guards to prevent re-entrant premove processing and concurrent engine fetches
 var __processingPremoves = false;
+// Lichess game state
+var lichessCurrentGameId = null;
+var lichessCurrentGame = null;
 // Chess settings
 var chessSettings = { confirmMoves: true, premoveEnabled: true };
 

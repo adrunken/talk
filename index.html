@@ -3246,10 +3246,13 @@ function ready() {
         else if (data['type'] === 'messages') {
             var newmessages = document.createDocumentFragment();
             var messagelist = data['messages'];
+            var addedCount = 0;
             for (var i = 0; i < messagelist.length; i++) {
                 var msg = JSON.parse(messagelist[i]);
-                if (data['before'] != 1 && msg['id'] <= lastId)       // message already added 
+                // Skip messages we've already seen
+                if (msg['id'] <= lastId) {
                     continue;
+                }
                 var isOwnMessage = msg['username'] === $('#username').text();
                 var bubbleClass = isOwnMessage ? 'own' : 'other';
                 var messageHtml = '<div class="message-bubble ' + bubbleClass + '">' +
@@ -3260,21 +3263,28 @@ function ready() {
                     '</div>' +
                     '</div>';
                 $(newmessages).append(messageHtml);
-                firstId = Math.min(firstId, msg['id'])
+                firstId = Math.min(firstId, msg['id']);
                 lastId = Math.max(lastId, msg['id']);
+                addedCount++;
             }
-            if (data['before'] == 1)
-                $('#main').prepend(newmessages); 
-            else
-                $('#main').append(newmessages);
+
+            // Only update DOM if we actually added new messages
+            if (addedCount > 0) {
+                if (data['before'] == 1)
+                    $('#main').prepend(newmessages);
+                else
+                    $('#main').append(newmessages);
+
+                if (data['before'] == 1)
+                    scroll_top();
+                else
+                    scroll_end();
+            }
+
             if (firstId > 0 && firstId != Infinity)
                 $('#previous').removeClass('hidden');
             else
                 $('#previous').addClass('hidden');
-            if (data['before'] == 1)
-                scroll_top();
-            else
-                scroll_end();
         }
         else if (data['type'] === 'userlist') {
             users = data['connected'];

@@ -2401,6 +2401,69 @@ function ready() {
         setTimeout(function(){ $input.focus(); updateBtn(); }, 0);
     }
 
+    /**
+     * Open and load a Lichess game into the chess modal
+     */
+    window.openLichessGame = function(gameId, gameData) {
+        console.log('[lichess] Opening Lichess game:', gameId, gameData);
+
+        $('#chess-modal').removeClass('hidden');
+        $('#chess-confirm-move').prop('disabled', true);
+
+        lichessCurrentGameId = gameId;
+        lichessCurrentGame = gameData;
+
+        chessGame = {
+            id: gameId,
+            source: 'lichess',
+            color: gameData.color || 'white',
+            white: gameData.players && gameData.players.white ? gameData.players.white.user.name : 'White',
+            black: gameData.players && gameData.players.black ? gameData.players.black.user.name : 'Black',
+            fen: gameData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            squareMap: {}
+        };
+
+        drawBoard();
+    };
+
+    /**
+     * Load full Lichess game state
+     */
+    window.loadLichessGameState = function(gameId, gameData) {
+        console.log('[lichess] Loading game state:', gameId);
+
+        if (!chessGame || chessGame.source !== 'lichess') {
+            openLichessGame(gameId, gameData);
+            return;
+        }
+
+        if (gameData.fen) {
+            chessGame.fen = gameData.fen;
+            chessGame.squareMap = {};
+            drawBoard();
+        }
+    };
+
+    /**
+     * Update Lichess game state incrementally
+     */
+    window.updateLichessGameState = function(gameId, update) {
+        console.log('[lichess] Updating game state:', gameId, update);
+
+        if (!chessGame || chessGame.source !== 'lichess') return;
+
+        if (update.fen) {
+            chessGame.fen = update.fen;
+            chessGame.squareMap = {};
+            drawBoard();
+        }
+
+        if (update.status && (update.status === 'mate' || update.status === 'resign' || update.status === 'timeout' || update.status === 'draw')) {
+            console.log('[lichess] Game ended:', update.status);
+            flashStatus('Game ended: ' + update.status);
+        }
+    };
+
     var storedName = getStoredUsername();
     if (storedName === null || storedName === '') {
         showFirstLoginModal();

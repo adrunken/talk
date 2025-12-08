@@ -1570,6 +1570,22 @@ wss.on('connection', (ws, req) => {
       }
       sendUserList();
       deliverQueuedInvites(username);
+
+      // Check for ongoing games associated with this username
+      const ongoingGameInfo = findOngoingGameByUsername(username);
+      if (ongoingGameInfo) {
+        const { gid, game } = ongoingGameInfo;
+        console.log(`[chess] User ${username} reconnected, found ongoing game ${gid}`);
+        const payload = {
+          type: 'chess_resume',
+          game_id: gid,
+          white: game.white,
+          black: game.black,
+          fen: game.board.fen(),
+          turn: game.board.turn() === 'w' ? 'white' : 'black'
+        };
+        send(ws, payload);
+      }
     }
     else if (msg.type === 'forget_me') {
       const uname = users.get(ws);

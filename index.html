@@ -3513,6 +3513,10 @@ function ready() {
                 updateLichessGameState(gameId, update);
             }
         }
+        else if (data['type'] === 'lichess_move_made') {
+            console.log('[lichess] Move accepted by Lichess:', data['move']);
+            flashStatus('Move sent: ' + data['move']);
+        }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
             firstId = Infinity;

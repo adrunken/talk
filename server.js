@@ -2173,6 +2173,27 @@ wss.on('connection', (ws, req) => {
       console.log('[lichess] Starting game stream for:', gameId);
       streamLichessGame(gameId, token, ws);
     }
+    else if (msg.type === 'lichess_make_move') {
+      const username = users.get(ws);
+      const settings = getUserSettings(username);
+      const token = settings && settings.lichessToken;
+      const gameId = String(msg.gameId || '').trim();
+      const move = String(msg.move || '').trim();
+      if (!username || !token || !gameId || !move) {
+        send(ws, { type: 'lichess_error', message: 'Invalid move request' });
+        return;
+      }
+
+      console.log('[lichess] Making move:', gameId, move);
+      const lichess = new LichessAPI(token);
+      lichess.makeMove(gameId, move).then(result => {
+        console.log('[lichess] Move successful:', move);
+        send(ws, { type: 'lichess_move_made', gameId: gameId, move: move, result: result });
+      }).catch(err => {
+        console.error('[lichess] Move error:', err.message);
+        send(ws, { type: 'lichess_error', message: 'Failed to make move: ' + err.message });
+      });
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

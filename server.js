@@ -1344,9 +1344,12 @@ function cleanUsername(usr, ws) {
 
 function messagesRange(startId, endIdExclusive) {
   const out = [];
-  for (let i = Math.max(0, startId); i < Math.min(idx, endIdExclusive); i++) {
-    const msg = messages[i];
-    if (msg) out.push(JSON.stringify(msg));
+  // Find messages with IDs in the range [startId, endIdExclusive)
+  // Don't assume messages[i].id === i since filtering can create gaps
+  for (const msg of messages) {
+    if (msg && msg.id >= startId && msg.id < endIdExclusive) {
+      out.push(JSON.stringify(msg));
+    }
   }
   return out;
 }

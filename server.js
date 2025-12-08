@@ -1401,6 +1401,16 @@ function deliverQueuedInvites(username) {
   }
 }
 
+function findOngoingGameByUsername(username) {
+  // Find the first ongoing game where this username is a player
+  for (const [gid, g] of games.entries()) {
+    if (!g.over && (g.white === username || g.black === username)) {
+      return { gid, game: g };
+    }
+  }
+  return null;
+}
+
 // Cleanup stale users
 setInterval(() => {
   const t = now();

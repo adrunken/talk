@@ -3221,6 +3221,10 @@ function ready() {
                 }, 1500);
             }
 
+            // Start listening for challenges being accepted
+            console.log('[lichess] Starting event stream to listen for challenge acceptances');
+            ws.send(JSON.stringify({ type: 'lichess_start_event_stream' }));
+
             setTimeout(function() {
                 $('#lichess-token-status').text('').removeClass('success');
             }, 3000);

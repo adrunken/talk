@@ -228,6 +228,122 @@ function updatePlayerElo(username, opponentElo, result) {
   return { newElo: playerData.elo, eloChange, playerData };
 }
 
+/**
+ * Start listening to Lichess event stream for a user
+ * Detects when challenges are accepted and streams game events
+ */
+function startLichessEventStream(username, token, ws) {
+  const WebSocket = require('ws');
+  const url = 'wss://lichess.org/api/stream/event';
+
+  console.log('[lichess] Connecting to event stream for user:', username);
+
+  try {
+    const eventStream = new WebSocket(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    eventStream.on('open', () => {
+      console.log('[lichess] Event stream connected for user:', username);
+      send(ws, { type: 'lichess_event_stream_connected' });
+    });
+
+    eventStream.on('message', (data) => {
+      try {
+        const lines = data.toString().split('\n').filter(Boolean);
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line);
+
+          console.log('[lichess] Event received:', event.type);
+
+          if (event.type === 'challenge') {
+            if (event.challenge && event.challenge.id) {
+              send(ws, { type: 'lichess_challenge_event', challenge: event.challenge });
+            }
+          } else if (event.type === 'gameStart') {
+            if (event.game && event.game.id) {
+              console.log('[lichess] Game started:', event.game.id);
+              send(ws, { type: 'lichess_game_started', game: event.game });
+              streamLichessGame(event.game.id, token, ws);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[lichess] Error parsing event:', err.message);
+      }
+    });
+
+    eventStream.on('error', (err) => {
+      console.error('[lichess] Event stream error:', err.message);
+      send(ws, { type: 'lichess_error', message: 'Event stream error: ' + err.message });
+    });
+
+    eventStream.on('close', () => {
+      console.log('[lichess] Event stream closed for user:', username);
+      lichessStreams.delete(username);
+    });
+
+    lichessStreams.set(username, eventStream);
+  } catch (err) {
+    console.error('[lichess] Failed to connect to event stream:', err.message);
+    send(ws, { type: 'lichess_error', message: 'Failed to connect to event stream: ' + err.message });
+  }
+}
+
+/**
+ * Stream a Lichess game and send moves/updates to the frontend
+ */
+function streamLichessGame(gameId, token, ws) {
+  const WebSocket = require('ws');
+  const url = `wss://lichess.org/api/bot/game/stream/${gameId}`;
+
+  console.log('[lichess] Connecting to game stream:', gameId);
+
+  try {
+    const gameStream = new WebSocket(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    gameStream.on('open', () => {
+      console.log('[lichess] Game stream connected:', gameId);
+      send(ws, { type: 'lichess_game_stream_connected', gameId: gameId });
+    });
+
+    gameStream.on('message', (data) => {
+      try {
+        const lines = data.toString().split('\n').filter(Boolean);
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const update = JSON.parse(line);
+
+          console.log('[lichess] Game update:', update.type);
+          send(ws, { type: 'lichess_game_update', gameId: gameId, update: update });
+        }
+      } catch (err) {
+        console.error('[lichess] Error parsing game update:', err.message);
+      }
+    });
+
+    gameStream.on('error', (err) => {
+      console.error('[lichess] Game stream error:', err.message);
+      send(ws, { type: 'lichess_error', message: 'Game stream error: ' + err.message });
+    });
+
+    gameStream.on('close', () => {
+      console.log('[lichess] Game stream closed:', gameId);
+    });
+
+  } catch (err) {
+    console.error('[lichess] Failed to connect to game stream:', err.message);
+    send(ws, { type: 'lichess_error', message: 'Failed to connect to game stream: ' + err.message });
+  }
+}
+
 loadMessages();
 loadKnownUsers();
 loadUserSettings();

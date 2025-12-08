@@ -88,6 +88,7 @@ function loadMessages() {
   if (!fs.existsSync(MSG_FILE)) return;
   const lines = fs.readFileSync(MSG_FILE, 'utf8').split('\n').filter(Boolean);
   const seenIds = new Set(); // Track seen message IDs to prevent duplicates
+  let duplicateCount = 0;
   for (const line of lines) {
     try {
       const obj = JSON.parse(line);
@@ -95,6 +96,7 @@ function loadMessages() {
         // Skip if we've already seen this message ID (prevents duplicates)
         if (seenIds.has(obj.id)) {
           console.log('[warn] Skipping duplicate message ID:', obj.id);
+          duplicateCount++;
           continue;
         }
         seenIds.add(obj.id);
@@ -102,6 +104,16 @@ function loadMessages() {
         idx = Math.max(idx, obj.id + 1);
       }
     } catch (_) {}
+  }
+
+  // If duplicates were found, rewrite the file to clean it up
+  if (duplicateCount > 0) {
+    console.log(`[cleanup] Found and removing ${duplicateCount} duplicate messages from file`);
+    const cleanedLines = messages.map(m => JSON.stringify(m)).join('\n');
+    fs.writeFile(MSG_FILE, cleanedLines + (cleanedLines.length > 0 ? '\n' : ''), (err) => {
+      if (err) console.error('[error] Failed to clean up messages file:', err.message);
+      else console.log('[cleanup] Messages file cleaned');
+    });
   }
 }
 

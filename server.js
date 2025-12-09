@@ -1344,9 +1344,12 @@ function cleanUsername(usr, ws) {
 
 function messagesRange(startId, endIdExclusive) {
   const out = [];
-  for (let i = Math.max(0, startId); i < Math.min(idx, endIdExclusive); i++) {
-    const msg = messages[i];
-    if (msg) out.push(JSON.stringify(msg));
+  // Find messages with IDs in the range [startId, endIdExclusive)
+  // Don't assume messages[i].id === i since filtering can create gaps
+  for (const msg of messages) {
+    if (msg && msg.id >= startId && msg.id < endIdExclusive) {
+      out.push(JSON.stringify(msg));
+    }
   }
   return out;
 }
@@ -1396,6 +1399,16 @@ function deliverQueuedInvites(username) {
       sendToUsername(username, { type: 'chess_invite', from: inviter, offline: true });
     }
   }
+}
+
+function findOngoingGameByUsername(username) {
+  // Find the first ongoing game where this username is a player
+  for (const [gid, g] of games.entries()) {
+    if (!g.over && (g.white === username || g.black === username)) {
+      return { gid, game: g };
+    }
+  }
+  return null;
 }
 
 // Cleanup stale users
@@ -1519,7 +1532,9 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'messagesafter') {
       const idafter = Number(msg.id) || 0;
-      send(ws, { type: 'messages', before: 0, messages: messagesRange(idafter, idx) });
+      const result = messagesRange(idafter, idx);
+      console.log(`[debug] messagesafter: client requested id>${idafter}, returning ${result.length} messages (idx=${idx})`);
+      send(ws, { type: 'messages', before: 0, messages: result });
     }
     else if (msg.type === 'clear_history') {
       const username = users.get(ws);
@@ -1555,6 +1570,22 @@ wss.on('connection', (ws, req) => {
       }
       sendUserList();
       deliverQueuedInvites(username);
+
+      // Check for ongoing games associated with this username
+      const ongoingGameInfo = findOngoingGameByUsername(username);
+      if (ongoingGameInfo) {
+        const { gid, game } = ongoingGameInfo;
+        console.log(`[chess] User ${username} reconnected, found ongoing game ${gid}`);
+        const payload = {
+          type: 'chess_resume',
+          game_id: gid,
+          white: game.white,
+          black: game.black,
+          fen: game.board.fen(),
+          turn: game.board.turn() === 'w' ? 'white' : 'black'
+        };
+        send(ws, payload);
+      }
     }
     else if (msg.type === 'forget_me') {
       const uname = users.get(ws);
@@ -2233,7 +2264,16 @@ wss.on('connection', (ws, req) => {
       // Remove all messages from this user to prevent duplication
       const originalMessageCount = messages.length;
       messages = messages.filter(m => m.username !== targetUser);
-      console.log(`[admin] Deleted user ${targetUser} and ${originalMessageCount - messages.length} messages`);
+
+      // Recalculate idx to be the next ID after the highest existing message
+      // This is critical because filtering breaks the assumption that messages[i].id === i
+      if (messages.length > 0) {
+        idx = Math.max(...messages.map(m => m.id || 0)) + 1;
+      } else {
+        idx = 0;
+      }
+
+      console.log(`[admin] Deleted user ${targetUser} and ${originalMessageCount - messages.length} messages, idx reset to ${idx}`);
 
       // Rewrite the messages file without deleted user's messages
       const messageLines = messages.map(m => JSON.stringify(m)).join('\n');
@@ -2242,7 +2282,15 @@ wss.on('connection', (ws, req) => {
       persistKnownUsers();
       const settingsStr = JSON.stringify(userSettings, null, 2);
       fs.writeFile(SETTINGS_FILE, settingsStr, () => {});
-      send(ws, { type: 'message', message: 'User deleted: ' + targetUser, username: 'System' });
+
+      // Send system message with proper id and timestamp so client doesn't get confused
+      const systemMsg = { type: 'message', message: 'User deleted: ' + targetUser, username: 'System', id: idx, datetime: Math.floor(now()) };
+      messages.push(systemMsg);
+      appendMessage(systemMsg);
+      idx += 1;
+      const msgStr = JSON.stringify(systemMsg);
+      for (const [u] of users) send(u, msgStr);
+
       sendUserList();
     }
   });

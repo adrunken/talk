@@ -2894,9 +2894,13 @@ function ready() {
         if (stockfishGame) {
             stockfishGame = null;
             chessGame = null;
+            hideRejoinPrompt(); // Hide rejoin prompt when closing AI game
         } else if (chessGame && !chessGame.over) {
             showRejoinPrompt();
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
+        } else if (chessGame && chessGame.over) {
+            // Game is over, hide the rejoin prompt
+            hideRejoinPrompt();
         }
     });
     $('#chess-confirm-move').on('click', function(){
@@ -3023,9 +3027,11 @@ function ready() {
             $('#chess-modal').addClass('hidden');
             stockfishGame = null;
             chessGame = null;
+            hideRejoinPrompt(); // Hide rejoin button when resigning from AI game
         } else if (chessGame && ws && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'chess_resign', game_id: chessGame.id }));
             flashStatus('Game resigned');
+            hideRejoinPrompt(); // Hide rejoin button when resigning from PvP game
         }
     });
 
@@ -3192,7 +3198,7 @@ function ready() {
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
             historyIndex: 0
         };
-        hideRejoinPrompt();
+        hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
         $('#chess-white').text(chessGame.white);
         $('#chess-black').text(chessGame.black);
         $('#chess-status').text('Your color: ' + chessGame.color);
@@ -3200,7 +3206,7 @@ function ready() {
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
-        $('#chess-modal').removeClass('hidden');
+        $('#chess-modal').removeClass('hidden'); // Show the modal
         updateSettingUI('confirm-moves');
     }
 
@@ -3343,6 +3349,9 @@ function ready() {
             if (chessGame && chessGame.id === data['game_id']) {
                 chessGame.over = true;
                 $('#chess-status').text('Game over: ' + data['result'] + ' (' + data['reason'] + ')');
+                // If user has no other games, hide the rejoin button
+                // (Server will send chess_resume only if another game exists)
+                hideRejoinPrompt();
             }
         }
         else if (data['type'] === 'chess_illegal') {

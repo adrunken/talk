@@ -3698,6 +3698,13 @@ function initializeRouting() {
         });
     }
 
+    var gameBackButton = document.getElementById('game-back-button');
+    if (gameBackButton) {
+        gameBackButton.addEventListener('click', function() {
+            window.history.pushState({}, '', '/games');
+            handleRoute('/games');
+        });
+    }
 
     var gameCards = document.querySelectorAll('.game-card');
     gameCards.forEach(function(card) {

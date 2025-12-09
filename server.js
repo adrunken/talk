@@ -382,14 +382,6 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/games', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
 app.get('/game-wrapper', (req, res) => {
   try {
     const wrapperPath = path.join(__dirname, 'game-wrapper.html');
@@ -398,6 +390,14 @@ app.get('/game-wrapper', (req, res) => {
     console.error('[game-wrapper] Error serving file:', err);
     res.status(500).send('Error loading game wrapper');
   }
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/games', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/:gameName', (req, res) => {

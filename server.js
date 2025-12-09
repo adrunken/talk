@@ -390,6 +390,10 @@ app.get('/games', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/game-wrapper', (req, res) => {
+  res.sendFile(path.join(__dirname, 'game-wrapper.html'));
+});
+
 app.get('/:gameName', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

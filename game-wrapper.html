@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body, iframe {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        body {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="game-frame" frameborder="0"></iframe>
+    
+    <script>
+        // Get game URL from query parameter
+        const gameUrl = new URLSearchParams(window.location.search).get('url');
+        const gameFrame = document.getElementById('game-frame');
+        
+        if (gameUrl) {
+            gameFrame.src = gameUrl;
+        }
+        
+        // Create a proxied localStorage object that communicates via postMessage
+        const createProxiedStorage = (targetWindow, targetOrigin) => {
+            return new Proxy(
+                {},
+                {
+                    get(target, prop, receiver) {
+                        if (prop === 'getItem') {
+                            return (key) => {
+                                try {
+                                    return localStorage.getItem(key);
+                                } catch (e) {
+                                    console.warn('localStorage.getItem blocked:', e);
+                                    return null;
+                                }
+                            };
+                        }
+                        if (prop === 'setItem') {
+                            return (key, value) => {
+                                try {
+                                    localStorage.setItem(key, value);
+                                } catch (e) {
+                                    console.warn('localStorage.setItem blocked:', e);
+                                }
+                            };
+                        }
+                        if (prop === 'removeItem') {
+                            return (key) => {
+                                try {
+                                    localStorage.removeItem(key);
+                                } catch (e) {
+                                    console.warn('localStorage.removeItem blocked:', e);
+                                }
+                            };
+                        }
+                        if (prop === 'clear') {
+                            return () => {
+                                try {
+                                    localStorage.clear();
+                                } catch (e) {
+                                    console.warn('localStorage.clear blocked:', e);
+                                }
+                            };
+                        }
+                        if (prop === 'key') {
+                            return (index) => {
+                                try {
+                                    return localStorage.key(index);
+                                } catch (e) {
+                                    console.warn('localStorage.key blocked:', e);
+                                    return null;
+                                }
+                            };
+                        }
+                        if (prop === 'length') {
+                            try {
+                                return localStorage.length;
+                            } catch (e) {
+                                console.warn('localStorage.length blocked:', e);
+                                return 0;
+                            }
+                        }
+                        // For any other property access
+                        if (prop in localStorage) {
+                            try {
+                                return localStorage[prop];
+                            } catch (e) {
+                                return undefined;
+                            }
+                        }
+                        return undefined;
+                    },
+                    set(target, prop, value) {
+                        try {
+                            localStorage[prop] = value;
+                        } catch (e) {
+                            console.warn('localStorage set blocked:', e);
+                        }
+                        return true;
+                    }
+                }
+            );
+        };
+        
+        // Listen for messages from the iframe trying to access storage
+        window.addEventListener('message', (event) => {
+            // Only process messages from our game iframe
+            if (event.source !== gameFrame.contentWindow) {
+                return;
+            }
+            
+            const message = event.data;
+            if (message && message.type === 'storage-request') {
+                const { action, key, value, id } = message;
+                let result = null;
+                let error = null;
+                
+                try {
+                    if (action === 'getItem') {
+                        result = localStorage.getItem(key);
+                    } else if (action === 'setItem') {
+                        localStorage.setItem(key, value);
+                    } else if (action === 'removeItem') {
+                        localStorage.removeItem(key);
+                    } else if (action === 'clear') {
+                        localStorage.clear();
+                    } else if (action === 'key') {
+                        result = localStorage.key(key);
+                    } else if (action === 'length') {
+                        result = localStorage.length;
+                    }
+                } catch (e) {
+                    error = e.message;
+                }
+                
+                // Send response back to iframe
+                gameFrame.contentWindow.postMessage(
+                    {
+                        type: 'storage-response',
+                        id,
+                        result,
+                        error
+                    },
+                    '*'
+                );
+            }
+        });
+        
+        // Inject storage proxy into iframe once it loads
+        gameFrame.addEventListener('load', () => {
+            try {
+                const injectionScript = `
+                    (function() {
+                        let requestId = 0;
+                        const pendingRequests = {};
+                        
+                        // Create a proxy for localStorage that sends messages to parent
+                        const proxiedStorage = new Proxy({}, {
+                            get(target, prop, receiver) {
+                                if (prop === 'getItem') {
+                                    return (key) => {
+                                        const id = ++requestId;
+                                        window.parent.postMessage({
+                                            type: 'storage-request',
+                                            action: 'getItem',
+                                            key,
+                                            id
+                                        }, '*');
+                                        
+                                        // Since postMessage is async, we need synchronous access
+                                        // Use a synchronous approach by waiting briefly
+                                        let result = null;
+                                        let resolved = false;
+                                        window.addEventListener('message', function handler(e) {
+                                            if (e.data && e.data.type === 'storage-response' && e.data.id === id) {
+                                                result = e.data.result;
+                                                resolved = true;
+                                                window.removeEventListener('message', handler);
+                                            }
+                                        });
+                                        // Wait for response (this is a limitation of postMessage)
+                                        const startTime = Date.now();
+                                        while (!resolved && Date.now() - startTime < 100) {
+                                            // Busy wait - not ideal but necessary for sync behavior
+                                        }
+                                        return result;
+                                    };
+                                }
+                                if (prop === 'setItem') {
+                                    return (key, value) => {
+                                        window.parent.postMessage({
+                                            type: 'storage-request',
+                                            action: 'setItem',
+                                            key,
+                                            value,
+                                            id: ++requestId
+                                        }, '*');
+                                    };
+                                }
+                                if (prop === 'removeItem') {
+                                    return (key) => {
+                                        window.parent.postMessage({
+                                            type: 'storage-request',
+                                            action: 'removeItem',
+                                            key,
+                                            id: ++requestId
+                                        }, '*');
+                                    };
+                                }
+                                if (prop === 'clear') {
+                                    return () => {
+                                        window.parent.postMessage({
+                                            type: 'storage-request',
+                                            action: 'clear',
+                                            id: ++requestId
+                                        }, '*');
+                                    };
+                                }
+                                if (prop === 'key') {
+                                    return (index) => {
+                                        const id = ++requestId;
+                                        window.parent.postMessage({
+                                            type: 'storage-request',
+                                            action: 'key',
+                                            key: index,
+                                            id
+                                        }, '*');
+                                        
+                                        let result = null;
+                                        let resolved = false;
+                                        window.addEventListener('message', function handler(e) {
+                                            if (e.data && e.data.type === 'storage-response' && e.data.id === id) {
+                                                result = e.data.result;
+                                                resolved = true;
+                                                window.removeEventListener('message', handler);
+                                            }
+                                        });
+                                        const startTime = Date.now();
+                                        while (!resolved && Date.now() - startTime < 100) {
+                                            // Busy wait
+                                        }
+                                        return result;
+                                    };
+                                }
+                                if (prop === 'length') {
+                                    const id = ++requestId;
+                                    window.parent.postMessage({
+                                        type: 'storage-request',
+                                        action: 'length',
+                                        id
+                                    }, '*');
+                                    
+                                    let result = 0;
+                                    let resolved = false;
+                                    window.addEventListener('message', function handler(e) {
+                                        if (e.data && e.data.type === 'storage-response' && e.data.id === id) {
+                                            result = e.data.result;
+                                            resolved = true;
+                                            window.removeEventListener('message', handler);
+                                        }
+                                    });
+                                    const startTime = Date.now();
+                                    while (!resolved && Date.now() - startTime < 100) {
+                                        // Busy wait
+                                    }
+                                    return result;
+                                }
+                                return undefined;
+                            }
+                        });
+                        
+                        // Replace localStorage with our proxy
+                        try {
+                            Object.defineProperty(window, 'localStorage', {
+                                value: proxiedStorage,
+                                writable: false,
+                                configurable: true
+                            });
+                        } catch (e) {
+                            console.warn('Could not override localStorage:', e);
+                        }
+                    })();
+                `;
+                
+                // Inject the script into the iframe's context
+                const script = gameFrame.contentDocument.createElement('script');
+                script.textContent = injectionScript;
+                gameFrame.contentDocument.head.insertBefore(script, gameFrame.contentDocument.head.firstChild);
+            } catch (e) {
+                console.warn('Could not inject storage proxy into iframe:', e);
+            }
+        });
+    </script>
+</body>
+</html>

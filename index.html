@@ -3198,7 +3198,7 @@ function ready() {
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
             historyIndex: 0
         };
-        hideRejoinPrompt();
+        hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
         $('#chess-white').text(chessGame.white);
         $('#chess-black').text(chessGame.black);
         $('#chess-status').text('Your color: ' + chessGame.color);
@@ -3206,7 +3206,7 @@ function ready() {
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
-        $('#chess-modal').removeClass('hidden');
+        $('#chess-modal').removeClass('hidden'); // Show the modal
         updateSettingUI('confirm-moves');
     }
 

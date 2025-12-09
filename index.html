@@ -2894,9 +2894,13 @@ function ready() {
         if (stockfishGame) {
             stockfishGame = null;
             chessGame = null;
+            hideRejoinPrompt(); // Hide rejoin prompt when closing AI game
         } else if (chessGame && !chessGame.over) {
             showRejoinPrompt();
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
+        } else if (chessGame && chessGame.over) {
+            // Game is over, hide the rejoin prompt
+            hideRejoinPrompt();
         }
     });
     $('#chess-confirm-move').on('click', function(){

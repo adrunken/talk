@@ -27,8 +27,7 @@ Now that it works locally, you probably want to install it on a web server, usin
 
 Why another chat software?
 ----
-There are thousands of great chat software everywhere, but I never found the one I was looking for, because:
-
+There are thousands of great chat software everywhere, but I never found the one I was looking for, because
 * some of them are cool, but not open-source, and so you cannot host them on your own server (e.g. [tlk.io](http://www.tlk.io)),
 * some of them are cool, but not easy to install, require a too big server, or offer too many features I don't need (e.g. [mattermost.org](http://www.mattermost.org)),
 * some of them are interesting tutorials about how to program a chat in PHP, node.js, but are not ready-to-use for everyday discussion inside a small team, because they lack some important feature (such as chat history, disconnection/reconnection handling, usable user interface, etc.)

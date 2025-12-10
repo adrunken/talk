@@ -3648,6 +3648,12 @@ function initializeRouting() {
         if (gamesListView) gamesListView.classList.add('hidden');
         if (gameDetailView) gameDetailView.classList.remove('hidden');
 
+        var firstLoginModal = document.getElementById('first-login');
+        if (firstLoginModal) {
+            firstLoginModal.classList.add('hidden');
+            firstLoginModal.classList.remove('show');
+        }
+
         if (gameContainer) {
             var iframe = document.createElement('iframe');
             iframe.src = '/game-wrapper?url=' + encodeURIComponent(game.url);

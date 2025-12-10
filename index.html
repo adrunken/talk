@@ -3330,96 +3330,28 @@ $(document).ready(function() {
 // ===== Routing Logic =====
 function initializeRouting() {
     var navHome = document.getElementById('nav-home');
-    var navController = document.getElementById('nav-controller');
     var wrapper = document.getElementById('wrapper');
-    var gamesPage = document.getElementById('games-page');
     var inputContainer = document.getElementById('input-container');
     var rightSidebar = document.getElementById('right');
-    var gamesListView = document.getElementById('games-list-view');
-    var gameDetailView = document.getElementById('game-detail-view');
-    var gameContainer = document.getElementById('game-container');
-
-    var gamesList = {
-        'n-gon': { title: 'N-Gon', url: 'https://n-gon-n8ri.onrender.com' },
-        'shell-shockers': { title: 'Shell Shockers', url: 'https://shell-shockers-io-0x72.onrender.com/' },
-        'eaglercraft': { title: 'Eaglercraft', url: 'https://eaglercrafthtmlsd.onrender.com' },
-        'ovo': { title: 'OVO', url: 'https://ovok.onrender.com/' },
-        'basket-random': { title: 'Basket Random', url: 'https://basket-random-rbdi.onrender.com' },
-        'rooftop-snipers': { title: 'Rooftop Snipers', url: 'https://rooftop-snipers-u22m.onrender.com' },
-        'wild-west-clash': { title: 'Wild West Clash', url: 'https://wild-west-cla.onrender.com' }
-    };
 
     function showHome() {
         if (wrapper) wrapper.classList.remove('hidden');
-        if (gamesPage) gamesPage.classList.add('hidden');
         if (inputContainer) inputContainer.classList.remove('hidden');
         if (rightSidebar) rightSidebar.classList.remove('hidden');
-    }
-
-    function showGamesList() {
-        if (wrapper) wrapper.classList.add('hidden');
-        if (gamesPage) gamesPage.classList.remove('hidden');
-        if (inputContainer) inputContainer.classList.add('hidden');
-        if (rightSidebar) rightSidebar.classList.add('hidden');
-        if (gamesListView) gamesListView.classList.remove('hidden');
-        if (gameDetailView) gameDetailView.classList.add('hidden');
-        if (gameContainer) gameContainer.innerHTML = '';
-
-        var firstLoginModal = document.getElementById('first-login');
-        if (firstLoginModal) {
-            firstLoginModal.classList.add('hidden');
-            firstLoginModal.classList.remove('show');
-        }
-    }
-
-
-    function handleRoute(pathname) {
-        if (pathname === '/games') {
-            showGamesList();
-        } else if (pathname.startsWith('/')) {
-            var gameId = pathname.substring(1);
-            if (gamesList[gameId]) {
-                // Games now open in new tabs, so just show games list
-                showGamesList();
-            } else {
-                showHome();
-            }
-        } else {
-            showHome();
-        }
     }
 
     if (navHome) {
         navHome.addEventListener('click', function() {
             window.history.pushState({}, '', '/');
-            handleRoute('/');
+            showHome();
         });
     }
-
-    if (navController) {
-        navController.addEventListener('click', function() {
-            window.history.pushState({}, '', '/games');
-            handleRoute('/games');
-        });
-    }
-
-    var gameCards = document.querySelectorAll('.game-card');
-    gameCards.forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            e.preventDefault();
-            var gameId = this.getAttribute('data-game-id');
-            var game = gamesList[gameId];
-            if (!game) return;
-
-            window.open('/blank?url=' + encodeURIComponent(game.url), '_blank');
-        });
-    });
 
     window.addEventListener('popstate', function() {
-        handleRoute(window.location.pathname);
+        showHome();
     });
 
-    handleRoute(window.location.pathname);
+    showHome();
 }
 
 if (document.readyState === 'loading') {

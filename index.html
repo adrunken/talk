@@ -3649,7 +3649,8 @@ function initializeRouting() {
         } else if (pathname.startsWith('/')) {
             var gameId = pathname.substring(1);
             if (gamesList[gameId]) {
-                showGameDetail(gameId);
+                // Games now open in new tabs, so just show games list
+                showGamesList();
             } else {
                 showHome();
             }

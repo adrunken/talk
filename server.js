@@ -381,6 +381,16 @@ app.use(function(req, res, next) {
   next();
 });
 
+app.get('/blank', (req, res) => {
+  try {
+    const blankPath = path.join(__dirname, 'blank.html');
+    res.sendFile(blankPath);
+  } catch (err) {
+    console.error('[blank] Error serving file:', err);
+    res.status(500).send('Error loading blank page');
+  }
+});
+
 app.get('/game-wrapper', (req, res) => {
   try {
     const wrapperPath = path.join(__dirname, 'game-wrapper.html');

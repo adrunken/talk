@@ -3646,38 +3646,9 @@ function initializeRouting() {
         var game = gamesList[gameId];
         if (!game) return;
 
-        if (wrapper) wrapper.classList.add('hidden');
-        if (gamesPage) gamesPage.classList.remove('hidden');
-        if (inputContainer) inputContainer.classList.add('hidden');
-        if (rightSidebar) rightSidebar.classList.add('hidden');
-        if (gamesListView) gamesListView.classList.add('hidden');
-        if (gameDetailView) gameDetailView.classList.remove('hidden');
-
-        var firstLoginModal = document.getElementById('first-login');
-        if (firstLoginModal) {
-            firstLoginModal.classList.add('hidden');
-            firstLoginModal.classList.remove('show');
-        }
-
-        if (gameContainer) {
-            var iframe = document.createElement('iframe');
-            iframe.src = '/game-wrapper?url=' + encodeURIComponent(game.url);
-            iframe.title = game.title;
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            gameContainer.innerHTML = '';
-            gameContainer.appendChild(iframe);
-
-            setTimeout(function() {
-                try {
-                    if (iframe.contentWindow) {
-                        iframe.contentWindow.open = function() { return null; };
-                    }
-                } catch (e) {
-                }
-            }, 100);
-        }
+        window.open(game.url, '_blank');
+        window.history.pushState({}, '', '/games');
+        handleRoute('/games');
     }
 
     function handleRoute(pathname) {

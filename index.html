@@ -3646,16 +3646,7 @@ function initializeRouting() {
         var game = gamesList[gameId];
         if (!game) return;
 
-        var gameWindow = window.open(game.url, '_blank');
-        if (gameWindow) {
-            setTimeout(function() {
-                try {
-                    gameWindow.location = 'about:blank';
-                } catch (e) {
-                    // Ignore errors if we can't access the window
-                }
-            }, 100);
-        }
+        window.open(game.url, '_blank');
         window.history.pushState({}, '', '/games');
         handleRoute('/games');
     }

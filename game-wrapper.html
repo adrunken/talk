@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; display: block; }
+        body { overflow: hidden; }
+        #game-frame { width: 100%; height: 100%; display: block; border: none; }
+    </style>
+</head>
+<body>
+    <iframe id="game-frame"></iframe>
+    
+    <script>
+        const gameUrl = new URLSearchParams(window.location.search).get('url');
+        const gameFrame = document.getElementById('game-frame');
+        
+        if (!gameUrl) {
+            document.body.textContent = 'No game URL provided';
+        } else {
+            gameFrame.src = gameUrl;
+            
+            window.addEventListener('message', (event) => {
+                if (event.source !== gameFrame.contentWindow) return;
+                
+                const msg = event.data;
+                if (!msg || msg.type !== 'storage-op') return;
+                
+                const { action, key, value, id } = msg;
+                let result = null;
+                let error = null;
+                
+                try {
+                    if (action === 'getItem') result = localStorage.getItem(key);
+                    else if (action === 'setItem') localStorage.setItem(key, value);
+                    else if (action === 'removeItem') localStorage.removeItem(key);
+                    else if (action === 'clear') localStorage.clear();
+                    else if (action === 'key') result = localStorage.key(parseInt(key));
+                    else if (action === 'length') result = localStorage.length;
+                } catch (e) {
+                    error = e.message;
+                }
+                
+                gameFrame.contentWindow.postMessage({ type: 'storage-result', id, result, error }, '*');
+            });
+            
+            gameFrame.addEventListener('load', () => {
+                try {
+                    const code = `(function() {
+                        let rid = 0;
+                        window.localStorage = new Proxy({}, {
+                            get: (t, k) => {
+                                if (k === 'getItem') return (key) => {
+                                    const id = ++rid;
+                                    let res = null, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'getItem', key, id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                };
+                                if (k === 'setItem') return (key, value) => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'setItem', key, value, id: ++rid }, '*');
+                                };
+                                if (k === 'removeItem') return (key) => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'removeItem', key, id: ++rid }, '*');
+                                };
+                                if (k === 'clear') return () => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'clear', id: ++rid }, '*');
+                                };
+                                if (k === 'key') return (idx) => {
+                                    const id = ++rid;
+                                    let res = null, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'key', key: idx, id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                };
+                                if (k === 'length') {
+                                    const id = ++rid;
+                                    let res = 0, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'length', id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                }
+                                return undefined;
+                            }
+                        });
+                    })();`;
+                    const script = gameFrame.contentDocument.createElement('script');
+                    script.textContent = code;
+                    gameFrame.contentDocument.head.insertBefore(script, gameFrame.contentDocument.head.firstChild);
+                } catch (e) {
+                    console.warn('Could not inject storage proxy');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

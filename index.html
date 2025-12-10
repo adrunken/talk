@@ -3634,39 +3634,14 @@ function initializeRouting() {
         if (gamesListView) gamesListView.classList.remove('hidden');
         if (gameDetailView) gameDetailView.classList.add('hidden');
         if (gameContainer) gameContainer.innerHTML = '';
-    }
 
-    function showGameDetail(gameId) {
-        var game = gamesList[gameId];
-        if (!game) return;
-
-        if (wrapper) wrapper.classList.add('hidden');
-        if (gamesPage) gamesPage.classList.remove('hidden');
-        if (inputContainer) inputContainer.classList.add('hidden');
-        if (rightSidebar) rightSidebar.classList.add('hidden');
-        if (gamesListView) gamesListView.classList.add('hidden');
-        if (gameDetailView) gameDetailView.classList.remove('hidden');
-
-        if (gameContainer) {
-            var iframe = document.createElement('iframe');
-            iframe.src = game.url;
-            iframe.title = game.title;
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            gameContainer.innerHTML = '';
-            gameContainer.appendChild(iframe);
-
-            setTimeout(function() {
-                try {
-                    if (iframe.contentWindow) {
-                        iframe.contentWindow.open = function() { return null; };
-                    }
-                } catch (e) {
-                }
-            }, 100);
+        var firstLoginModal = document.getElementById('first-login');
+        if (firstLoginModal) {
+            firstLoginModal.classList.add('hidden');
+            firstLoginModal.classList.remove('show');
         }
     }
+
 
     function handleRoute(pathname) {
         if (pathname === '/games') {
@@ -3674,7 +3649,8 @@ function initializeRouting() {
         } else if (pathname.startsWith('/')) {
             var gameId = pathname.substring(1);
             if (gamesList[gameId]) {
-                showGameDetail(gameId);
+                // Games now open in new tabs, so just show games list
+                showGamesList();
             } else {
                 showHome();
             }
@@ -3697,13 +3673,15 @@ function initializeRouting() {
         });
     }
 
-
     var gameCards = document.querySelectorAll('.game-card');
     gameCards.forEach(function(card) {
-        card.addEventListener('click', function() {
+        card.addEventListener('click', function(e) {
+            e.preventDefault();
             var gameId = this.getAttribute('data-game-id');
-            window.history.pushState({}, '', '/' + gameId);
-            handleRoute('/' + gameId);
+            var game = gamesList[gameId];
+            if (!game) return;
+
+            window.open('/blank?url=' + encodeURIComponent(game.url), '_blank');
         });
     });
 
@@ -3711,7 +3689,7 @@ function initializeRouting() {
         handleRoute(window.location.pathname);
     });
 
-    showHome();
+    handleRoute(window.location.pathname);
 }
 
 if (document.readyState === 'loading') {

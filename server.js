@@ -371,7 +371,6 @@ loadOnlineHistory();
 
 // Server
 const app = express();
-app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 // Allow CORS for API endpoints so clients opened from file:// or other origins can call /api
 app.use(function(req, res, next) {
@@ -382,6 +381,26 @@ app.use(function(req, res, next) {
   next();
 });
 
+app.get('/blank', (req, res) => {
+  try {
+    const blankPath = path.join(__dirname, 'blank.html');
+    res.sendFile(blankPath);
+  } catch (err) {
+    console.error('[blank] Error serving file:', err);
+    res.status(500).send('Error loading blank page');
+  }
+});
+
+app.get('/game-wrapper', (req, res) => {
+  try {
+    const wrapperPath = path.join(__dirname, 'game-wrapper.html');
+    res.sendFile(wrapperPath);
+  } catch (err) {
+    console.error('[game-wrapper] Error serving file:', err);
+    res.status(500).send('Error loading game wrapper');
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -389,6 +408,9 @@ app.get('/', (req, res) => {
 app.get('/games', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// Serve static files BEFORE the catch-all route
+app.use(express.static(path.join(__dirname)));
 
 app.get('/:gameName', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));

@@ -3646,7 +3646,15 @@ function initializeRouting() {
         var game = gamesList[gameId];
         if (!game) return;
 
-        window.open(game.url, '_blank');
+        var gameWindow = window.open('about:blank', '_blank');
+        if (gameWindow) {
+            gameWindow.document.write(
+                '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box;}html,body,iframe{width:100%;height:100%;display:block;}body{overflow:hidden;}</style></head><body><iframe src="' +
+                game.url.replace(/"/g, '&quot;') +
+                '" style="width:100%;height:100%;border:none;"></iframe></body></html>'
+            );
+            gameWindow.document.close();
+        }
         window.history.pushState({}, '', '/games');
         handleRoute('/games');
     }

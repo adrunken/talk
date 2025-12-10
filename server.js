@@ -371,7 +371,6 @@ loadOnlineHistory();
 
 // Server
 const app = express();
-app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 // Allow CORS for API endpoints so clients opened from file:// or other origins can call /api
 app.use(function(req, res, next) {
@@ -403,6 +402,9 @@ app.get('/games', (req, res) => {
 app.get('/:gameName', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+// Serve static files after API routes
+app.use(express.static(path.join(__dirname)));
 
 app.get('/popsound.mp3', (req, res) => {
   res.sendFile(path.join(__dirname, 'popsound.mp3'));

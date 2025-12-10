@@ -3635,6 +3635,12 @@ function initializeRouting() {
         if (gamesListView) gamesListView.classList.remove('hidden');
         if (gameDetailView) gameDetailView.classList.add('hidden');
         if (gameContainer) gameContainer.innerHTML = '';
+
+        var firstLoginModal = document.getElementById('first-login');
+        if (firstLoginModal) {
+            firstLoginModal.classList.add('hidden');
+            firstLoginModal.classList.remove('show');
+        }
     }
 
     function showGameDetail(gameId) {

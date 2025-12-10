@@ -502,235 +502,8 @@ html {
     display: none !important;
 }
 
-#games-page.hidden {
-    display: none !important;
-}
-
 #input-container.hidden {
     display: none !important;
-}
-
-.games-list {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.games-list h2 {
-    color: var(--text-primary);
-    margin-bottom: 2rem;
-    font-size: 1.8rem;
-    display: none;
-}
-
-.games-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    width: 100%;
-    flex: 1;
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-@media (max-width: 1024px) {
-    .games-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 600px) {
-    .games-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.game-card {
-    background: var(--accent-primary);
-    border: none;
-    border-radius: var(--radius-lg);
-    padding: 2rem 1rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    color: white;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-md);
-}
-
-.game-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    background: var(--accent-hover);
-}
-
-.game-card:active {
-    transform: translateY(-2px);
-}
-
-.game-card-icon {
-    font-size: 2.5rem;
-}
-
-.game-card-title {
-    font-size: 1rem;
-    text-align: center;
-}
-
-.n-gon-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.n-gon-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.shell-shockers-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.shell-shockers-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.eaglercraft-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.eaglercraft-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.ovo-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.ovo-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.basket-random-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.basket-random-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.rooftop-snipers-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.rooftop-snipers-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.wild-west-clash-card {
-    width: 240px;
-    height: 160px;
-    padding: 0;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.wild-west-clash-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: calc(var(--radius-lg) - 4px);
-}
-
-.game-detail {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.game-detail.hidden {
-    display: none !important;
-}
-
-.game-back-button {
-    align-self: flex-start;
-    padding: 0.75rem 1.5rem;
-    background: var(--accent-primary);
-    color: white;
-    border: none;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.game-back-button:hover {
-    background: var(--accent-hover);
-    box-shadow: var(--shadow-md);
-}
-
-.game-container {
-    width: 100%;
-    height: 100%;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
-    flex: 1;
-}
-
-.game-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
 }
 
 .opaque { 
@@ -1013,9 +786,6 @@ html {
         <button id="nav-home" class="nav-button nav-button-home" title="Home">
             <i class="fas fa-home"></i>
         </button>
-        <button id="nav-controller" class="nav-button nav-button-controller" title="Controller">
-            <i class="fas fa-gamepad"></i>
-        </button>
     </div>
 </div>
 
@@ -1103,46 +873,6 @@ html {
     <div id="main"></div>
 </div>
 
-<div id="games-page" class="hidden page-container">
-    <div id="games-list-view" class="games-list">
-        <div class="games-grid">
-            <button class="game-card n-gon-card" data-game-id="n-gon" data-game-title="N-Gon" data-game-url="https://n-gon-n8ri.onrender.com">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F8e9be0716abd4ede97819ee63aae1956?format=webp&width=800" alt="N-Gon" class="n-gon-image">
-                <div class="game-card-title">N-Gon</div>
-            </button>
-            <button class="game-card shell-shockers-card" data-game-id="shell-shockers" data-game-title="Shell Shockers" data-game-url="https://shell-shockers-io-0x72.onrender.com/">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F7fa9e512060d46c3b42d49ebf3372ac9?format=webp&width=800" alt="Shell Shockers" class="shell-shockers-image">
-                <div class="game-card-title">Shell Shockers</div>
-            </button>
-            <button class="game-card eaglercraft-card" data-game-id="eaglercraft" data-game-title="Eaglercraft" data-game-url="https://eaglercrafthtmlsd.onrender.com">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F20a80aebb8e94ad8a635ef1f5e06d8cc?format=webp&width=800" alt="Eaglercraft" class="eaglercraft-image">
-                <div class="game-card-title">Eaglercraft</div>
-            </button>
-            <button class="game-card ovo-card" data-game-id="ovo" data-game-title="OVO" data-game-url="https://ovok.onrender.com/">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2Fb4040e88f2e74f66a9fc73f22ad9daf3?format=webp&width=800" alt="OVO" class="ovo-image">
-                <div class="game-card-title">OVO</div>
-            </button>
-            <button class="game-card basket-random-card" data-game-id="basket-random" data-game-title="Basket Random" data-game-url="https://basket-random-rbdi.onrender.com">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F3cf85fbea24a4a5a9b312cd524cf8563?format=webp&width=800" alt="Basket Random" class="basket-random-image">
-                <div class="game-card-title">Basket Random</div>
-            </button>
-            <button class="game-card rooftop-snipers-card" data-game-id="rooftop-snipers" data-game-title="Rooftop Snipers" data-game-url="https://rooftop-snipers-u22m.onrender.com">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2F25957c88bcb34f0da06f2aefb0290b49?format=webp&width=800" alt="Rooftop Snipers" class="rooftop-snipers-image">
-                <div class="game-card-title">Rooftop Snipers</div>
-            </button>
-            <button class="game-card wild-west-clash-card" data-game-id="wild-west-clash" data-game-title="Wild West Clash" data-game-url="https://wild-west-cla.onrender.com">
-                <img src="https://cdn.builder.io/api/v1/image/assets%2F7707d4e6b08b425eb292f35dd8c8818d%2Fa2eafa74ef0a467593cbb4afedb2120e?format=webp&width=800" alt="Wild West Clash" class="wild-west-clash-image">
-                <div class="game-card-title">Wild West Clash</div>
-            </button>
-        </div>
-    </div>
-
-    <div id="game-detail-view" class="hidden game-detail">
-        <div id="game-container" class="game-container">
-            <!-- Game content will be loaded here -->
-        </div>
-    </div>
-</div>
 
 <div id="input-container">
     <div id="input-wrapper">
@@ -3600,96 +3330,28 @@ $(document).ready(function() {
 // ===== Routing Logic =====
 function initializeRouting() {
     var navHome = document.getElementById('nav-home');
-    var navController = document.getElementById('nav-controller');
     var wrapper = document.getElementById('wrapper');
-    var gamesPage = document.getElementById('games-page');
     var inputContainer = document.getElementById('input-container');
     var rightSidebar = document.getElementById('right');
-    var gamesListView = document.getElementById('games-list-view');
-    var gameDetailView = document.getElementById('game-detail-view');
-    var gameContainer = document.getElementById('game-container');
-
-    var gamesList = {
-        'n-gon': { title: 'N-Gon', url: 'https://n-gon-n8ri.onrender.com' },
-        'shell-shockers': { title: 'Shell Shockers', url: 'https://shell-shockers-io-0x72.onrender.com/' },
-        'eaglercraft': { title: 'Eaglercraft', url: 'https://eaglercrafthtmlsd.onrender.com' },
-        'ovo': { title: 'OVO', url: 'https://ovok.onrender.com/' },
-        'basket-random': { title: 'Basket Random', url: 'https://basket-random-rbdi.onrender.com' },
-        'rooftop-snipers': { title: 'Rooftop Snipers', url: 'https://rooftop-snipers-u22m.onrender.com' },
-        'wild-west-clash': { title: 'Wild West Clash', url: 'https://wild-west-cla.onrender.com' }
-    };
 
     function showHome() {
         if (wrapper) wrapper.classList.remove('hidden');
-        if (gamesPage) gamesPage.classList.add('hidden');
         if (inputContainer) inputContainer.classList.remove('hidden');
         if (rightSidebar) rightSidebar.classList.remove('hidden');
-    }
-
-    function showGamesList() {
-        if (wrapper) wrapper.classList.add('hidden');
-        if (gamesPage) gamesPage.classList.remove('hidden');
-        if (inputContainer) inputContainer.classList.add('hidden');
-        if (rightSidebar) rightSidebar.classList.add('hidden');
-        if (gamesListView) gamesListView.classList.remove('hidden');
-        if (gameDetailView) gameDetailView.classList.add('hidden');
-        if (gameContainer) gameContainer.innerHTML = '';
-
-        var firstLoginModal = document.getElementById('first-login');
-        if (firstLoginModal) {
-            firstLoginModal.classList.add('hidden');
-            firstLoginModal.classList.remove('show');
-        }
-    }
-
-
-    function handleRoute(pathname) {
-        if (pathname === '/games') {
-            showGamesList();
-        } else if (pathname.startsWith('/')) {
-            var gameId = pathname.substring(1);
-            if (gamesList[gameId]) {
-                // Games now open in new tabs, so just show games list
-                showGamesList();
-            } else {
-                showHome();
-            }
-        } else {
-            showHome();
-        }
     }
 
     if (navHome) {
         navHome.addEventListener('click', function() {
             window.history.pushState({}, '', '/');
-            handleRoute('/');
+            showHome();
         });
     }
-
-    if (navController) {
-        navController.addEventListener('click', function() {
-            window.history.pushState({}, '', '/games');
-            handleRoute('/games');
-        });
-    }
-
-    var gameCards = document.querySelectorAll('.game-card');
-    gameCards.forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            e.preventDefault();
-            var gameId = this.getAttribute('data-game-id');
-            var game = gamesList[gameId];
-            if (!game) return;
-
-            window.open('/blank?url=' + encodeURIComponent(game.url), '_blank');
-        });
-    });
 
     window.addEventListener('popstate', function() {
-        handleRoute(window.location.pathname);
+        showHome();
     });
 
-    handleRoute(window.location.pathname);
+    showHome();
 }
 
 if (document.readyState === 'loading') {

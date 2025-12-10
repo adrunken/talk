@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body, iframe { width: 100%; height: 100%; display: block; }
+        html, body { width: 100%; height: 100%; }
         body { overflow: hidden; }
+        #game-frame { width: 100%; height: 100%; border: none; display: block; }
     </style>
 </head>
 <body>
-    <iframe id="game" style="width:100%;height:100%;border:none;"></iframe>
+    <iframe id="game-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation"></iframe>
+
     <script>
-        var url = new URLSearchParams(window.location.search).get('url');
-        if (url) {
-            document.getElementById('game').src = decodeURIComponent(url);
+        const gameUrl = new URLSearchParams(window.location.search).get('url');
+        const gameFrame = document.getElementById('game-frame');
+
+        if (gameUrl) {
+            gameFrame.src = decodeURIComponent(gameUrl);
         }
     </script>
 </body>

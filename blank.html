@@ -5,161 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; display: flex; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        body { overflow: hidden; background: #0f172a; color: #f1f5f9; }
-        iframe { width: 100%; height: 100%; border: none; display: block; }
-        #game { display: block; }
-        #error-panel {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.95);
-            z-index: 10000;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-        }
-        #error-panel.show { display: flex; }
-        .error-content {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 0.75rem;
-            padding: 2rem;
-            max-width: 500px;
-            text-align: center;
-        }
-        .error-icon { font-size: 3rem; margin-bottom: 1rem; }
-        .error-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; color: #ef4444; }
-        .error-message { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 1.5rem; line-height: 1.6; }
-        .error-code {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            color: #60a5fa;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .error-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-        .error-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .error-btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        .error-btn-primary:hover {
-            background: #2563eb;
-        }
-        .error-btn-secondary {
-            background: #475569;
-            color: #f1f5f9;
-        }
-        .error-btn-secondary:hover {
-            background: #64748b;
-        }
+        html, body { width: 100%; height: 100%; display: block; }
+        body { overflow: hidden; }
+        #game-frame { width: 100%; height: 100%; display: block; border: none; }
     </style>
 </head>
 <body>
-    <iframe id="game"></iframe>
-    <div id="error-panel">
-        <div class="error-content">
-            <div class="error-icon">⚠️</div>
-            <div class="error-title">Game Failed to Load</div>
-            <div class="error-message" id="error-message">The game server encountered an error. Please try again later or check your browser console for details.</div>
-            <div class="error-code" id="error-code" style="display: none;"></div>
-            <div class="error-actions">
-                <button class="error-btn error-btn-primary" onclick="location.reload()">Reload</button>
-                <button class="error-btn error-btn-secondary" onclick="window.history.back()">Go Back</button>
-            </div>
-        </div>
-    </div>
+    <iframe id="game-frame"></iframe>
 
     <script>
-        var url = new URLSearchParams(window.location.search).get('url');
-        var gameFrame = document.getElementById('game');
-        var errorPanel = document.getElementById('error-panel');
-        var errorMessage = document.getElementById('error-message');
-        var errorCode = document.getElementById('error-code');
-        var timeoutId = null;
-        var hasError = false;
+        const gameUrl = new URLSearchParams(window.location.search).get('url');
+        const gameFrame = document.getElementById('game-frame');
 
-        function showError(message, details) {
-            hasError = true;
-            if (gameFrame) gameFrame.style.display = 'none';
-            if (errorPanel) errorPanel.classList.add('show');
-            if (errorMessage) errorMessage.textContent = message;
-            if (details && errorCode) {
-                errorCode.textContent = details;
-                errorCode.style.display = 'block';
-            }
-        }
-
-        if (!url) {
-            showError('No game URL provided', 'The game URL parameter is missing.');
+        if (!gameUrl) {
+            document.body.textContent = 'No game URL provided';
         } else {
-            // Set a timeout in case the game doesn't load within 15 seconds
-            timeoutId = setTimeout(function() {
-                if (!hasError) {
-                    showError(
-                        'Game server is not responding',
-                        'The game server took too long to respond. This may indicate:\n• Server is temporarily down\n• Network connectivity issue\n• Game build error'
-                    );
-                }
-            }, 15000);
+            gameFrame.src = gameUrl;
 
-            // Listen for errors on the iframe
-            gameFrame.addEventListener('error', function(e) {
-                clearTimeout(timeoutId);
-                showError(
-                    'Failed to load game',
-                    'Error: ' + (e.message || 'Unknown error')
-                );
-            });
+            window.addEventListener('message', (event) => {
+                if (event.source !== gameFrame.contentWindow) return;
 
-            // Handle iframe crashes and unhandled exceptions
-            gameFrame.addEventListener('load', function() {
-                clearTimeout(timeoutId);
+                const msg = event.data;
+                if (!msg || msg.type !== 'storage-op') return;
+
+                const { action, key, value, id } = msg;
+                let result = null;
+                let error = null;
+
                 try {
-                    // Try to detect if iframe is accessible
-                    if (gameFrame.contentWindow) {
-                        // Set up error handlers in the iframe context
-                        gameFrame.contentWindow.addEventListener('error', function(e) {
-                            console.error('Game error:', e);
-                        });
-                    }
+                    if (action === 'getItem') result = localStorage.getItem(key);
+                    else if (action === 'setItem') localStorage.setItem(key, value);
+                    else if (action === 'removeItem') localStorage.removeItem(key);
+                    else if (action === 'clear') localStorage.clear();
+                    else if (action === 'key') result = localStorage.key(parseInt(key));
+                    else if (action === 'length') result = localStorage.length;
                 } catch (e) {
-                    // Likely CORS restriction - this is expected
+                    error = e.message;
                 }
+
+                gameFrame.contentWindow.postMessage({ type: 'storage-result', id, result, error }, '*');
             });
 
-            // Fallback: detect if page never loads after a reasonable time
-            window.addEventListener('error', function(e) {
-                if (!hasError && e.message && (e.message.includes('Java exception') || e.message.includes('WebGL'))) {
-                    clearTimeout(timeoutId);
-                    showError(
-                        'Game encountered a critical error',
-                        'Error type: ' + e.message + '\n\nThis may indicate a WebGL or engine initialization issue.'
-                    );
+            gameFrame.addEventListener('load', () => {
+                try {
+                    const code = `(function() {
+                        let rid = 0;
+                        window.localStorage = new Proxy({}, {
+                            get: (t, k) => {
+                                if (k === 'getItem') return (key) => {
+                                    const id = ++rid;
+                                    let res = null, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'getItem', key, id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                };
+                                if (k === 'setItem') return (key, value) => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'setItem', key, value, id: ++rid }, '*');
+                                };
+                                if (k === 'removeItem') return (key) => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'removeItem', key, id: ++rid }, '*');
+                                };
+                                if (k === 'clear') return () => {
+                                    window.parent.postMessage({ type: 'storage-op', action: 'clear', id: ++rid }, '*');
+                                };
+                                if (k === 'key') return (idx) => {
+                                    const id = ++rid;
+                                    let res = null, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'key', key: idx, id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                };
+                                if (k === 'length') {
+                                    const id = ++rid;
+                                    let res = 0, ok = false;
+                                    const h = (e) => {
+                                        if (e.data && e.data.type === 'storage-result' && e.data.id === id) {
+                                            res = e.data.result; ok = true; window.removeEventListener('message', h);
+                                        }
+                                    };
+                                    window.addEventListener('message', h);
+                                    window.parent.postMessage({ type: 'storage-op', action: 'length', id }, '*');
+                                    const start = Date.now();
+                                    while (!ok && Date.now() - start < 100) {}
+                                    if (!ok) window.removeEventListener('message', h);
+                                    return res;
+                                }
+                                return undefined;
+                            }
+                        });
+                    })();`;
+                    const script = gameFrame.contentDocument.createElement('script');
+                    script.textContent = code;
+                    gameFrame.contentDocument.head.insertBefore(script, gameFrame.contentDocument.head.firstChild);
+                } catch (e) {
+                    console.warn('Could not inject storage proxy');
                 }
             });
-
-            gameFrame.src = decodeURIComponent(url);
         }
     </script>
 </body>

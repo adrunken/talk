@@ -399,12 +399,12 @@ app.get('/games', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve static files BEFORE the catch-all route
+app.use(express.static(path.join(__dirname)));
+
 app.get('/:gameName', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-// Serve static files after API routes
-app.use(express.static(path.join(__dirname)));
 
 app.get('/popsound.mp3', (req, res) => {
   res.sendFile(path.join(__dirname, 'popsound.mp3'));

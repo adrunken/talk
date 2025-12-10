@@ -20,7 +20,7 @@ The best way to test TalkTalkTalk is to install it locally on a Windows or Linux
     python talktalktalk.py start                                    # or use ./talktalktalk.py start instead to have a 
                                                                     #                     proper name when using "top"
 
-Open your browser at the address `127.0.0.1:9000`, it works!
+Open your browser at the address `127.0.0.1:9000`, it wor
 
 Now that it works locally, you probably want to install it on a web server, using an Apache server? The installation process is the same, you probably have nothing else to do, because the `.htaccess` file is already telling your web server how to redirect the traffic to the Python script, and everything should work out of the box.  If it doesn't, try to run `a2enmod proxy proxy_wstunnel ; service apache2 restart` to enable WebSocket handling by Apache.
 

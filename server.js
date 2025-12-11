@@ -7,7 +7,6 @@ const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
 const { createHumanChessAI } = require('./human-like-chess-ai');
-const LichessAPI = require('./lichess');
 
 // Config (mirrors config.py defaults)
 const HOST = '0.0.0.0';

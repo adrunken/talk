@@ -2747,7 +2747,18 @@ function ready() {
             var dotClass = user.online ? 'status-dot online' : 'status-dot offline';
             var lastSeenAttr = '';
             if (!user.online && user.lastSeen) {
-                lastSeenAttr = ' data-last-seen="Last Seen: ' + user.lastSeen.time + '"';
+                var lastSeenDate = '';
+                if (user.lastSeen.timestamp) {
+                    var date = new Date(user.lastSeen.timestamp * 1000);
+                    var day = date.getDate();
+                    var dayStr = day + (day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th');
+                    var hours = String(date.getHours()).padStart(2, '0');
+                    var minutes = String(date.getMinutes()).padStart(2, '0');
+                    lastSeenDate = dayStr + ' ' + hours + ':' + minutes;
+                } else {
+                    lastSeenDate = user.lastSeen.time;
+                }
+                lastSeenAttr = ' data-last-seen="Last Seen: ' + lastSeenDate + '"';
             }
             if (user.name === me) {
                 return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';

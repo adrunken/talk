@@ -2162,6 +2162,7 @@ wss.on('connection', (ws, req) => {
       const color = msg.color || 'random';
 
       console.log('[lichess] Creating challenge for user:', username, 'with options:', { clockLimit, clockIncrement, rated, color });
+      console.log('[lichess] Token available:', token ? '✓ (length: ' + token.length + ')' : '✗ missing');
 
       const lichess = new LichessAPI(token);
       lichess.createOpenChallenge({

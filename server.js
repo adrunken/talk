@@ -17,9 +17,6 @@ const ADMINHIDDENNAME = 'adminxyz';
 // Human-like AI bot cache (game_id -> bot instance)
 const aiBotsCache = new Map();
 
-// Lichess event stream connections (username -> stream connection)
-const lichessStreams = new Map();
-
 // Create a human-like AI bot for a game
 async function createAIBotForGame(board, aiElo) {
   try {

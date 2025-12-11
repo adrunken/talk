@@ -685,7 +685,7 @@ async function bestMoveWithStockfish(fen, depth, elo) {
     return chessApiMove; // Success with Chess-API
   }
 
-  // Both APIs failed, use improved fallback algorithm
+  // Chess-API.com failed, use improved fallback algorithm
   console.log('[ai] Chess-API.com failed, using local fallback algorithm');
   return bestMoveFallback(fen, depth, elo);
 }

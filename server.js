@@ -678,15 +678,8 @@ async function bestMoveWithStockfish(fen, depth, elo) {
     return openingMove;
   }
 
-  // Try Lichess API (most reliable)
-  console.log('[ai] Attempting Lichess API for move generation');
-  const lichessMove = await getMoveLichessAPI(fen, depth, elo);
-  if (lichessMove && lichessMove.length >= 4) {
-    return lichessMove; // Success with Lichess
-  }
-
-  // Lichess failed, try Chess-API.com
-  console.log('[ai] Lichess API failed, attempting Chess-API.com fallback');
+  // Try Chess-API.com
+  console.log('[ai] Attempting Chess-API.com for move generation');
   const chessApiMove = await getMoveChessAPI(fen, depth, elo);
   if (chessApiMove && chessApiMove.length >= 4) {
     return chessApiMove; // Success with Chess-API

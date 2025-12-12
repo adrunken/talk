@@ -1565,6 +1565,29 @@ function ready() {
         });
     });
 
+    // Admin IP ban modal handlers
+    $('#admin-ip-bans-close').on('click', function() {
+        hideAdminIpBansModal();
+    });
+
+    $('#admin-ban-ip-btn').on('click', function() {
+        var ip = $('#admin-ban-ip-input').val().trim();
+        var reason = $('#admin-ban-reason-input').val().trim();
+        if (!ip || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'admin_ban_ip', ip: ip, reason: reason }));
+        $('#admin-ban-ip-input').val('');
+        $('#admin-ban-reason-input').val('');
+    });
+
+    $(document).on('click', '.admin-unban-btn', function() {
+        var ip = $(this).data('ip');
+        if (!ip || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'admin_unban_ip', ip: ip }));
+        $(this).closest('.admin-ban-item').fadeOut(400, function() {
+            $(this).remove();
+        });
+    });
+
     // Delegated handlers for invites and users
     $('#right').on('click', '.invite-user-btn', function() {
         var toUser = $(this).data('user');

@@ -1528,15 +1528,6 @@ function hidePromotionDialog() {
 function sendMove(from, to, promotion) {
     if (!chessGame) return;
 
-    // Handle Lichess games
-    if (chessGame.source === 'lichess') {
-        sendLichessMove(from, to, promotion);
-        clearSelection();
-        $('#chess-board .chess-square').removeClass('drag-over');
-        clearPendingMove();
-        return;
-    }
-
     if (stockfishGame) {
         handleStockfishMove(from, to, promotion);
         clearPendingMove();

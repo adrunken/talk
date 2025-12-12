@@ -1338,6 +1338,15 @@ wss.on('connection', (ws, req) => {
     ws.close();
     return;
   }
+
+  // Check if IP is banned
+  const clientIp = req.socket.remoteAddress || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+  if (isIpBanned(clientIp)) {
+    console.log(`[ban] Connection attempt from banned IP: ${clientIp}`);
+    ws.close(4000, 'IP address is banned');
+    return;
+  }
+
   userMessageTimes.set(ws, []);
 
   ws.on('message', async (data) => {

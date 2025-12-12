@@ -2066,6 +2066,61 @@ wss.on('connection', (ws, req) => {
 
       sendUserList();
     }
+    else if (msg.type === 'admin_ban_ip') {
+      const uname = users.get(ws);
+      const ip = String(msg.ip || '').trim();
+      const reason = String(msg.reason || 'No reason specified').trim();
+      const unameStr = String(uname || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can ban IPs.', username: 'System' });
+        return;
+      }
+
+      if (!ip || ip.length === 0) {
+        send(ws, { type: 'message', message: 'Invalid IP address.', username: 'System' });
+        return;
+      }
+
+      const banned = banIp(ip, reason, uname);
+      if (banned) {
+        const systemMsg = { type: 'message', message: `IP ${ip} banned: ${reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
+        messages.push(systemMsg);
+        appendMessage(systemMsg);
+        idx += 1;
+        const msgStr = JSON.stringify(systemMsg);
+        for (const [u] of users) send(u, msgStr);
+      } else {
+        send(ws, { type: 'message', message: 'Failed to ban IP.', username: 'System' });
+      }
+    }
+    else if (msg.type === 'admin_unban_ip') {
+      const uname = users.get(ws);
+      const ip = String(msg.ip || '').trim();
+      const unameStr = String(uname || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can unban IPs.', username: 'System' });
+        return;
+      }
+
+      if (!ip || ip.length === 0) {
+        send(ws, { type: 'message', message: 'Invalid IP address.', username: 'System' });
+        return;
+      }
+
+      const unbanned = unbanIp(ip);
+      if (unbanned) {
+        const systemMsg = { type: 'message', message: `IP ${ip} unbanned`, username: 'System', id: idx, datetime: Math.floor(now()) };
+        messages.push(systemMsg);
+        appendMessage(systemMsg);
+        idx += 1;
+        const msgStr = JSON.stringify(systemMsg);
+        for (const [u] of users) send(u, msgStr);
+      } else {
+        send(ws, { type: 'message', message: 'IP not found in ban list.', username: 'System' });
+      }
+    }
   });
 
   ws.on('close', () => {

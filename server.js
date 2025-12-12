@@ -243,12 +243,83 @@ function updatePlayerElo(username, opponentElo, result) {
   return { newElo: playerData.elo, eloChange, playerData };
 }
 
+// IP Ban System
+const IP_BANS_FILE = path.join(DATA_DIR, 'ip-bans.json');
+let ipBans = {}; // ip -> { reason: string, createdAt: number, createdBy: string, expiresAt?: number }
+
+function loadIpBans() {
+  try {
+    if (fs.existsSync(IP_BANS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(IP_BANS_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        ipBans = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistIpBans() {
+  try { fs.writeFile(IP_BANS_FILE, JSON.stringify(ipBans, null, 2), () => {}); } catch(_) {}
+}
+
+function isIpBanned(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  const ban = ipBans[ip];
+  if (!ban) return false;
+  if (ban.expiresAt && ban.expiresAt < Date.now()) {
+    delete ipBans[ip];
+    persistIpBans();
+    return false;
+  }
+  return true;
+}
+
+function banIp(ip, reason = 'No reason specified', adminName = 'System') {
+  if (!ip || typeof ip !== 'string') return false;
+  ipBans[ip] = {
+    reason: String(reason || '').slice(0, 500),
+    createdAt: Date.now(),
+    createdBy: String(adminName || 'System').slice(0, 50)
+  };
+  persistIpBans();
+  console.log(`[ban] IP ${ip} banned by ${adminName}: ${reason}`);
+  return true;
+}
+
+function unbanIp(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  if (ipBans[ip]) {
+    delete ipBans[ip];
+    persistIpBans();
+    console.log(`[ban] IP ${ip} unbanned`);
+    return true;
+  }
+  return false;
+}
+
+function getBannedIps() {
+  const now = Date.now();
+  const result = {};
+  for (const [ip, ban] of Object.entries(ipBans)) {
+    if (ban.expiresAt && ban.expiresAt < now) {
+      delete ipBans[ip];
+    } else {
+      result[ip] = ban;
+    }
+  }
+  if (Object.keys(result).length !== Object.keys(ipBans).length) {
+    persistIpBans();
+  }
+  return result;
+}
+
 
 loadMessages();
 loadKnownUsers();
 loadUserSettings();
 loadUserElos();
 loadOnlineHistory();
+loadIpBans();
 
 // Server
 const app = express();

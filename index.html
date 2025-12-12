@@ -2605,7 +2605,38 @@ function ready() {
         $('#admin-users-list').empty();
     }
 
+    function showAdminIpBansModal(bans) {
+        var bansList = $('#admin-bans-list');
+        bansList.empty();
 
+        if (!bans || Object.keys(bans).length === 0) {
+            bansList.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No banned IPs</div>');
+        } else {
+            Object.entries(bans).forEach(function([ip, ban]) {
+                var item = $('<div class="admin-ban-item" />');
+                var info = $('<div class="admin-ban-info" />');
+                var ipSpan = $('<div class="admin-ban-ip" />').text(ip);
+                var reasonSpan = $('<div class="admin-ban-details" />').text('Reason: ' + (ban.reason || 'N/A'));
+                var createdSpan = $('<div class="admin-ban-details" />').text('Banned by ' + (ban.createdBy || 'System') + ' at ' + new Date(ban.createdAt).toLocaleString());
+
+                info.append(ipSpan);
+                info.append(reasonSpan);
+                info.append(createdSpan);
+
+                var unbanBtn = $('<button class="admin-unban-btn" />').text('Unban').attr('data-ip', ip);
+                item.append(info);
+                item.append(unbanBtn);
+                bansList.append(item);
+            });
+        }
+
+        $('#admin-ip-bans-modal').addClass('show');
+    }
+
+    function hideAdminIpBansModal() {
+        $('#admin-ip-bans-modal').removeClass('show');
+        $('#admin-bans-list').empty();
+    }
 
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();

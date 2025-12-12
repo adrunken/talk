@@ -10,6 +10,16 @@ const LICHESS_API_URL = 'https://lichess.org/api';
 class LichessAPI {
   constructor(apiToken) {
     this.apiToken = apiToken;
+    if (!apiToken || typeof apiToken !== 'string' || apiToken.trim() === '') {
+      console.error('[lichess] Invalid token provided to LichessAPI:', {
+        isSet: !!apiToken,
+        type: typeof apiToken,
+        length: apiToken ? apiToken.length : 0
+      });
+    } else {
+      const maskedToken = apiToken.substring(0, 4) + '*'.repeat(Math.max(0, apiToken.length - 8)) + apiToken.substring(Math.max(4, apiToken.length - 4));
+      console.log('[lichess] LichessAPI initialized with token (masked):', maskedToken);
+    }
   }
 
   /**

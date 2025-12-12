@@ -752,28 +752,6 @@ html {
 .admin-user-name { flex: 1; font-weight: 500; color: var(--text-primary); }
 .admin-delete-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-delete-btn:hover { background: #ef4444; color: white; }
-/* Lichess Styles */
-#lichess-section { margin-top: 0.5rem; margin-bottom: 1rem; }
-#lichess-section h3 { margin-bottom: 0.75rem; }
-.lichess-setting { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
-#lichess-token-input { padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.875rem; }
-#lichess-token-input:focus { outline: none; border-color: var(--accent-primary); }
-.lichess-status-indicator { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
-.lichess-status-indicator.success { color: #22c55e; }
-.lichess-status-indicator.error { color: #ef4444; }
-.lichess-form { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); }
-.lichess-form-group { display: flex; flex-direction: column; gap: 0.25rem; }
-.lichess-form-group label { font-size: 0.875rem; color: var(--text-secondary); }
-.lichess-form-group select { padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); }
-.lichess-challenges-container { max-height: 300px; overflow-y: auto; padding: 0.5rem 0; }
-.lichess-challenge-item { padding: 0.75rem; background: var(--bg-tertiary); border-radius: var(--radius-md); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
-.lichess-challenge-info { flex: 1; }
-.lichess-challenge-name { font-weight: 500; color: var(--text-primary); font-size: 0.875rem; }
-.lichess-challenge-details { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
-.lichess-challenge-accept-btn { padding: 0.5rem 0.75rem; background: var(--accent-primary); color: white; border: none; border-radius: var(--radius-md); cursor: pointer; font-size: 0.75rem; }
-.lichess-challenge-accept-btn:hover { background: var(--accent-hover); }
-#lichess-controls-wrapper { display: flex; gap: 0.5rem; }
-#lichess-controls-wrapper .chess-button { flex: 1; }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
@@ -807,9 +785,6 @@ html {
                 <button class="chess-settings-button" id="board-pieces-btn" title="Board and Pieces">
                     <i class="fas fa-chess"></i> Board & Pieces
                 </button>
-                <button class="chess-settings-button" id="lichess-token-btn" title="Lichess API Token">
-                    <i class="fas fa-key"></i> Lichess Token
-                </button>
             </div>
         </div>
     </div>
@@ -818,42 +793,6 @@ html {
         <h3>Username</h3>
         <span id="username" class="dashed">user</span>
         <input value="user1" id="usernameinput" maxlength="16" />
-    </div>
-
-    <div id="lichess-section">
-        <h3>Lichess</h3>
-        <div id="lichess-token-input-wrapper" class="lichess-setting">
-            <input type="password" id="lichess-token-input" placeholder="Paste Lichess API token" maxlength="100" />
-            <button id="lichess-token-save" class="chess-button">Save Token</button>
-            <span id="lichess-token-status" class="lichess-status-indicator"></span>
-        </div>
-        <div id="lichess-controls-wrapper" class="lichess-setting hidden">
-            <button id="lichess-create-challenge-btn" class="chess-button">Create Challenge</button>
-            <button id="lichess-list-challenges-btn" class="chess-button">Browse Challenges</button>
-        </div>
-        <div id="lichess-challenges-list" class="lichess-challenges-container hidden">
-            <div id="lichess-challenges-items"></div>
-        </div>
-        <div id="lichess-create-challenge-form" class="lichess-form hidden">
-            <div class="lichess-form-group">
-                <label>Time Control</label>
-                <select id="lichess-time-control">
-                    <option value="1+0">Bullet 1+0</option>
-                    <option value="2+1">Bullet 2+1</option>
-                    <option value="3+0">Blitz 3+0</option>
-                    <option value="3+2">Blitz 3+2</option>
-                    <option value="5+3">Blitz 5+3</option>
-                    <option value="10+0">Rapid 10+0</option>
-                </select>
-            </div>
-            <div class="lichess-form-group">
-                <label>
-                    <input type="checkbox" id="lichess-rated" /> Rated
-                </label>
-            </div>
-            <button id="lichess-create-btn" class="chess-button">Create</button>
-            <button id="lichess-cancel-challenge-btn" class="chess-button">Cancel</button>
-        </div>
     </div>
 
     <div>
@@ -920,19 +859,6 @@ html {
   </div>
 </div>
 
-<!-- Lichess API Token modal -->
-<div id="lichess-token-modal" class="first-login-overlay hidden">
-  <div class="first-login-panel">
-    <div class="first-login-title">Lichess API Token</div>
-    <div style="margin: 0.5rem 0 0.75rem; color: var(--text-secondary); font-size: 0.9rem;">Get your token from <a href="https://lichess.org/account/oauth/token" target="_blank" style="color: var(--accent-primary);">lichess.org/account/oauth/token</a></div>
-    <input id="lichess-token-modal-input" class="first-login-input" type="password" maxlength="100" autocomplete="off" placeholder="Paste your Lichess API token" />
-    <div id="lichess-token-modal-status" style="margin-top: 0.5rem; font-size: 0.85rem; min-height: 1.2rem;"></div>
-    <div class="first-login-actions">
-      <button id="lichess-token-modal-cancel" class="first-login-save">Cancel</button>
-      <button id="lichess-token-modal-save" class="first-login-save">Save Token</button>
-    </div>
-  </div>
-</div>
 
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
@@ -1055,9 +981,6 @@ var premoveQueue = [];
 var currentTentative = null; // {from,to,isPremove}
 // Guards to prevent re-entrant premove processing and concurrent engine fetches
 var __processingPremoves = false;
-// Lichess game state
-var lichessCurrentGameId = null;
-var lichessCurrentGame = null;
 // Chess settings
 var chessSettings = { confirmMoves: true, premoveEnabled: true };
 
@@ -1605,15 +1528,6 @@ function hidePromotionDialog() {
 function sendMove(from, to, promotion) {
     if (!chessGame) return;
 
-    // Handle Lichess games
-    if (chessGame.source === 'lichess') {
-        sendLichessMove(from, to, promotion);
-        clearSelection();
-        $('#chess-board .chess-square').removeClass('drag-over');
-        clearPendingMove();
-        return;
-    }
-
     if (stockfishGame) {
         handleStockfishMove(from, to, promotion);
         clearPendingMove();
@@ -1644,19 +1558,6 @@ function clearPendingMove(){
 function stageMove(from, to, promotion){
     // Clear existing tentative visuals
     clearTentativeMoveVisuals();
-
-    // For Lichess games, always show confirmation (can't easily validate moves client-side)
-    if (chessGame && chessGame.source === 'lichess') {
-        pendingUserMove = { from: from, to: to, promotion: promotion || null };
-        $('#chess-board .chess-square').removeClass('selected');
-        $('#chess-board .chess-square[data-square="' + from + '"]').addClass('selected');
-        $('#chess-board .chess-square[data-square="' + to + '"]').addClass('selected');
-        currentTentative = { from: from, to: to, isPremove: false };
-        showTentativeMove(from, to);
-        updateConfirmButton();
-        flashStatus('Move ready. Press Confirm');
-        return;
-    }
 
     // If confirm moves is disabled, send immediately
     if (!chessSettings.confirmMoves) {
@@ -2154,118 +2055,6 @@ function ready() {
         setTimeout(function(){ $input.focus(); updateBtn(); }, 0);
     }
 
-    /**
-     * Open and load a Lichess game into the chess modal
-     */
-    window.openLichessGame = function(gameId, gameData) {
-        console.log('[lichess] Opening Lichess game:', gameId, gameData);
-
-        $('#chess-modal').removeClass('hidden');
-        $('#chess-confirm-move').prop('disabled', true);
-
-        lichessCurrentGameId = gameId;
-        lichessCurrentGame = gameData;
-
-        chessGame = {
-            id: gameId,
-            source: 'lichess',
-            color: gameData.color || 'white',
-            white: gameData.players && gameData.players.white ? gameData.players.white.user.name : 'White',
-            black: gameData.players && gameData.players.black ? gameData.players.black.user.name : 'Black',
-            fen: gameData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-            squareMap: {}
-        };
-
-        drawBoard();
-    };
-
-    /**
-     * Load full Lichess game state
-     */
-    window.loadLichessGameState = function(gameId, gameData) {
-        console.log('[lichess] Loading game state:', gameId);
-
-        if (!chessGame || chessGame.source !== 'lichess') {
-            openLichessGame(gameId, gameData);
-            return;
-        }
-
-        if (gameData.fen) {
-            chessGame.fen = gameData.fen;
-            chessGame.squareMap = {};
-            drawBoard();
-        }
-    };
-
-    /**
-     * Update Lichess game state incrementally
-     */
-    window.updateLichessGameState = function(gameId, update) {
-        console.log('[lichess] Updating game state:', gameId, update);
-
-        if (!chessGame || chessGame.source !== 'lichess') return;
-
-        if (update.fen) {
-            chessGame.fen = update.fen;
-            chessGame.squareMap = {};
-            drawBoard();
-
-            // Check if it's our turn now
-            updateLichessTurnStatus(update);
-        }
-
-        if (update.status && (update.status === 'mate' || update.status === 'resign' || update.status === 'timeout' || update.status === 'draw')) {
-            console.log('[lichess] Game ended:', update.status);
-            flashStatus('Game ended: ' + update.status);
-        }
-    };
-
-    /**
-     * Update turn status for Lichess game
-     */
-    window.updateLichessTurnStatus = function(update) {
-        if (!chessGame || chessGame.source !== 'lichess') return;
-
-        var isMyturn = false;
-        if (update.fen) {
-            // FEN format: ... w ... means white to move, b means black
-            var parts = update.fen.split(' ');
-            var turnColor = parts[1];
-            isMyturn = (turnColor === 'w' && chessGame.color === 'white') || (turnColor === 'b' && chessGame.color === 'black');
-        }
-
-        $('#chess-confirm-move').prop('disabled', !isMyturn);
-        if (isMyturn) {
-            flashStatus('Your turn!');
-        }
-    };
-
-    /**
-     * Send move to Lichess
-     */
-    window.sendLichessMove = function(from, to, promotion) {
-        if (!chessGame || chessGame.source !== 'lichess' || !lichessCurrentGameId) {
-            console.error('[lichess] Cannot send move - not a Lichess game');
-            return;
-        }
-
-        // Convert algebraic notation to UCI format
-        var move = from + to;
-        if (promotion) {
-            move += promotion.toLowerCase();
-        }
-
-        console.log('[lichess] Sending move to Lichess:', move);
-
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({
-                type: 'lichess_make_move',
-                gameId: lichessCurrentGameId,
-                move: move
-            }));
-        }
-    };
-
     var storedName = getStoredUsername();
     if (storedName === null || storedName === '') {
         showFirstLoginModal();
@@ -2554,52 +2343,6 @@ function ready() {
         }
     });
 
-    // Lichess token modal handlers
-    $('#lichess-token-btn').on('click', function(e) {
-        e.stopPropagation();
-        $('#chess-settings-dropdown').addClass('hidden');
-        $('#lichess-token-modal').removeClass('hidden').addClass('show');
-        $('body > *:not(#lichess-token-modal)').addClass('opaque');
-        $('#lichess-token-modal-input').val('').focus();
-        $('#lichess-token-modal-status').text('').removeClass('error').removeClass('success');
-    });
-
-    $('#lichess-token-modal-cancel').on('click', function() {
-        $('#lichess-token-modal').addClass('hidden').removeClass('show');
-        $('body > *:not(#lichess-token-modal)').removeClass('opaque');
-    });
-
-    $('#lichess-token-modal-save').on('click', function() {
-        var token = $('#lichess-token-modal-input').val().trim();
-        var username = $('#username').text().trim();
-        var $status = $('#lichess-token-modal-status');
-
-        if (!token) {
-            $status.text('✗ Token required').addClass('error').removeClass('success');
-            return;
-        }
-        if (!username || username === 'user') {
-            $status.text('✗ Set username first').addClass('error').removeClass('success');
-            return;
-        }
-        if (!ws || ws.readyState !== 1) {
-            $status.text('✗ Connection not ready').addClass('error').removeClass('success');
-            return;
-        }
-
-        console.log('[lichess] Saving token from modal for user:', username);
-        $status.text('Saving...').removeClass('error').removeClass('success');
-        ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
-    });
-
-    // Close lichess token modal when clicking outside
-    $('#lichess-token-modal').on('click', function(e) {
-        if (e.target.id === 'lichess-token-modal') {
-            $(this).addClass('hidden').removeClass('show');
-            $('body > *:not(#lichess-token-modal)').removeClass('opaque');
-        }
-    });
-
     // Board and Pieces tab switching
     $('.board-pieces-tab').on('click', function() {
         var tabName = $(this).data('tab');
@@ -2637,96 +2380,6 @@ function ready() {
         if (!pendingUserMove) return;
         var m = pendingUserMove; clearPendingMove();
         sendMove(m.from, m.to, m.promotion);
-    });
-
-    // Lichess Integration Handlers
-    $('#lichess-token-save').on('click', function() {
-        var token = $('#lichess-token-input').val().trim();
-        var username = $('#username').text().trim();
-
-        if (!token) {
-            $('#lichess-token-status').text('✗ Token required').addClass('error').removeClass('success');
-            return;
-        }
-        if (!username || username === 'user') {
-            $('#lichess-token-status').text('✗ Set username first').addClass('error').removeClass('success');
-            return;
-        }
-        if (!ws || ws.readyState !== 1) {
-            $('#lichess-token-status').text('✗ Connection not ready').addClass('error').removeClass('success');
-            console.error('WebSocket not ready. State:', ws ? ws.readyState : 'undefined');
-            return;
-        }
-        console.log('[lichess] Saving token for user:', username);
-        ws.send(JSON.stringify({ type: 'lichess_set_token', token: token }));
-        $('#lichess-token-status').text('Saving...').removeClass('error').removeClass('success');
-    });
-
-    $('#lichess-create-challenge-btn').on('click', function() {
-        $('#lichess-create-challenge-form').removeClass('hidden');
-        $('#lichess-challenges-list').addClass('hidden');
-        $('#lichess-controls-wrapper').addClass('hidden');
-    });
-
-    $('#lichess-list-challenges-btn').on('click', function() {
-        if (ws && ws.readyState === 1) {
-            $('#lichess-controls-wrapper').addClass('hidden');
-            $('#lichess-challenges-items').html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">Loading challenges...</div>');
-            $('#lichess-challenges-list').removeClass('hidden');
-            console.log('[lichess] Requesting challenges list');
-            ws.send(JSON.stringify({ type: 'lichess_list_challenges' }));
-        } else {
-            flashStatus('Connection not ready. Please wait and try again.');
-            console.error('[lichess] WebSocket not ready for browse challenges:', ws ? ws.readyState : 'no ws');
-        }
-    });
-
-    $('#lichess-create-btn').on('click', function() {
-        var timeControl = $('#lichess-time-control').val();
-        var parts = timeControl.split('+');
-        var clockLimit = parseInt(parts[0]) * 60;
-        var clockIncrement = parseInt(parts[1]);
-        var rated = $('#lichess-rated').is(':checked');
-
-        console.log('[lichess] Creating challenge:', { timeControl, clockLimit, clockIncrement, rated });
-
-        if (ws && ws.readyState === 1) {
-            $('#lichess-token-status').text('Creating...').removeClass('error').removeClass('success');
-            ws.send(JSON.stringify({
-                type: 'lichess_create_challenge',
-                clockLimit: clockLimit,
-                clockIncrement: clockIncrement,
-                rated: rated,
-                color: 'random'
-            }));
-        } else {
-            console.error('[lichess] WebSocket not ready');
-            $('#lichess-token-status').text('✗ Connection error').addClass('error').removeClass('success');
-        }
-    });
-
-    $('#lichess-cancel-challenge-btn').on('click', function() {
-        $('#lichess-create-challenge-form').addClass('hidden');
-        $('#lichess-controls-wrapper').removeClass('hidden');
-    });
-
-    // Check Lichess token status when username is available
-    function checkLichessTokenStatus() {
-        var username = $('#username').text().trim();
-        if (username && username !== 'user' && ws && ws.readyState === 1) {
-            console.log('[lichess] Checking token status for user:', username);
-            ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
-        }
-    }
-
-    // Check on page load
-    $(window).on('load', function() {
-        setTimeout(checkLichessTokenStatus, 1000);
-    });
-
-    // Check when username changes
-    $(document).on('change', '#usernameinput', function() {
-        setTimeout(checkLichessTokenStatus, 500);
     });
 
     // Keyboard: Enter confirms staged move (unless typing in inputs)
@@ -2854,7 +2507,18 @@ function ready() {
             var dotClass = user.online ? 'status-dot online' : 'status-dot offline';
             var lastSeenAttr = '';
             if (!user.online && user.lastSeen) {
-                lastSeenAttr = ' data-last-seen="Last Seen: ' + user.lastSeen.time + '"';
+                var lastSeenDate = '';
+                if (user.lastSeen.timestamp) {
+                    var date = new Date(user.lastSeen.timestamp * 1000);
+                    var day = date.getDate();
+                    var dayStr = day + (day % 10 === 1 && day !== 11 ? 'st' : day % 10 === 2 && day !== 12 ? 'nd' : day % 10 === 3 && day !== 13 ? 'rd' : 'th');
+                    var hours = String(date.getHours()).padStart(2, '0');
+                    var minutes = String(date.getMinutes()).padStart(2, '0');
+                    lastSeenDate = dayStr + ' ' + hours + ':' + minutes;
+                } else {
+                    lastSeenDate = user.lastSeen.time;
+                }
+                lastSeenAttr = ' data-last-seen="Last Seen: ' + lastSeenDate + '"';
             }
             if (user.name === me) {
                 return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
@@ -3090,195 +2754,6 @@ function ready() {
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
         }
-        else if (data['type'] === 'lichess_token_saved') {
-            console.log('[lichess] Token saved response received');
-            $('#lichess-token-status').text('✓ Saved').addClass('success').removeClass('error');
-            $('#lichess-token-input').val('');
-            $('#lichess-controls-wrapper').removeClass('hidden');
-            $('#lichess-token-input-wrapper').addClass('hidden');
-
-            // Also update modal status if it's open
-            if (!$('#lichess-token-modal').hasClass('hidden')) {
-                var $modalStatus = $('#lichess-token-modal-status');
-                $modalStatus.text('✓ Token saved').addClass('success').removeClass('error');
-                setTimeout(function() {
-                    $('#lichess-token-modal').addClass('hidden').removeClass('show');
-                    $('body > *:not(#lichess-token-modal)').removeClass('opaque');
-                    $modalStatus.text('').removeClass('success');
-                }, 1500);
-            }
-
-            // Start listening for challenges being accepted
-            console.log('[lichess] Starting event stream to listen for challenge acceptances');
-            ws.send(JSON.stringify({ type: 'lichess_start_event_stream' }));
-
-            setTimeout(function() {
-                $('#lichess-token-status').text('').removeClass('success');
-            }, 3000);
-        }
-        else if (data['type'] === 'lichess_token_status') {
-            console.log('[lichess] Token status:', data['hasToken'] ? 'has token' : 'no token');
-            if (data['hasToken']) {
-                $('#lichess-token-input-wrapper').addClass('hidden');
-                $('#lichess-controls-wrapper').removeClass('hidden');
-            } else {
-                $('#lichess-token-input-wrapper').removeClass('hidden');
-                $('#lichess-controls-wrapper').addClass('hidden');
-            }
-        }
-        else if (data['type'] === 'lichess_challenge_created') {
-            var challenge = data['challenge'];
-            console.log('[lichess] Challenge created:', challenge);
-
-            // Validate challenge has required fields
-            if (!challenge || (!challenge.id && !challenge.url)) {
-                console.error('[lichess] Invalid challenge response:', challenge);
-                var errorMsg = challenge && challenge.error ? challenge.error : 'Invalid response from Lichess';
-                $('#lichess-token-status').text('✗ ' + errorMsg).addClass('error').removeClass('success');
-                flashStatus('Error: ' + errorMsg);
-                return;
-            }
-
-            var challengeUrl = challenge.url || ('https://lichess.org/' + challenge.id);
-            flashStatus('Challenge created! Share this link: ' + challengeUrl);
-            $('#lichess-token-status').text('✓ Challenge created').addClass('success').removeClass('error');
-            setTimeout(function() {
-                $('#lichess-token-status').text('');
-                $('#lichess-create-challenge-form').addClass('hidden');
-                $('#lichess-controls-wrapper').removeClass('hidden');
-            }, 2000);
-        }
-        else if (data['type'] === 'lichess_challenges_list') {
-            var incomingChallenges = data['incoming'] || [];
-            var outgoingChallenges = data['outgoing'] || [];
-            var listContainer = $('#lichess-challenges-items');
-            listContainer.empty();
-
-            var hasContent = false;
-
-            if (incomingChallenges.length > 0) {
-                hasContent = true;
-                var incomingHeader = $('<div style="margin-bottom: 0.5rem; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Challenges to You:</div>');
-                listContainer.append(incomingHeader);
-
-                incomingChallenges.forEach(function(ch) {
-                    var challengeDiv = $('<div class="lichess-challenge-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border: 1px solid var(--border-light); border-radius: 4px; margin-bottom: 0.5rem;" />');
-                    var infoDiv = $('<div class="lichess-challenge-info" style="flex: 1;" />');
-                    var nameDiv = $('<div class="lichess-challenge-name" style="font-weight: bold;" />').text(ch.challenger ? ch.challenger.name : 'Anonymous');
-                    var detailsDiv = $('<div class="lichess-challenge-details" style="font-size: 0.85rem; color: var(--text-secondary);" />').text(
-                        (ch.timeControl ? ch.timeControl.show : 'No time control') + ' • ' +
-                        (ch.rated ? 'Rated' : 'Casual')
-                    );
-                    infoDiv.append(nameDiv);
-                    infoDiv.append(detailsDiv);
-                    var acceptBtn = $('<button class="lichess-challenge-accept-btn chess-button" style="margin-left: 0.5rem;" />').text('Accept');
-                    acceptBtn.data('challenge-id', ch.id);
-                    acceptBtn.on('click', function() {
-                        if (ws && ws.readyState === 1) {
-                            ws.send(JSON.stringify({ type: 'lichess_accept_challenge', challengeId: $(this).data('challenge-id') }));
-                        }
-                    });
-                    challengeDiv.append(infoDiv);
-                    challengeDiv.append(acceptBtn);
-                    listContainer.append(challengeDiv);
-                });
-            }
-
-            if (outgoingChallenges.length > 0) {
-                hasContent = true;
-                if (incomingChallenges.length > 0) {
-                    listContainer.append('<div style="margin: 1rem 0 0.5rem 0; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Your Challenges:</div>');
-                } else {
-                    listContainer.append('<div style="margin-bottom: 0.5rem; font-weight: bold; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Your Challenges:</div>');
-                }
-
-                outgoingChallenges.forEach(function(ch) {
-                    var challengeDiv = $('<div class="lichess-challenge-item" style="padding: 0.5rem; border: 1px solid var(--border-light); border-radius: 4px; margin-bottom: 0.5rem;" />');
-                    var infoDiv = $('<div class="lichess-challenge-info" />');
-                    var nameDiv = $('<div class="lichess-challenge-name" style="font-weight: bold;" />').text('Awaiting ' + (ch.destUser ? ch.destUser.name : 'opponent'));
-                    var detailsDiv = $('<div class="lichess-challenge-details" style="font-size: 0.85rem; color: var(--text-secondary);" />').text(
-                        (ch.timeControl ? ch.timeControl.show : 'No time control') + ' • ' +
-                        (ch.rated ? 'Rated' : 'Casual')
-                    );
-                    infoDiv.append(nameDiv);
-                    infoDiv.append(detailsDiv);
-                    challengeDiv.append(infoDiv);
-                    listContainer.append(challengeDiv);
-                });
-            }
-
-            if (!hasContent) {
-                var infoMsg = data['info'] || 'No challenges.';
-                listContainer.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">' + infoMsg + '<br><br><strong>Create a new challenge</strong> to invite an opponent!</div>');
-            }
-
-            var backBtn = $('<button class="lichess-back-btn chess-button" style="margin-top: 0.5rem; width: 100%;">Back</button>');
-            backBtn.on('click', function() {
-                $('#lichess-challenges-list').addClass('hidden');
-                $('#lichess-controls-wrapper').removeClass('hidden');
-            });
-            listContainer.append(backBtn);
-            $('#lichess-challenges-list').removeClass('hidden');
-        }
-        else if (data['type'] === 'lichess_challenge_accepted') {
-            var game = data['game'];
-            flashStatus('Challenge accepted! Game ID: ' + game.id);
-            $('#lichess-challenges-list').addClass('hidden');
-            $('#lichess-controls-wrapper').removeClass('hidden');
-        }
-        else if (data['type'] === 'lichess_error') {
-            flashStatus('Lichess error: ' + data['message']);
-            console.error('[lichess] Error:', data['message']);
-            $('#lichess-token-status').text('✗ ' + data['message']).addClass('error').removeClass('success');
-
-            // Also show error in modal if it's open
-            if (!$('#lichess-token-modal').hasClass('hidden')) {
-                $('#lichess-token-modal-status').text('✗ ' + data['message']).addClass('error').removeClass('success');
-            }
-
-            // If we were showing the challenges list, show the error there too
-            if (!$('#lichess-challenges-list').hasClass('hidden')) {
-                $('#lichess-challenges-items').html('<div style="padding: 1rem; text-align: center; color: #ef4444;"><strong>Error:</strong> ' + data['message'] + '</div>');
-            }
-        }
-        else if (data['type'] === 'lichess_event_stream_connected') {
-            console.log('[lichess] Event stream connected - now listening for challenges');
-            flashStatus('Lichess event stream connected - listening for challenges');
-        }
-        else if (data['type'] === 'lichess_game_started') {
-            console.log('[lichess] Challenge accepted! Game started:', data['game']);
-            var game = data['game'];
-            if (game && game.id) {
-                // Store current game ID and prepare to stream it
-                var gameId = game.id;
-                lichessCurrentGameId = gameId;
-                console.log('[lichess] Loading game into modal:', gameId);
-                flashStatus('Challenge accepted! Game starting...');
-
-                // Initialize board for Lichess game
-                openLichessGame(gameId, game);
-            }
-        }
-        else if (data['type'] === 'lichess_game_stream_connected') {
-            console.log('[lichess] Game stream connected:', data['gameId']);
-        }
-        else if (data['type'] === 'lichess_game_update') {
-            console.log('[lichess] Game update:', data['update']);
-            var gameId = data['gameId'];
-            var update = data['update'];
-
-            if (update.type === 'gameFull') {
-                // Initial full game state
-                loadLichessGameState(gameId, update.game);
-            } else if (update.type === 'gameState') {
-                // Incremental game state update
-                updateLichessGameState(gameId, update);
-            }
-        }
-        else if (data['type'] === 'lichess_move_made') {
-            console.log('[lichess] Move accepted by Lichess:', data['move']);
-            flashStatus('Move sent: ' + data['move']);
-        }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
             firstId = Infinity;
@@ -3312,13 +2787,6 @@ function ready() {
     connectWS = function(){
         if (__connectCalled) return; __connectCalled = true; _origOpen();
         if (ws) ws.onmessage = handleWsMessage;
-        // Check Lichess token status after connection
-        setTimeout(function() {
-            if (ws && ws.readyState === 1) {
-                console.log('[lichess] Connection established, checking token status');
-                ws.send(JSON.stringify({ type: 'lichess_get_token_status' }));
-            }
-        }, 500);
     };
 }
 

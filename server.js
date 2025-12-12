@@ -7,7 +7,6 @@ const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
 const { createHumanChessAI } = require('./human-like-chess-ai');
-const LichessAPI = require('./lichess');
 
 // Config (mirrors config.py defaults)
 const HOST = '0.0.0.0';
@@ -17,9 +16,6 @@ const ADMINHIDDENNAME = 'adminxyz';
 
 // Human-like AI bot cache (game_id -> bot instance)
 const aiBotsCache = new Map();
-
-// Lichess event stream connections (username -> stream connection)
-const lichessStreams = new Map();
 
 // Create a human-like AI bot for a game
 async function createAIBotForGame(board, aiElo) {
@@ -247,121 +243,6 @@ function updatePlayerElo(username, opponentElo, result) {
   return { newElo: playerData.elo, eloChange, playerData };
 }
 
-/**
- * Start listening to Lichess event stream for a user
- * Detects when challenges are accepted and streams game events
- */
-function startLichessEventStream(username, token, ws) {
-  const WebSocket = require('ws');
-  const url = 'wss://lichess.org/api/stream/event';
-
-  console.log('[lichess] Connecting to event stream for user:', username);
-
-  try {
-    const eventStream = new WebSocket(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    eventStream.on('open', () => {
-      console.log('[lichess] Event stream connected for user:', username);
-      send(ws, { type: 'lichess_event_stream_connected' });
-    });
-
-    eventStream.on('message', (data) => {
-      try {
-        const lines = data.toString().split('\n').filter(Boolean);
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const event = JSON.parse(line);
-
-          console.log('[lichess] Event received:', event.type);
-
-          if (event.type === 'challenge') {
-            if (event.challenge && event.challenge.id) {
-              send(ws, { type: 'lichess_challenge_event', challenge: event.challenge });
-            }
-          } else if (event.type === 'gameStart') {
-            if (event.game && event.game.id) {
-              console.log('[lichess] Game started:', event.game.id);
-              send(ws, { type: 'lichess_game_started', game: event.game });
-              streamLichessGame(event.game.id, token, ws);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('[lichess] Error parsing event:', err.message);
-      }
-    });
-
-    eventStream.on('error', (err) => {
-      console.error('[lichess] Event stream error:', err.message);
-      send(ws, { type: 'lichess_error', message: 'Event stream error: ' + err.message });
-    });
-
-    eventStream.on('close', () => {
-      console.log('[lichess] Event stream closed for user:', username);
-      lichessStreams.delete(username);
-    });
-
-    lichessStreams.set(username, eventStream);
-  } catch (err) {
-    console.error('[lichess] Failed to connect to event stream:', err.message);
-    send(ws, { type: 'lichess_error', message: 'Failed to connect to event stream: ' + err.message });
-  }
-}
-
-/**
- * Stream a Lichess game and send moves/updates to the frontend
- */
-function streamLichessGame(gameId, token, ws) {
-  const WebSocket = require('ws');
-  const url = `wss://lichess.org/api/bot/game/stream/${gameId}`;
-
-  console.log('[lichess] Connecting to game stream:', gameId);
-
-  try {
-    const gameStream = new WebSocket(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    gameStream.on('open', () => {
-      console.log('[lichess] Game stream connected:', gameId);
-      send(ws, { type: 'lichess_game_stream_connected', gameId: gameId });
-    });
-
-    gameStream.on('message', (data) => {
-      try {
-        const lines = data.toString().split('\n').filter(Boolean);
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const update = JSON.parse(line);
-
-          console.log('[lichess] Game update:', update.type);
-          send(ws, { type: 'lichess_game_update', gameId: gameId, update: update });
-        }
-      } catch (err) {
-        console.error('[lichess] Error parsing game update:', err.message);
-      }
-    });
-
-    gameStream.on('error', (err) => {
-      console.error('[lichess] Game stream error:', err.message);
-      send(ws, { type: 'lichess_error', message: 'Game stream error: ' + err.message });
-    });
-
-    gameStream.on('close', () => {
-      console.log('[lichess] Game stream closed:', gameId);
-    });
-
-  } catch (err) {
-    console.error('[lichess] Failed to connect to game stream:', err.message);
-    send(ws, { type: 'lichess_error', message: 'Failed to connect to game stream: ' + err.message });
-  }
-}
 
 loadMessages();
 loadKnownUsers();
@@ -644,71 +525,6 @@ async function initStockfishEngine() {
   return stockfishInitPromise;
 }
 
-const moveCache = new Map(); // Cache for Lichess API results
-
-async function getMoveLichessAPI(fen, depth, elo) {
-  try {
-    console.log('[lichess] Requesting move from Lichess API for depth', depth);
-
-    // Lichess API endpoint for computer analysis
-    const url = `https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=1`;
-
-    // Use AbortController for proper timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        console.warn('[lichess] API returned status:', response.status);
-        return null;
-      }
-
-      const data = await response.json();
-      console.log('[lichess] API response:', JSON.stringify(data).substring(0, 200));
-
-      if (data && data.pvs && data.pvs.length > 0) {
-        const bestVariation = data.pvs[0];
-
-        // moves is a space-separated string like "e2e4 d7d5"
-        if (bestVariation.moves && typeof bestVariation.moves === 'string') {
-          const moves = bestVariation.moves.split(' ');
-          if (moves.length > 0 && moves[0].length >= 4) {
-            const move = moves[0];
-            console.log('[lichess] Best move:', move, 'eval:', bestVariation.cp);
-            return move;
-          }
-        }
-      }
-
-      console.warn('[lichess] No valid moves in response');
-      return null;
-
-    } catch (fetchErr) {
-      clearTimeout(timeoutId);
-      if (fetchErr.name === 'AbortError') {
-        console.warn('[lichess] API request timed out');
-      } else {
-        console.error('[lichess] API fetch error:', fetchErr.message);
-      }
-      return null;
-    }
-
-  } catch (err) {
-    console.error('[lichess] API error:', err.message);
-    return null;
-  }
-}
-
 async function getMoveChessAPI(fen, depth, elo) {
   try {
     console.log('[chess-api] Requesting move from Chess-API.com for depth', depth);
@@ -862,21 +678,14 @@ async function bestMoveWithStockfish(fen, depth, elo) {
     return openingMove;
   }
 
-  // Try Lichess API (most reliable)
-  console.log('[ai] Attempting Lichess API for move generation');
-  const lichessMove = await getMoveLichessAPI(fen, depth, elo);
-  if (lichessMove && lichessMove.length >= 4) {
-    return lichessMove; // Success with Lichess
-  }
-
-  // Lichess failed, try Chess-API.com
-  console.log('[ai] Lichess API failed, attempting Chess-API.com fallback');
+  // Try Chess-API.com
+  console.log('[ai] Attempting Chess-API.com for move generation');
   const chessApiMove = await getMoveChessAPI(fen, depth, elo);
   if (chessApiMove && chessApiMove.length >= 4) {
     return chessApiMove; // Success with Chess-API
   }
 
-  // Both APIs failed, use improved fallback algorithm
+  // Chess-API.com failed, use improved fallback algorithm
   console.log('[ai] Chess-API.com failed, using local fallback algorithm');
   return bestMoveFallback(fen, depth, elo);
 }
@@ -2117,154 +1926,6 @@ wss.on('connection', (ws, req) => {
           send(ws, { type: 'chess_error', message: 'AI move generation failed' });
         }
       }, delayBeforeAiMove);
-    }
-    else if (msg.type === 'lichess_set_token') {
-      const username = users.get(ws);
-      const token = String(msg.token || '').trim();
-      console.log('[lichess] Set token request for user:', username, 'token length:', token.length);
-      if (!username) {
-        console.log('[lichess] Error: No username');
-        send(ws, { type: 'lichess_error', message: 'Username required' });
-        return;
-      }
-      if (!token) {
-        console.log('[lichess] Error: No token provided');
-        send(ws, { type: 'lichess_error', message: 'Token required' });
-        return;
-      }
-      const settings = getUserSettings(username) || {};
-      settings.lichessToken = token;
-      saveUserSettings(username, settings);
-      console.log('[lichess] Token saved for user:', username);
-      send(ws, { type: 'lichess_token_saved', message: 'Lichess token saved' });
-    }
-    else if (msg.type === 'lichess_get_token_status') {
-      const username = users.get(ws);
-      if (!username) {
-        send(ws, { type: 'lichess_error', message: 'Username required' });
-        return;
-      }
-      const settings = getUserSettings(username) || {};
-      const hasToken = !!settings.lichessToken;
-      send(ws, { type: 'lichess_token_status', hasToken: hasToken });
-    }
-    else if (msg.type === 'lichess_create_challenge') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      if (!username || !token) {
-        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
-        return;
-      }
-      const clockLimit = msg.clockLimit || 300;
-      const clockIncrement = msg.clockIncrement || 0;
-      const rated = msg.rated === true;
-      const color = msg.color || 'random';
-
-      console.log('[lichess] Creating challenge for user:', username, 'with options:', { clockLimit, clockIncrement, rated, color });
-
-      const lichess = new LichessAPI(token);
-      lichess.createOpenChallenge({
-        clockLimit: clockLimit,
-        clockIncrement: clockIncrement,
-        rated: rated,
-        color: color
-      }).then(challenge => {
-        console.log('[lichess] Challenge created successfully:', JSON.stringify(challenge, null, 2));
-        console.log('[lichess] Challenge URL:', challenge && challenge.url ? challenge.url : 'No URL in response');
-        console.log('[lichess] Challenge ID:', challenge && challenge.id ? challenge.id : 'No ID in response');
-        send(ws, { type: 'lichess_challenge_created', challenge: challenge });
-      }).catch(err => {
-        console.error('[lichess] Challenge creation error:', err.message);
-        console.error('[lichess] Full error:', err);
-        send(ws, { type: 'lichess_error', message: 'Failed to create challenge: ' + err.message });
-      });
-    }
-    else if (msg.type === 'lichess_list_challenges') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      if (!username || !token) {
-        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
-        return;
-      }
-
-      console.log('[lichess] Fetching incoming challenges for user:', username);
-      const lichess = new LichessAPI(token);
-
-      // Lichess API note: There is no public endpoint to browse all open challenges.
-      // Users can only see challenges sent to them directly.
-      // For now, return empty arrays and a helpful message.
-      send(ws, {
-        type: 'lichess_challenges_list',
-        incoming: [],
-        outgoing: [],
-        info: 'Lichess doesn\'t support browsing public challenges. Use "Create Challenge" to invite specific opponents, or they can find your challenge via the challenge URL.'
-      });
-    }
-    else if (msg.type === 'lichess_accept_challenge') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      const challengeId = String(msg.challengeId || '').trim();
-      if (!username || !token || !challengeId) {
-        send(ws, { type: 'lichess_error', message: 'Invalid accept challenge request' });
-        return;
-      }
-
-      const lichess = new LichessAPI(token);
-      lichess.acceptChallenge(challengeId).then(game => {
-        send(ws, { type: 'lichess_challenge_accepted', game: game });
-      }).catch(err => {
-        console.error('[lichess] Accept challenge error:', err.message);
-        send(ws, { type: 'lichess_error', message: 'Failed to accept challenge: ' + err.message });
-      });
-    }
-    else if (msg.type === 'lichess_start_event_stream') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      if (!username || !token) {
-        send(ws, { type: 'lichess_error', message: 'Lichess token not configured' });
-        return;
-      }
-
-      console.log('[lichess] Starting event stream for user:', username);
-      startLichessEventStream(username, token, ws);
-    }
-    else if (msg.type === 'lichess_stream_game') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      const gameId = String(msg.gameId || '').trim();
-      if (!username || !token || !gameId) {
-        send(ws, { type: 'lichess_error', message: 'Invalid stream game request' });
-        return;
-      }
-
-      console.log('[lichess] Starting game stream for:', gameId);
-      streamLichessGame(gameId, token, ws);
-    }
-    else if (msg.type === 'lichess_make_move') {
-      const username = users.get(ws);
-      const settings = getUserSettings(username);
-      const token = settings && settings.lichessToken;
-      const gameId = String(msg.gameId || '').trim();
-      const move = String(msg.move || '').trim();
-      if (!username || !token || !gameId || !move) {
-        send(ws, { type: 'lichess_error', message: 'Invalid move request' });
-        return;
-      }
-
-      console.log('[lichess] Making move:', gameId, move);
-      const lichess = new LichessAPI(token);
-      lichess.makeMove(gameId, move).then(result => {
-        console.log('[lichess] Move successful:', move);
-        send(ws, { type: 'lichess_move_made', gameId: gameId, move: move, result: result });
-      }).catch(err => {
-        console.error('[lichess] Move error:', err.message);
-        send(ws, { type: 'lichess_error', message: 'Failed to make move: ' + err.message });
-      });
     }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);

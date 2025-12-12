@@ -1560,18 +1560,6 @@ function stageMove(from, to, promotion){
     clearTentativeMoveVisuals();
 
     // For Lichess games, always show confirmation (can't easily validate moves client-side)
-    if (chessGame && chessGame.source === 'lichess') {
-        pendingUserMove = { from: from, to: to, promotion: promotion || null };
-        $('#chess-board .chess-square').removeClass('selected');
-        $('#chess-board .chess-square[data-square="' + from + '"]').addClass('selected');
-        $('#chess-board .chess-square[data-square="' + to + '"]').addClass('selected');
-        currentTentative = { from: from, to: to, isPremove: false };
-        showTentativeMove(from, to);
-        updateConfirmButton();
-        flashStatus('Move ready. Press Confirm');
-        return;
-    }
-
     // If confirm moves is disabled, send immediately
     if (!chessSettings.confirmMoves) {
         sendMove(from, to, promotion);

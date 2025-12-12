@@ -1559,7 +1559,6 @@ function stageMove(from, to, promotion){
     // Clear existing tentative visuals
     clearTentativeMoveVisuals();
 
-    // For Lichess games, always show confirmation (can't easily validate moves client-side)
     // If confirm moves is disabled, send immediately
     if (!chessSettings.confirmMoves) {
         sendMove(from, to, promotion);

@@ -274,7 +274,8 @@ async function startServer() {
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
-    console.log(`Chat available at http://localhost:${PORT}/chat`);
+    console.log(`Chat (main) available at http://localhost:${PORT}`);
+    console.log(`AI Code Editor available at http://localhost:${PORT}/editor`);
     console.log(`API available at http://localhost:${PORT}/api`);
   });
 }

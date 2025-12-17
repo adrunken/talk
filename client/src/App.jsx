@@ -115,7 +115,7 @@ export default function App() {
         {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Editor panel */}
-          <div className="w-1/3 border-r border-slate-700 overflow-y-auto">
+          <div className="flex-1 border-r border-slate-700 overflow-y-auto">
             <Editor
               prompt={prompt}
               setPrompt={setPrompt}
@@ -126,13 +126,17 @@ export default function App() {
               previewExists={!!preview}
             />
           </div>
-
-          {/* Preview panel */}
-          <div className="flex-1 overflow-hidden">
-            <Preview preview={preview} loading={loading} />
-          </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={showPreviewModal}
+        preview={preview}
+        onClose={() => setShowPreviewModal(false)}
+        onPublish={handlePublish}
+        publishing={publishing}
+      />
 
       {/* Error dialog */}
       {error && (

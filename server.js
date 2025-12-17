@@ -2265,6 +2265,10 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+ensureSiteDir();
+
 server.listen(PORT, HOST, () => {
   console.log(`Server listening on http://${HOST}:${PORT}`);
+  console.log(`Chat available at http://localhost:${PORT}`);
+  console.log(`API available at http://localhost:${PORT}/api`);
 });

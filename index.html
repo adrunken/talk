@@ -2369,6 +2369,71 @@ function ready() {
         }
     });
 
+    // AI Code Editor - Generate button
+    $('#ai-generate-btn').on('click', function(e) {
+        e.preventDefault();
+        var prompt = $('#ai-prompt').val().trim();
+        if (!prompt) {
+            $('#ai-status').text('Please enter a description of changes.');
+            return;
+        }
+
+        $('#ai-status').text('Generating preview...');
+        $('#ai-generate-btn').prop('disabled', true);
+
+        fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!response.ok) {
+                var errorMsg = data.details ? (Array.isArray(data.details) ? data.details.join('\n') : data.details) : data.error;
+                $('#ai-status').text('Error: ' + errorMsg);
+                $('#ai-generate-btn').prop('disabled', false);
+                return;
+            }
+            $('#ai-status').text('✓ Preview ready');
+            $('#ai-generate-btn').prop('disabled', false);
+            $('#ai-publish-btn').prop('disabled', false);
+        })
+        .catch(function(err) {
+            $('#ai-status').text('Error: ' + err.message);
+            $('#ai-generate-btn').prop('disabled', false);
+        });
+    });
+
+    // AI Code Editor - Publish button
+    $('#ai-publish-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#ai-status').text('Publishing...');
+        $('#ai-publish-btn').prop('disabled', true);
+
+        fetch('/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!response.ok) {
+                $('#ai-status').text('Error: ' + (data.error || 'Failed to publish'));
+                $('#ai-publish-btn').prop('disabled', false);
+                return;
+            }
+            $('#ai-status').text('✓ Published!');
+            $('#ai-prompt').val('');
+            $('#ai-publish-btn').prop('disabled', true);
+            setTimeout(function() {
+                $('#ai-status').text('');
+            }, 3000);
+        })
+        .catch(function(err) {
+            $('#ai-status').text('Error: ' + err.message);
+            $('#ai-publish-btn').prop('disabled', false);
+        });
+    });
+
     $('#usernameinput').on('blur', function(e) {
         var usr =  $('#usernameinput').val();
         usr = usr.replace(/[:\s]/g, '');

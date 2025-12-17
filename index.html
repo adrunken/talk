@@ -602,8 +602,8 @@ html {
 .invite-actions { display: inline-flex; gap: 0.5rem; margin-left: 0.5rem; }
 .invite-btn { padding: 0.125rem 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); cursor: pointer; font-size: 0.75rem; }
 .invite-btn:hover { background: var(--accent-secondary); color: var(--accent-primary); }
-#connected .user-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 0.25rem 0; position: relative; gap: 0.5rem; }
-#connected .user-info { display: flex; flex-direction: row; align-items: center; gap: 0.5rem; flex: 1; position: relative; }
+#connected .user-row { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0; position: relative; }
+#connected .user-info { display: flex; flex-direction: row; align-items: center; gap: 0.5rem; position: relative; }
 #connected .user-info[data-last-seen]::before { content: attr(data-last-seen); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--bg-secondary); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.2s ease; z-index: 1000; margin-bottom: 0.5rem; pointer-events: none; border: 1px solid var(--border-light); }
 #connected .user-info[data-last-seen]::after { content: ''; position: absolute; bottom: calc(100% - 4px); left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--bg-secondary); opacity: 0; visibility: hidden; transition: all 0.2s ease; z-index: 1000; pointer-events: none; }
 #connected .user-info:hover[data-last-seen]::before { opacity: 1; visibility: visible; }
@@ -614,7 +614,7 @@ html {
 #connected .user-row .status-dot.offline { background: #9ca3af; }
 #rejoin-wrapper { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
 #invites .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
-.invite-user-btn { padding: 0.125rem 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--accent-primary); cursor: pointer; font-size: 0.75rem; }
+.invite-user-btn { padding: 0.125rem 0.1rem; border: 1px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--accent-primary); cursor: pointer; font-size: 0.65rem; display: inline-block; white-space: nowrap; max-width: 45px; }
 .invite-user-btn:hover { background: var(--accent-secondary); }
 #rejoin-game { padding: 0.5rem 0.75rem; background: var(--bg-tertiary); border: none; border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; box-shadow: var(--shadow-sm); }
 #rejoin-game:hover { background: var(--accent-secondary); color: var(--accent-primary); border-color: var(--accent-primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }

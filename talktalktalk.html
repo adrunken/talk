@@ -548,6 +548,15 @@ html {
 .admin-user-name { flex: 1; font-weight: 500; color: var(--text-primary); }
 .admin-delete-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-delete-btn:hover { background: #ef4444; color: white; }
+
+.admin-ban-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid var(--border-light); }
+.admin-ban-item:last-child { border-bottom: none; }
+.admin-ban-item:hover { background: var(--bg-tertiary); }
+.admin-ban-info { flex: 1; font-size: 0.875rem; }
+.admin-ban-ip { font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+.admin-ban-details { color: var(--text-muted); font-size: 0.75rem; }
+.admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
+.admin-unban-btn:hover { background: #ef4444; color: white; }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
@@ -665,6 +674,28 @@ html {
     </div>
     <div class="first-login-actions">
       <button id="admin-delete-users-close" class="first-login-save">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin IP Bans modal -->
+<div id="admin-ip-bans-modal" class="first-login-overlay">
+  <div class="first-login-panel" style="min-width: 500px; max-height: 80vh; overflow-y: auto;">
+    <div class="first-login-title">Manage IP Bans</div>
+    <div style="margin: 1rem 0; padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-md);">
+      <h4 style="margin-bottom: 0.5rem;">Ban New IP</h4>
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <input type="text" id="admin-ban-ip-input" placeholder="IP address" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);">
+        <button id="admin-ban-ip-btn" class="first-login-save" style="width: auto;">Ban IP</button>
+      </div>
+      <input type="text" id="admin-ban-reason-input" placeholder="Reason (optional)" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);">
+    </div>
+    <h4 style="margin-bottom: 0.5rem;">Banned IPs</h4>
+    <div id="admin-bans-list" style="margin: 1rem 0; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem;">
+      <div style="color: var(--text-muted); text-align: center; padding: 2rem;">No banned IPs</div>
+    </div>
+    <div class="first-login-actions">
+      <button id="admin-ip-bans-close" class="first-login-save">Close</button>
     </div>
   </div>
 </div>
@@ -1534,6 +1565,29 @@ function ready() {
         });
     });
 
+    // Admin IP ban modal handlers
+    $('#admin-ip-bans-close').on('click', function() {
+        hideAdminIpBansModal();
+    });
+
+    $('#admin-ban-ip-btn').on('click', function() {
+        var ip = $('#admin-ban-ip-input').val().trim();
+        var reason = $('#admin-ban-reason-input').val().trim();
+        if (!ip || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'admin_ban_ip', ip: ip, reason: reason }));
+        $('#admin-ban-ip-input').val('');
+        $('#admin-ban-reason-input').val('');
+    });
+
+    $(document).on('click', '.admin-unban-btn', function() {
+        var ip = $(this).data('ip');
+        if (!ip || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'admin_unban_ip', ip: ip }));
+        $(this).closest('.admin-ban-item').fadeOut(400, function() {
+            $(this).remove();
+        });
+    });
+
     // Delegated handlers for invites and users
     $('#right').on('click', '.invite-user-btn', function() {
         var toUser = $(this).data('user');
@@ -1764,6 +1818,39 @@ function ready() {
     function hideAdminDeleteUsersModal() {
         $('#admin-delete-users-modal').removeClass('show');
         $('#admin-users-list').empty();
+    }
+
+    function showAdminIpBansModal(bans) {
+        var bansList = $('#admin-bans-list');
+        bansList.empty();
+
+        if (!bans || Object.keys(bans).length === 0) {
+            bansList.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No banned IPs</div>');
+        } else {
+            Object.entries(bans).forEach(function([ip, ban]) {
+                var item = $('<div class="admin-ban-item" />');
+                var info = $('<div class="admin-ban-info" />');
+                var ipSpan = $('<div class="admin-ban-ip" />').text(ip);
+                var reasonSpan = $('<div class="admin-ban-details" />').text('Reason: ' + (ban.reason || 'N/A'));
+                var createdSpan = $('<div class="admin-ban-details" />').text('Banned by ' + (ban.createdBy || 'System') + ' at ' + new Date(ban.createdAt).toLocaleString());
+
+                info.append(ipSpan);
+                info.append(reasonSpan);
+                info.append(createdSpan);
+
+                var unbanBtn = $('<button class="admin-unban-btn" />').text('Unban').attr('data-ip', ip);
+                item.append(info);
+                item.append(unbanBtn);
+                bansList.append(item);
+            });
+        }
+
+        $('#admin-ip-bans-modal').addClass('show');
+    }
+
+    function hideAdminIpBansModal() {
+        $('#admin-ip-bans-modal').removeClass('show');
+        $('#admin-bans-list').empty();
     }
 
     function showStockfishRejoinPrompt() {

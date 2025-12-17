@@ -243,12 +243,83 @@ function updatePlayerElo(username, opponentElo, result) {
   return { newElo: playerData.elo, eloChange, playerData };
 }
 
+// IP Ban System
+const IP_BANS_FILE = path.join(DATA_DIR, 'ip-bans.json');
+let ipBans = {}; // ip -> { reason: string, createdAt: number, createdBy: string, expiresAt?: number }
+
+function loadIpBans() {
+  try {
+    if (fs.existsSync(IP_BANS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(IP_BANS_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        ipBans = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistIpBans() {
+  try { fs.writeFile(IP_BANS_FILE, JSON.stringify(ipBans, null, 2), () => {}); } catch(_) {}
+}
+
+function isIpBanned(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  const ban = ipBans[ip];
+  if (!ban) return false;
+  if (ban.expiresAt && ban.expiresAt < Date.now()) {
+    delete ipBans[ip];
+    persistIpBans();
+    return false;
+  }
+  return true;
+}
+
+function banIp(ip, reason = 'No reason specified', adminName = 'System') {
+  if (!ip || typeof ip !== 'string') return false;
+  ipBans[ip] = {
+    reason: String(reason || '').slice(0, 500),
+    createdAt: Date.now(),
+    createdBy: String(adminName || 'System').slice(0, 50)
+  };
+  persistIpBans();
+  console.log(`[ban] IP ${ip} banned by ${adminName}: ${reason}`);
+  return true;
+}
+
+function unbanIp(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  if (ipBans[ip]) {
+    delete ipBans[ip];
+    persistIpBans();
+    console.log(`[ban] IP ${ip} unbanned`);
+    return true;
+  }
+  return false;
+}
+
+function getBannedIps() {
+  const now = Date.now();
+  const result = {};
+  for (const [ip, ban] of Object.entries(ipBans)) {
+    if (ban.expiresAt && ban.expiresAt < now) {
+      delete ipBans[ip];
+    } else {
+      result[ip] = ban;
+    }
+  }
+  if (Object.keys(result).length !== Object.keys(ipBans).length) {
+    persistIpBans();
+  }
+  return result;
+}
+
 
 loadMessages();
 loadKnownUsers();
 loadUserSettings();
 loadUserElos();
 loadOnlineHistory();
+loadIpBans();
 
 // Server
 const app = express();
@@ -1267,6 +1338,15 @@ wss.on('connection', (ws, req) => {
     ws.close();
     return;
   }
+
+  // Check if IP is banned
+  const clientIp = req.socket.remoteAddress || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+  if (isIpBanned(clientIp)) {
+    console.log(`[ban] Connection attempt from banned IP: ${clientIp}`);
+    ws.close(4000, 'IP address is banned');
+    return;
+  }
+
   userMessageTimes.set(ws, []);
 
   ws.on('message', async (data) => {
@@ -1344,6 +1424,16 @@ wss.on('connection', (ws, req) => {
           } else {
             const userList = Array.from(knownUsers).sort();
             send(ws, JSON.stringify({ type: 'admin_delete_users_modal', users: userList }));
+          }
+        } else if (message.toLowerCase() === '/ip bans') {
+          const uname = String(username || '').toLowerCase();
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            const obj = { type: 'message', message: 'Permission denied. Only admin can manage IP bans.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+          } else {
+            const bans = getBannedIps();
+            send(ws, JSON.stringify({ type: 'admin_ip_bans_modal', bans: bans }));
           }
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
@@ -1975,6 +2065,61 @@ wss.on('connection', (ws, req) => {
       for (const [u] of users) send(u, msgStr);
 
       sendUserList();
+    }
+    else if (msg.type === 'admin_ban_ip') {
+      const uname = users.get(ws);
+      const ip = String(msg.ip || '').trim();
+      const reason = String(msg.reason || 'No reason specified').trim();
+      const unameStr = String(uname || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can ban IPs.', username: 'System' });
+        return;
+      }
+
+      if (!ip || ip.length === 0) {
+        send(ws, { type: 'message', message: 'Invalid IP address.', username: 'System' });
+        return;
+      }
+
+      const banned = banIp(ip, reason, uname);
+      if (banned) {
+        const systemMsg = { type: 'message', message: `IP ${ip} banned: ${reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
+        messages.push(systemMsg);
+        appendMessage(systemMsg);
+        idx += 1;
+        const msgStr = JSON.stringify(systemMsg);
+        for (const [u] of users) send(u, msgStr);
+      } else {
+        send(ws, { type: 'message', message: 'Failed to ban IP.', username: 'System' });
+      }
+    }
+    else if (msg.type === 'admin_unban_ip') {
+      const uname = users.get(ws);
+      const ip = String(msg.ip || '').trim();
+      const unameStr = String(uname || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can unban IPs.', username: 'System' });
+        return;
+      }
+
+      if (!ip || ip.length === 0) {
+        send(ws, { type: 'message', message: 'Invalid IP address.', username: 'System' });
+        return;
+      }
+
+      const unbanned = unbanIp(ip);
+      if (unbanned) {
+        const systemMsg = { type: 'message', message: `IP ${ip} unbanned`, username: 'System', id: idx, datetime: Math.floor(now()) };
+        messages.push(systemMsg);
+        appendMessage(systemMsg);
+        idx += 1;
+        const msgStr = JSON.stringify(systemMsg);
+        for (const [u] of users) send(u, msgStr);
+      } else {
+        send(ws, { type: 'message', message: 'IP not found in ban list.', username: 'System' });
+      }
     }
   });
 

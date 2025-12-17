@@ -371,6 +371,120 @@ app.get('/game-wrapper', (req, res) => {
   }
 });
 
+// AI Code Modifier API endpoints
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+app.get('/api/preview', async (req, res) => {
+  try {
+    if (!fs.existsSync(PREVIEW_FILE)) {
+      return res.json({ preview: null });
+    }
+    const preview = await fsPromises.readFile(PREVIEW_FILE, 'utf-8');
+    res.json({ preview });
+  } catch (error) {
+    console.error('Error reading preview:', error);
+    res.status(500).json({ error: 'Failed to read preview' });
+  }
+});
+
+app.post('/api/generate', async (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Invalid prompt' });
+  }
+
+  try {
+    let currentCode = '';
+    if (fs.existsSync(LIVE_FILE)) {
+      currentCode = await fsPromises.readFile(LIVE_FILE, 'utf-8');
+    } else {
+      return res.status(400).json({
+        error: 'No live.html found. Please create the initial site file.',
+      });
+    }
+
+    console.log('Querying Ollama...');
+    const aiResponse = await queryOllama(currentCode, prompt);
+
+    const validation = validateHTMLOutput(aiResponse);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        error: 'AI output validation failed',
+        details: validation.errors,
+      });
+    }
+
+    await fsPromises.writeFile(PREVIEW_FILE, aiResponse, 'utf-8');
+    console.log('Preview written to:', PREVIEW_FILE);
+
+    res.json({
+      success: true,
+      message: 'Preview generated successfully',
+      preview: aiResponse,
+    });
+  } catch (error) {
+    console.error('Error generating preview:', error);
+    res.status(500).json({
+      error: 'Failed to generate preview',
+      details: error.message,
+    });
+  }
+});
+
+app.post('/api/publish', async (req, res) => {
+  try {
+    if (!fs.existsSync(PREVIEW_FILE)) {
+      return res.status(400).json({
+        error: 'No preview available. Generate a preview first.',
+      });
+    }
+
+    const previewContent = await fsPromises.readFile(PREVIEW_FILE, 'utf-8');
+
+    await fsPromises.copyFile(PREVIEW_FILE, LIVE_FILE);
+    console.log('Published preview to live.html');
+
+    if (process.env.GITHUB_TOKEN) {
+      try {
+        const commitSha = await commitFileToGitHub(
+          'site/live.html',
+          previewContent,
+          'AI-modified code update'
+        );
+        console.log('Committed to GitHub:', commitSha);
+
+        res.json({
+          success: true,
+          message: 'Changes published and committed to GitHub',
+          commitSha,
+        });
+      } catch (githubError) {
+        console.error('GitHub commit failed:', githubError);
+        res.json({
+          success: true,
+          message:
+            'Changes published locally but GitHub commit failed. Check GITHUB_TOKEN and GITHUB_REPO.',
+          githubError: githubError.message,
+        });
+      }
+    } else {
+      res.json({
+        success: true,
+        message: 'Changes published locally. GitHub token not configured.',
+      });
+    }
+  } catch (error) {
+    console.error('Error publishing:', error);
+    res.status(500).json({
+      error: 'Failed to publish changes',
+      details: error.message,
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

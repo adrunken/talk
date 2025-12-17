@@ -79,6 +79,20 @@ const SETTINGS_FILE = path.join(DATA_DIR, 'user-settings.json');
 const ONLINE_HISTORY_FILE = path.join(DATA_DIR, 'online-history.json');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// AI Code Modifier - Site directory
+const SITE_DIR = path.join(__dirname, 'site');
+const LIVE_FILE = path.join(SITE_DIR, 'live.html');
+const PREVIEW_FILE = path.join(SITE_DIR, 'preview.html');
+
+// Ensure site directory exists
+function ensureSiteDir() {
+  try {
+    fs.mkdirSync(SITE_DIR, { recursive: true });
+  } catch (error) {
+    console.error('Error creating site directory:', error);
+  }
+}
+
 let idx = 0; // next message id
 let messages = []; // array of message objects {type:'message', message, username, id, datetime}
 let knownUsers = new Set(); // all-time seen users (current canonical usernames)

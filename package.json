@@ -1,15 +1,19 @@
 {
-  "name": "talktalktalk-node",
+  "name": "ai-code-modifier",
   "version": "1.0.0",
   "private": true,
-  "description": "TalkTalkTalk chat server (Node.js) compatible with existing frontend.",
+  "description": "AI-powered code modification system with local Ollama",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js"
+    "dev": "node server/index.js",
+    "start": "node server/index.js",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "build": "npm run client:build"
   },
   "dependencies": {
     "chess.js": "0.12.0",
     "express": "^4.19.2",
+    "cors": "^2.8.5",
     "stockfish": "14.1.0",
     "sanitize-html": "^2.13.0",
     "tar": "^7.5.2",

@@ -1,0 +1,14 @@
+FROM ollama/ollama:latest
+
+# Set environment variables
+ENV OLLAMA_HOST=0.0.0.0:11434
+ENV OLLAMA_MODELS=/models
+
+# Expose port
+EXPOSE 11434
+
+# Create models directory
+RUN mkdir -p /models
+
+# Start Ollama and pull the model
+CMD ["sh", "-c", "ollama serve & sleep 10 && ollama pull deepseek-coder:6.7b && wait"]

@@ -9,7 +9,7 @@ const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
 const { createHumanChessAI } = require('./human-like-chess-ai');
 const { queryOllama } = require('./server/ollama');
-const { commitFileToGitHub } = require('./server/github');
+const { commitFileToGitHub, createPullRequest } = require('./server/github');
 const { validateHTMLOutput } = require('./server/validation');
 
 // Config (mirrors config.py defaults)
@@ -443,37 +443,47 @@ app.post('/api/publish', async (req, res) => {
     }
 
     const previewContent = await fsPromises.readFile(PREVIEW_FILE, 'utf-8');
+    const { prompt } = req.body || {};
 
     await fsPromises.copyFile(PREVIEW_FILE, LIVE_FILE);
     console.log('Published preview to live.html');
 
     if (process.env.GITHUB_TOKEN) {
       try {
-        const commitSha = await commitFileToGitHub(
+        const prTitle = prompt ? prompt.substring(0, 72) : 'AI Code Update';
+        const prDescription = prompt
+          ? `AI-generated changes based on prompt: "${prompt}"\n\nGenerated and reviewed in AI Code Modifier.`
+          : 'AI-generated code changes';
+        const baseBranch = process.env.GITHUB_BASE_BRANCH || 'zenith-hub';
+
+        const prResult = await createPullRequest(
           'site/live.html',
           previewContent,
-          'AI-modified code update'
+          prTitle,
+          prDescription,
+          baseBranch
         );
-        console.log('Committed to GitHub:', commitSha);
+        console.log('Created GitHub PR:', prResult.prNumber, prResult.prUrl);
 
         res.json({
           success: true,
-          message: 'Changes published and committed to GitHub',
-          commitSha,
+          message: `Pull request #${prResult.prNumber} created successfully`,
+          prNumber: prResult.prNumber,
+          prUrl: prResult.prUrl,
+          branch: prResult.branch,
+          commitSha: prResult.commitSha,
         });
       } catch (githubError) {
-        console.error('GitHub commit failed:', githubError);
-        res.json({
-          success: true,
-          message:
-            'Changes published locally but GitHub commit failed. Check GITHUB_TOKEN and GITHUB_REPO.',
-          githubError: githubError.message,
+        console.error('GitHub PR creation failed:', githubError);
+        res.status(500).json({
+          error: 'Failed to create pull request on GitHub',
+          details: githubError.message,
         });
       }
     } else {
-      res.json({
-        success: true,
-        message: 'Changes published locally. GitHub token not configured.',
+      res.status(400).json({
+        error: 'GitHub token not configured',
+        message: 'GITHUB_TOKEN environment variable must be set to create pull requests',
       });
     }
   } catch (error) {

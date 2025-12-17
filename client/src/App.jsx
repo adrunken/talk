@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
-import Preview from './components/Preview';
 import ErrorDialog from './components/ErrorDialog';
+import PreviewModal from './components/PreviewModal';
 
 export default function App() {
   const [prompt, setPrompt] = useState('');
@@ -9,6 +9,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Fetch initial preview
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function App() {
       }
 
       setPreview(data.preview);
+      setShowPreviewModal(true);
       setError(null);
       setLoading(false);
     } catch (err) {
@@ -78,19 +80,26 @@ export default function App() {
       const response = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim() }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to publish changes');
+        setError(data.details || data.error || 'Failed to publish changes');
         setPublishing(false);
         return;
       }
 
       setError(null);
       setPrompt('');
-      alert(`✓ Changes published successfully!\n\n${data.message}`);
+      setShowPreviewModal(false);
+
+      const message = data.prUrl
+        ? `✓ Pull Request Created!\n\nPR #${data.prNumber}: ${data.message}\n\nURL: ${data.prUrl}`
+        : `✓ Changes published successfully!\n\n${data.message}`;
+
+      alert(message);
       setPublishing(false);
     } catch (err) {
       setError(`Network error: ${err.message}`);
@@ -112,7 +121,7 @@ export default function App() {
         {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Editor panel */}
-          <div className="w-1/3 border-r border-slate-700 overflow-y-auto">
+          <div className="flex-1 border-r border-slate-700 overflow-y-auto">
             <Editor
               prompt={prompt}
               setPrompt={setPrompt}
@@ -123,13 +132,17 @@ export default function App() {
               previewExists={!!preview}
             />
           </div>
-
-          {/* Preview panel */}
-          <div className="flex-1 overflow-hidden">
-            <Preview preview={preview} loading={loading} />
-          </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={showPreviewModal}
+        preview={preview}
+        onClose={() => setShowPreviewModal(false)}
+        onPublish={handlePublish}
+        publishing={publishing}
+      />
 
       {/* Error dialog */}
       {error && (

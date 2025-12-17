@@ -93,8 +93,8 @@ html {
 #input-container {
     position: fixed;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 280px;
+    right: 280px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-light);
     padding: 1rem;
@@ -103,7 +103,7 @@ html {
 }
 
 #input-wrapper {
-    max-width: 75%;
+    max-width: 100%;
     margin: 0 auto;
     display: flex;
     gap: 0.75rem;
@@ -167,8 +167,8 @@ html {
 
 /* Main Chat Area */
 #wrapper {
-    width: 75%;
-    margin: 1rem auto 6rem calc(20% / 6);
+    width: calc(100% - 280px - 280px);
+    margin: 1rem 280px 6rem 280px;
     word-wrap: break-word;
     padding: 0 1rem;
 }
@@ -277,12 +277,12 @@ html {
 
 /* Sidebar */
 #left {
-    width: calc(20% / 6);
+    width: 280px;
     top: 0;
     left: 0;
     position: fixed;
     height: 100vh;
-    padding: 1rem 0.5rem;
+    padding: 1rem 0.75rem;
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--bg-secondary);
@@ -329,9 +329,13 @@ html {
     font-size: 1.25rem;
 }
 
+.nav-button.nav-button-home {
+    display: none;
+}
+
 .page-container {
-    width: calc(100% - calc(20% / 6));
-    margin: 0 0 0 calc(20% / 6);
+    width: calc(100% - 280px - 280px);
+    margin: 0 280px 0 280px;
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -345,11 +349,11 @@ html {
 }
 
 #right {
-    width: 20%;
+    width: 280px;
     top: 0;
     right: 0;
     position: fixed;
-    height: calc(100vh - 6rem);
+    height: 100vh;
     padding: 1.5rem 1rem;
     overflow-y: auto;
     overflow-x: hidden;
@@ -761,6 +765,129 @@ html {
 .admin-ban-details { color: var(--text-muted); font-size: 0.75rem; }
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
+
+/* AI Editor Panel */
+.ai-editor-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.ai-editor-header {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.ai-editor-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ai-editor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.ai-editor-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.ai-editor-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 200px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.ai-editor-textarea:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-secondary);
+}
+
+.ai-editor-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.ai-editor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ai-editor-btn {
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.ai-editor-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ai-editor-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.ai-generate-btn {
+    background: var(--accent-primary);
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.ai-publish-btn {
+    background: #22c55e;
+}
+
+.ai-publish-btn:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+.ai-editor-status {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0.5rem;
+    min-height: 1.5rem;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
@@ -773,6 +900,27 @@ html {
         <button id="nav-home" class="nav-button nav-button-home" title="Home">
             <i class="fas fa-home"></i>
         </button>
+    </div>
+
+    <div id="ai-editor-container" class="ai-editor-panel">
+        <div class="ai-editor-header">
+            <h2>AI Code Editor</h2>
+        </div>
+        <div class="ai-editor-content">
+            <label class="ai-editor-label">Describe your changes:</label>
+            <textarea id="ai-prompt" class="ai-editor-textarea" placeholder="Example: Add a dark navbar to the top..."></textarea>
+
+            <div class="ai-editor-actions">
+                <button id="ai-generate-btn" class="ai-editor-btn ai-generate-btn">
+                    <i class="fas fa-sparkles"></i> Generate
+                </button>
+                <button id="ai-publish-btn" class="ai-editor-btn ai-publish-btn">
+                    <i class="fas fa-rocket"></i> Publish
+                </button>
+            </div>
+
+            <div id="ai-status" class="ai-editor-status"></div>
+        </div>
     </div>
 </div>
 
@@ -1969,6 +2117,8 @@ function ready() {
     }
     $(document).on('click.audio keydown.audio', unmuteAudioOnInteraction);
 
+    // Initialize AI Code Editor buttons
+    $('#ai-publish-btn').prop('disabled', true);
 
     function popup_message (message, clicktoclosepopup, clicktoreload) {
         $('#popup').text(message).removeClass('hidden');
@@ -2219,6 +2369,79 @@ function ready() {
             $('#writing').blur();
             setTimeout(function() { $('#writing').focus(); }, 10);
         }
+    });
+
+    // AI Code Editor - Generate button
+    $('#ai-generate-btn').on('click', function(e) {
+        e.preventDefault();
+        var prompt = $('#ai-prompt').val().trim();
+        if (!prompt) {
+            $('#ai-status').text('Please enter a description of changes.');
+            return;
+        }
+
+        $('#ai-status').text('Generating preview...');
+        $('#ai-generate-btn').prop('disabled', true);
+
+        fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (!result.ok) {
+                var errorMsg = result.data.details ? (Array.isArray(result.data.details) ? result.data.details.join('\n') : result.data.details) : result.data.error;
+                $('#ai-status').text('Error: ' + errorMsg);
+                $('#ai-generate-btn').prop('disabled', false);
+                return;
+            }
+            $('#ai-status').text('✓ Preview ready');
+            $('#ai-generate-btn').prop('disabled', false);
+            $('#ai-publish-btn').prop('disabled', false);
+        })
+        .catch(function(err) {
+            $('#ai-status').text('Error: ' + err.message);
+            $('#ai-generate-btn').prop('disabled', false);
+        });
+    });
+
+    // AI Code Editor - Publish button
+    $('#ai-publish-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#ai-status').text('Publishing...');
+        $('#ai-publish-btn').prop('disabled', true);
+
+        fetch('/api/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (!result.ok) {
+                $('#ai-status').text('Error: ' + (result.data.error || 'Failed to publish'));
+                $('#ai-publish-btn').prop('disabled', false);
+                return;
+            }
+            $('#ai-status').text('✓ Published!');
+            $('#ai-prompt').val('');
+            $('#ai-publish-btn').prop('disabled', true);
+            setTimeout(function() {
+                $('#ai-status').text('');
+            }, 3000);
+        })
+        .catch(function(err) {
+            $('#ai-status').text('Error: ' + err.message);
+            $('#ai-publish-btn').prop('disabled', false);
+        });
     });
 
     $('#usernameinput').on('blur', function(e) {

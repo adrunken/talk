@@ -9,7 +9,7 @@ const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
 const { createHumanChessAI } = require('./human-like-chess-ai');
 const { queryOllama } = require('./server/ollama');
-const { commitFileToGitHub } = require('./server/github');
+const { commitFileToGitHub, createPullRequest } = require('./server/github');
 const { validateHTMLOutput } = require('./server/validation');
 
 // Config (mirrors config.py defaults)

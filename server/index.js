@@ -171,13 +171,23 @@ app.use(
 // Serve chat page as main page
 app.get('/', (req, res) => {
   const chatPagePath = path.join(__dirname, '..', 'index.html');
-  res.sendFile(chatPagePath);
+  res.sendFile(chatPagePath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err.message);
+      res.status(500).send('Error loading chat page');
+    }
+  });
 });
 
 // Keep /chat route for compatibility
 app.get('/chat', (req, res) => {
   const chatPagePath = path.join(__dirname, '..', 'index.html');
-  res.sendFile(chatPagePath);
+  res.sendFile(chatPagePath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err.message);
+      res.status(500).send('Error loading chat page');
+    }
+  });
 });
 
 // WebSocket state

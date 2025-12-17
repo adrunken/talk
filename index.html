@@ -779,6 +779,27 @@ html {
             <i class="fas fa-home"></i>
         </button>
     </div>
+
+    <div id="ai-editor-container" class="ai-editor-panel">
+        <div class="ai-editor-header">
+            <h2>AI Code Editor</h2>
+        </div>
+        <div class="ai-editor-content">
+            <label class="ai-editor-label">Describe your changes:</label>
+            <textarea id="ai-prompt" class="ai-editor-textarea" placeholder="Example: Add a dark navbar to the top..."></textarea>
+
+            <div class="ai-editor-actions">
+                <button id="ai-generate-btn" class="ai-editor-btn ai-generate-btn">
+                    <i class="fas fa-sparkles"></i> Generate
+                </button>
+                <button id="ai-publish-btn" class="ai-editor-btn ai-publish-btn">
+                    <i class="fas fa-rocket"></i> Publish
+                </button>
+            </div>
+
+            <div id="ai-status" class="ai-editor-status"></div>
+        </div>
+    </div>
 </div>
 
 <div id="right">

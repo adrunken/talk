@@ -160,6 +160,12 @@ app.use(
 // Serve site folder
 app.use('/site', express.static(SITE_DIR));
 
+// Serve chat page
+app.get('/chat', (req, res) => {
+  const chatPagePath = path.join(__dirname, '..', 'index.html');
+  res.sendFile(chatPagePath);
+});
+
 // Start server
 async function startServer() {
   await ensureSiteDir();

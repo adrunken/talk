@@ -157,17 +157,24 @@ app.post('/api/publish', async (req, res) => {
   }
 });
 
-// Serve static files from client
+// Serve site folder
+app.use('/site', express.static(SITE_DIR));
+
+// Serve AI code editor app at /editor
 app.use(
+  '/editor',
   express.static(path.join(__dirname, '..', 'client', 'dist'), {
     extensions: ['html'],
   })
 );
 
-// Serve site folder
-app.use('/site', express.static(SITE_DIR));
+// Serve chat page as main page
+app.get('/', (req, res) => {
+  const chatPagePath = path.join(__dirname, '..', 'index.html');
+  res.sendFile(chatPagePath);
+});
 
-// Serve chat page
+// Keep /chat route for compatibility
 app.get('/chat', (req, res) => {
   const chatPagePath = path.join(__dirname, '..', 'index.html');
   res.sendFile(chatPagePath);

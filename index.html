@@ -2562,11 +2562,46 @@ function ready() {
             $('#ai-status').text('✓ Preview ready');
             $('#ai-generate-btn').prop('disabled', false);
             $('#ai-publish-btn').prop('disabled', false);
+
+            // Show preview modal with the generated preview
+            var previewIframe = document.getElementById('ai-preview-iframe');
+            previewIframe.src = '/site/preview.html';
+
+            var messageDiv = document.getElementById('ai-preview-message');
+            messageDiv.textContent = 'Preview of your changes has been generated. Click "Accept & Publish" to publish these changes.';
+
+            $('#ai-preview-modal').removeClass('hidden');
         })
         .catch(function(err) {
             $('#ai-status').text('Error: ' + err.message);
             $('#ai-generate-btn').prop('disabled', false);
         });
+    });
+
+    // AI Preview Modal - Close button
+    $('#ai-preview-close').on('click', function(e) {
+        e.preventDefault();
+        $('#ai-preview-modal').addClass('hidden');
+    });
+
+    // AI Preview Modal - Cancel button
+    $('#ai-preview-cancel').on('click', function(e) {
+        e.preventDefault();
+        $('#ai-preview-modal').addClass('hidden');
+    });
+
+    // AI Preview Modal - Accept button (publish)
+    $('#ai-preview-accept').on('click', function(e) {
+        e.preventDefault();
+        $('#ai-preview-modal').addClass('hidden');
+        $('#ai-publish-btn').click();
+    });
+
+    // Close modal when clicking outside
+    $('#ai-preview-modal').on('click', function(e) {
+        if (e.target.id === 'ai-preview-modal') {
+            $(this).addClass('hidden');
+        }
     });
 
     // AI Code Editor - Publish button

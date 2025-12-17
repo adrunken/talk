@@ -1235,6 +1235,30 @@ html {
   </div>
 </div>
 
+<!-- AI Preview Modal -->
+<div id="ai-preview-modal" class="hidden ai-preview-modal">
+  <div class="ai-preview-panel">
+    <div class="ai-preview-header">
+      <h2>Preview Changes</h2>
+      <button class="ai-preview-close" id="ai-preview-close" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="ai-preview-content">
+      <iframe id="ai-preview-iframe" class="ai-preview-iframe" sandbox="allow-same-origin" title="Preview of AI generated changes"></iframe>
+      <div id="ai-preview-message" class="ai-preview-message"></div>
+    </div>
+    <div class="ai-preview-actions">
+      <button id="ai-preview-accept" class="ai-preview-btn ai-preview-btn-accept">
+        <i class="fas fa-check"></i> Accept & Publish
+      </button>
+      <button id="ai-preview-cancel" class="ai-preview-btn ai-preview-btn-cancel">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies

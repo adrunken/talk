@@ -766,6 +766,129 @@ html {
 .admin-ban-details { color: var(--text-muted); font-size: 0.75rem; }
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
+
+/* AI Editor Panel */
+.ai-editor-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.ai-editor-header {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.ai-editor-header h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.ai-editor-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.ai-editor-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.ai-editor-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 200px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.ai-editor-textarea:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-secondary);
+}
+
+.ai-editor-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.ai-editor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ai-editor-btn {
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.ai-editor-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ai-editor-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.ai-generate-btn {
+    background: var(--accent-primary);
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.ai-publish-btn {
+    background: #22c55e;
+}
+
+.ai-publish-btn:hover:not(:disabled) {
+    background: #16a34a;
+}
+
+.ai-editor-status {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0.5rem;
+    min-height: 1.5rem;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>

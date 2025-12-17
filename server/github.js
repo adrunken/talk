@@ -163,4 +163,71 @@ async function commitFileToGitHub(filePath, fileContent, commitMessage) {
   return newCommitSha;
 }
 
-module.exports = { commitFileToGitHub };
+async function createPullRequest(filePath, fileContent, prTitle, prDescription, baseBranch) {
+  if (!GITHUB_TOKEN) {
+    throw new Error('GITHUB_TOKEN environment variable not set');
+  }
+
+  const { owner, repo } = parseRepoString(GITHUB_REPO);
+
+  // Generate a unique branch name for this PR
+  const timestamp = Date.now();
+  const headBranch = `ai-changes-${timestamp}`;
+
+  // Get the latest commit SHA from the base branch
+  const latestCommitSha = await getLatestCommitSha(owner, repo, baseBranch);
+  const parentTree = await getTree(owner, repo, latestCommitSha);
+
+  // Create a blob for the modified file
+  const blobSha = await createBlob(owner, repo, fileContent);
+
+  // Create a tree with the new file
+  const treeSha = await createTree(
+    owner,
+    repo,
+    parentTree.sha,
+    blobSha,
+    filePath
+  );
+
+  // Create a commit
+  const newCommitSha = await createCommit(
+    owner,
+    repo,
+    treeSha,
+    latestCommitSha,
+    `AI: ${prTitle}`
+  );
+
+  // Create the new branch
+  await makeGitHubRequest(
+    'POST',
+    `/repos/${owner}/${repo}/git/refs`,
+    {
+      ref: `refs/heads/${headBranch}`,
+      sha: newCommitSha,
+    }
+  );
+
+  // Create the pull request
+  const prResponse = await makeGitHubRequest(
+    'POST',
+    `/repos/${owner}/${repo}/pulls`,
+    {
+      title: prTitle,
+      body: prDescription,
+      head: headBranch,
+      base: baseBranch,
+      draft: false,
+    }
+  );
+
+  return {
+    prNumber: prResponse.number,
+    prUrl: prResponse.html_url,
+    branch: headBranch,
+    commitSha: newCommitSha,
+  };
+}
+
+module.exports = { commitFileToGitHub, createPullRequest };

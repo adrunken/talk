@@ -2117,6 +2117,8 @@ function ready() {
     }
     $(document).on('click.audio keydown.audio', unmuteAudioOnInteraction);
 
+    // Initialize AI Code Editor buttons
+    $('#ai-publish-btn').prop('disabled', true);
 
     function popup_message (message, clicktoclosepopup, clicktoreload) {
         $('#popup').text(message).removeClass('hidden');

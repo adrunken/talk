@@ -58,6 +58,7 @@ export default function App() {
       }
 
       setPreview(data.preview);
+      setShowPreviewModal(true);
       setError(null);
       setLoading(false);
     } catch (err) {

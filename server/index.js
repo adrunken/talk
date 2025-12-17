@@ -1,14 +1,21 @@
 const express = require('express');
+const http = require('http');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const cors = require('cors');
+const WebSocket = require('ws');
+const sanitizeHtml = require('sanitize-html');
 const { queryOllama } = require('./ollama');
 const { commitFileToGitHub } = require('./github');
 const { validateHTMLOutput } = require('./validation');
 
 const app = express();
 const PORT = process.env.PORT || 12000;
+
+// Create HTTP server for WebSocket support
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));

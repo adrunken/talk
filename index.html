@@ -2386,10 +2386,14 @@ function ready() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: prompt })
         })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            if (!response.ok) {
-                var errorMsg = data.details ? (Array.isArray(data.details) ? data.details.join('\n') : data.details) : data.error;
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (!result.ok) {
+                var errorMsg = result.data.details ? (Array.isArray(result.data.details) ? result.data.details.join('\n') : result.data.details) : result.data.error;
                 $('#ai-status').text('Error: ' + errorMsg);
                 $('#ai-generate-btn').prop('disabled', false);
                 return;
@@ -2414,10 +2418,14 @@ function ready() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            if (!response.ok) {
-                $('#ai-status').text('Error: ' + (data.error || 'Failed to publish'));
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (!result.ok) {
+                $('#ai-status').text('Error: ' + (result.data.error || 'Failed to publish'));
                 $('#ai-publish-btn').prop('disabled', false);
                 return;
             }

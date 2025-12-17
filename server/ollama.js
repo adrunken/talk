@@ -1,7 +1,7 @@
 const https = require('https');
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = 'mixtral-8x7b-32768'; // Fast and capable for code
+const GROQ_MODEL = 'llama-3.1-70b-versatile'; // Powerful and stable for code
 
 const SYSTEM_INSTRUCTION = `You are an expert web engineer.
 You are modifying an existing website.

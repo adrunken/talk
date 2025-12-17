@@ -92,6 +92,7 @@ export default function App() {
 
       setError(null);
       setPrompt('');
+      setShowPreviewModal(false);
       alert(`✓ Changes published successfully!\n\n${data.message}`);
       setPublishing(false);
     } catch (err) {

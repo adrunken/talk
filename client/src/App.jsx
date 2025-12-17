@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
-import Preview from './components/Preview';
 import ErrorDialog from './components/ErrorDialog';
+import PreviewModal from './components/PreviewModal';
 
 export default function App() {
   const [prompt, setPrompt] = useState('');
@@ -9,6 +9,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Fetch initial preview
   useEffect(() => {

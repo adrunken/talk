@@ -1,14 +1,21 @@
 const express = require('express');
+const http = require('http');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
 const cors = require('cors');
+const WebSocket = require('ws');
+const sanitizeHtml = require('sanitize-html');
 const { queryOllama } = require('./ollama');
 const { commitFileToGitHub } = require('./github');
 const { validateHTMLOutput } = require('./validation');
 
 const app = express();
 const PORT = process.env.PORT || 12000;
+
+// Create HTTP server for WebSocket support
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -150,22 +157,135 @@ app.post('/api/publish', async (req, res) => {
   }
 });
 
-// Serve static files from client
+// Serve site folder
+app.use('/site', express.static(SITE_DIR));
+
+// Serve AI code editor app at /editor
 app.use(
+  '/editor',
   express.static(path.join(__dirname, '..', 'client', 'dist'), {
     extensions: ['html'],
   })
 );
 
-// Serve site folder
-app.use('/site', express.static(SITE_DIR));
+// Serve chat page as main page
+app.get('/', (req, res) => {
+  const chatPagePath = path.join(__dirname, '..', 'index.html');
+  res.sendFile(chatPagePath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err.message);
+      res.status(500).send('Error loading chat page');
+    }
+  });
+});
+
+// Keep /chat route for compatibility
+app.get('/chat', (req, res) => {
+  const chatPagePath = path.join(__dirname, '..', 'index.html');
+  res.sendFile(chatPagePath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err.message);
+      res.status(500).send('Error loading chat page');
+    }
+  });
+});
+
+// WebSocket state
+const users = new Map(); // ws -> username
+const usernameToWs = new Map(); // username -> ws
+
+function send(ws, payload) {
+  if (ws && ws.readyState === 1) {
+    try {
+      ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+    } catch (err) {
+      console.error('[ws] Error sending message:', err.message);
+    }
+  }
+}
+
+function broadcast(payload) {
+  for (const ws of wss.clients) {
+    send(ws, payload);
+  }
+}
+
+// WebSocket connection handler
+wss.on('connection', (ws, req) => {
+  if (req.url && !req.url.startsWith('/ws')) {
+    ws.close();
+    return;
+  }
+
+  ws.on('message', async (data) => {
+    try {
+      let msgStr = data.toString();
+      const msg = JSON.parse(msgStr);
+
+      if (msg.type === 'username') {
+        const username = sanitizeHtml(String(msg.username || ''), {
+          allowedTags: [],
+          allowedAttributes: {}
+        });
+        if (!username || username.toLowerCase() === 'admin' || username === '') {
+          send(ws, { type: 'usernameunavailable', username: 'user' + Math.floor(Math.random() * 1001) });
+          return;
+        }
+        users.set(ws, username);
+        usernameToWs.set(username, ws);
+        send(ws, { type: 'displayeduser', username });
+        broadcast({
+          type: 'userlist',
+          connected: Array.from(users.values()),
+          offline: []
+        });
+      } else if (msg.type === 'message') {
+        const username = users.get(ws);
+        if (username) {
+          broadcast({
+            type: 'message',
+            username: username,
+            message: sanitizeHtml(String(msg.message || ''), {
+              allowedTags: [],
+              allowedAttributes: {}
+            }),
+            datetime: Date.now()
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[ws] Error handling message:', err.message);
+    }
+  });
+
+  ws.on('close', () => {
+    const username = users.get(ws);
+    users.delete(ws);
+    if (username && usernameToWs.get(username) === ws) {
+      usernameToWs.delete(username);
+    }
+    if (username) {
+      broadcast({
+        type: 'userlist',
+        connected: Array.from(users.values()),
+        offline: []
+      });
+    }
+  });
+
+  ws.on('error', (err) => {
+    console.error('[ws] WebSocket error:', err.message);
+  });
+});
 
 // Start server
 async function startServer() {
   await ensureSiteDir();
 
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${PORT}`);
+    console.log(`Chat (main) available at http://localhost:${PORT}`);
+    console.log(`AI Code Editor available at http://localhost:${PORT}/editor`);
     console.log(`API available at http://localhost:${PORT}/api`);
   });
 }

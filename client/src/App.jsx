@@ -80,12 +80,13 @@ export default function App() {
       const response = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim() }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to publish changes');
+        setError(data.details || data.error || 'Failed to publish changes');
         setPublishing(false);
         return;
       }
@@ -93,7 +94,12 @@ export default function App() {
       setError(null);
       setPrompt('');
       setShowPreviewModal(false);
-      alert(`✓ Changes published successfully!\n\n${data.message}`);
+
+      const message = data.prUrl
+        ? `✓ Pull Request Created!\n\nPR #${data.prNumber}: ${data.message}\n\nURL: ${data.prUrl}`
+        : `✓ Changes published successfully!\n\n${data.message}`;
+
+      alert(message);
       setPublishing(false);
     } catch (err) {
       setError(`Network error: ${err.message}`);

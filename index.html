@@ -2933,7 +2933,7 @@ function ready() {
             ws.send(JSON.stringify({ type: messageType, targets: chessGameSelectedPlayers }));
             flashStatus('4-Player game invites sent');
         }
-        $('#chess-game-modal').addClass('hidden');
+        $('#chess-game-modal').removeClass('show').addClass('hidden');
         chessGameSelectedPlayers = [];
     });
 

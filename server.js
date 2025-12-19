@@ -1645,7 +1645,7 @@ wss.on('connection', (ws, req) => {
         const board = new ChessCtor();
         let white, black;
         if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false });
+        games.set(gid, { board, white, black, over: false });
         const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
         sendToUsername(white, payload); sendToUsername(black, payload);
         invites.delete(key);
@@ -1678,8 +1678,8 @@ wss.on('connection', (ws, req) => {
           const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
           const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
 
-          // Update Elo for player-vs-player games
-          if (!g.isAiGame && g.white && g.black) {
+          // Update Elo for all 2-player games (always player-vs-player now)
+          if (g.white && g.black) {
             let whiteResult, blackResult;
             if (result === '1-0') {
               whiteResult = 1; // white wins
@@ -1725,8 +1725,8 @@ wss.on('connection', (ws, req) => {
             fen: g.board.fen()
           };
 
-          // Update Elo for player-vs-player games
-          if (!g.isAiGame && g.white && g.black) {
+          // Update Elo for all 2-player games (always player-vs-player now)
+          if (g.white && g.black) {
             const whiteResult = winner === g.white ? 1 : 0;
             const blackResult = winner === g.black ? 1 : 0;
 
@@ -1739,14 +1739,9 @@ wss.on('connection', (ws, req) => {
             console.log('[chess] Player-vs-player game resigned:', g.white, 'vs', g.black, 'winner:', winner);
           }
 
-          // Send to both players if it's a regular game
-          if (!g.isAiGame) {
-            sendToUsername(g.white, over);
-            sendToUsername(g.black, over);
-          } else {
-            // For AI games, just send to the player
-            send(ws, over);
-          }
+          // Send to both players
+          sendToUsername(g.white, over);
+          sendToUsername(g.black, over);
 
           console.log('[chess] Player resigned -', username, 'vs', g.white === username ? g.black : g.white);
         }

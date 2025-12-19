@@ -1752,61 +1752,8 @@ wss.on('connection', (ws, req) => {
         }
       }
     }
-    else if (msg.type === 'chess_ai_start') {
-      const username = users.get(ws);
-      const playerElo = Number(msg.playerElo || 0);
-      const aiElo = Number(msg.aiElo || 1600);
-
-      if (!username) {
-        send(ws, { type: 'chess_error', message: 'Username required' });
-        return;
-      }
-
-      const gid = nextGameId++;
-      const board = new ChessCtor();
-      const playerColor = Math.random() < 0.5 ? 'w' : 'b';
-      const white = playerColor === 'w' ? username : 'zyberAI';
-      const black = playerColor === 'b' ? username : 'zyberAI';
-
-      // Try to create human-like AI bot, fall back to opening book if it fails
-      let aiBot = null;
-      try {
-        aiBot = await createAIBotForGame(board, aiElo);
-        if (aiBot) {
-          aiBotsCache.set(gid, aiBot);
-          console.log('[ai] Created human-like bot for game', gid, 'ELO', aiElo);
-        }
-      } catch (err) {
-        console.warn('[ai] Failed to create human-like bot:', err.message);
-      }
-
-      games.set(gid, {
-        board,
-        white,
-        black,
-        over: false,
-        isAiGame: true,
-        playerUsername: username,
-        playerColor,
-        playerElo,
-        aiElo,
-        aiBot
-      });
-
-      const payload = {
-        type: 'chess_start',
-        game_id: gid,
-        white,
-        black,
-        fen: board.fen(),
-        turn: 'white',
-        isAiGame: true,
-        playerColor,
-        aiElo
-      };
-      send(ws, payload);
-    }
-    else if (msg.type === 'chess_ai_move') {
+    // AI opponents removed - 2-player chess is player-vs-player only
+    else if (msg.type === 'chess_move') {
       const gid = msg.game_id;
       const src = String(msg.from || '');
       const dst = String(msg.to || '');

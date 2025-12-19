@@ -278,13 +278,15 @@ export class GameController {
 
   getFinalScoreboard() {
     const scores = [];
-    for (let i = 0; i < 4; i++) {
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+
+    playerOrder.forEach(player => {
       scores.push({
-        player: this.game.getPlayerName(i),
-        score: this.game.scores[i],
-        eliminated: this.game.eliminatedPlayers.has(i),
+        player: PLAYER_NAMES[player],
+        score: this.game.scores[player],
+        eliminated: this.game.eliminatedPlayers.has(player),
       });
-    }
+    });
     return scores.sort((a, b) => b.score - a.score);
   }
 

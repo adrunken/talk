@@ -1174,7 +1174,45 @@ html {
   </div>
 </div>
 
-<!-- 4-Player Game Creation Modal -->
+<!-- Chess Game Creation Modal -->
+<div id="chess-game-modal" class="first-login-overlay hidden">
+  <div class="first-login-panel" style="min-width: 450px;">
+    <div class="first-login-title">Create Chess Game</div>
+
+    <div style="margin: 1rem 0;">
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">Game Mode</label>
+        <select id="chess-game-mode" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit;">
+          <option value="2player">2-Player Chess</option>
+          <option value="4player">4-Player Chess</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">Time Control</label>
+        <select id="chess-time-control" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit;">
+          <option value="1min">1 minute</option>
+          <option value="3min">3 minutes</option>
+          <option value="5min">5 minutes</option>
+          <option value="10min">10 minutes</option>
+          <option value="unlimited">No limit</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;" id="chess-players-label">Select 1 player to invite</label>
+        <div id="chess-game-players-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+    </div>
+
+    <div class="first-login-actions">
+      <button id="chess-game-cancel" class="first-login-save">Cancel</button>
+      <button id="chess-game-create" class="first-login-save" disabled>Create Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4-Player Game Creation Modal (kept for backward compatibility if needed) -->
 <div id="chess-4player-modal" class="first-login-overlay hidden">
   <div class="first-login-panel" style="min-width: 400px;">
     <div class="first-login-title">Start 4-Player Chess</div>

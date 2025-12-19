@@ -2695,6 +2695,14 @@ function ready() {
         }
     });
 
+    // Close chess game modal when clicking outside
+    $('#chess-game-modal').on('click', function(e) {
+        if (e.target.id === 'chess-game-modal') {
+            $(this).addClass('hidden');
+            chessGameSelectedPlayers = [];
+        }
+    });
+
     // AI Code Editor - Publish button
     $('#ai-publish-btn').on('click', function(e) {
         e.preventDefault();

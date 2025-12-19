@@ -108,20 +108,20 @@ export class BoardRenderer {
 
   getPlayerInitial(player) {
     const initials = {
-      [PLAYERS.BLUE]: 'b',
-      [PLAYERS.YELLOW]: 'y',
+      [PLAYERS.WHITE]: 'w',
       [PLAYERS.RED]: 'r',
-      [PLAYERS.GREEN]: 'g',
+      [PLAYERS.BLACK]: 'b',
+      [PLAYERS.BLUE]: 'u',
     };
     return initials[player];
   }
 
   getPlayerName(player) {
     const names = {
-      [PLAYERS.BLUE]: 'Blue',
-      [PLAYERS.YELLOW]: 'Yellow',
+      [PLAYERS.WHITE]: 'White',
       [PLAYERS.RED]: 'Red',
-      [PLAYERS.GREEN]: 'Green',
+      [PLAYERS.BLACK]: 'Black',
+      [PLAYERS.BLUE]: 'Blue',
     };
     return names[player];
   }

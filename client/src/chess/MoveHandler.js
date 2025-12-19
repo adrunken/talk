@@ -204,20 +204,21 @@ export class MoveHandler {
   }
 
   undo() {
-    if (this.game.moveHistory.length === 0) return false;
-
-    const lastMove = this.game.moveHistory.pop();
-
-    // Reconstruct board state - this is simplified
-    // In a real app, you'd maintain full board history
-    const newGame = new this.game.constructor();
-    for (const move of this.game.moveHistory) {
-      if (move.type !== 'resign') {
-        // Simple replay - doesn't handle all edge cases
-        // This is a placeholder implementation
-      }
+    if (this.game.moveHistory.length === 0 || this.game.boardSnapshots.length === 0) {
+      return false;
     }
 
+    const snapshot = this.game.boardSnapshots.pop();
+    this.game.moveHistory.pop();
+
+    // Restore board state
+    this.game.board = snapshot.board.map(row => [...row]);
+    this.game.turnIndex = snapshot.turnIndex;
+    this.game.eliminatedPlayers = new Set(snapshot.eliminatedPlayers);
+    this.game.kingPositions = { ...snapshot.kingPositions };
+    this.game.scores = { ...snapshot.scores };
+
+    this.deselectSquare();
     this.boardRenderer.update();
     return true;
   }

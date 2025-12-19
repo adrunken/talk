@@ -2457,10 +2457,10 @@ function formatTimer(seconds) {
 }
 
 function updateTimerDisplay() {
-    $('#chess-blue-timer').text(formatTimer(chessTimers.blue));
-    $('#chess-yellow-timer').text(formatTimer(chessTimers.yellow));
+    $('#chess-white-timer').text(formatTimer(chessTimers.white));
     $('#chess-red-timer').text(formatTimer(chessTimers.red));
-    $('#chess-green-timer').text(formatTimer(chessTimers.green));
+    $('#chess-black-timer').text(formatTimer(chessTimers.black));
+    $('#chess-blue-timer').text(formatTimer(chessTimers.blue));
 }
 
 function startChessTimer() {

@@ -49,36 +49,48 @@ class ChessBoard4Player:
     def _setup_initial_position(self):
         """Set up initial piece positions for all 4 players"""
         # White (bottom-left, pieces on rank 0-1, files a-d)
-        self.board.set_piece_at(chess.A1, chess.Piece(chess.ROOK, chess.WHITE))
-        self.board.set_piece_at(chess.B1, chess.Piece(chess.KNIGHT, chess.WHITE))
-        self.board.set_piece_at(chess.C1, chess.Piece(chess.BISHOP, chess.WHITE))
-        self.board.set_piece_at(chess.D1, chess.Piece(chess.QUEEN, chess.WHITE))
+        squares_white = [chess.A1, chess.B1, chess.C1, chess.D1]
+        pieces_white = [chess.ROOK, chess.KNIGHT, chess.BISHOP, chess.QUEEN]
+        for sq, piece_type in zip(squares_white, pieces_white):
+            self.board.set_piece_at(sq, chess.Piece(piece_type, chess.WHITE))
+            self.initial_pieces[sq] = (piece_type, PlayerColor.WHITE)
         for file_idx in range(4):  # a-d
-            self.board.set_piece_at(chess.Square(file_idx, 1), chess.Piece(chess.PAWN, chess.WHITE))
-        
+            sq = chess.Square(file_idx, 1)
+            self.board.set_piece_at(sq, chess.Piece(chess.PAWN, chess.WHITE))
+            self.initial_pieces[sq] = (chess.PAWN, PlayerColor.WHITE)
+
         # Red (left-bottom, pieces on rank 0-1, files a-b, rotated orientation)
-        self.board.set_piece_at(chess.A2, chess.Piece(chess.ROOK, chess.BLACK))
-        self.board.set_piece_at(chess.A3, chess.Piece(chess.KNIGHT, chess.BLACK))
-        self.board.set_piece_at(chess.B2, chess.Piece(chess.BISHOP, chess.BLACK))
-        self.board.set_piece_at(chess.B3, chess.Piece(chess.QUEEN, chess.BLACK))
+        squares_red = [chess.A2, chess.A3, chess.B2, chess.B3]
+        pieces_red = [chess.ROOK, chess.KNIGHT, chess.BISHOP, chess.QUEEN]
+        for sq, piece_type in zip(squares_red, pieces_red):
+            self.board.set_piece_at(sq, chess.Piece(piece_type, chess.BLACK))
+            self.initial_pieces[sq] = (piece_type, PlayerColor.RED)
         for rank_idx in range(2, 6):
-            self.board.set_piece_at(chess.Square(0, rank_idx), chess.Piece(chess.PAWN, chess.BLACK))
-        
+            sq = chess.Square(0, rank_idx)
+            self.board.set_piece_at(sq, chess.Piece(chess.PAWN, chess.BLACK))
+            self.initial_pieces[sq] = (chess.PAWN, PlayerColor.RED)
+
         # Black (top-right, pieces on rank 6-7, files e-h)
-        self.board.set_piece_at(chess.E8, chess.Piece(chess.QUEEN, chess.BLACK))
-        self.board.set_piece_at(chess.F8, chess.Piece(chess.BISHOP, chess.BLACK))
-        self.board.set_piece_at(chess.G8, chess.Piece(chess.KNIGHT, chess.BLACK))
-        self.board.set_piece_at(chess.H8, chess.Piece(chess.ROOK, chess.BLACK))
+        squares_black = [chess.E8, chess.F8, chess.G8, chess.H8]
+        pieces_black = [chess.QUEEN, chess.BISHOP, chess.KNIGHT, chess.ROOK]
+        for sq, piece_type in zip(squares_black, pieces_black):
+            self.board.set_piece_at(sq, chess.Piece(piece_type, chess.BLACK))
+            self.initial_pieces[sq] = (piece_type, PlayerColor.BLACK)
         for file_idx in range(4, 8):  # e-h
-            self.board.set_piece_at(chess.Square(file_idx, 6), chess.Piece(chess.PAWN, chess.BLACK))
-        
+            sq = chess.Square(file_idx, 6)
+            self.board.set_piece_at(sq, chess.Piece(chess.PAWN, chess.BLACK))
+            self.initial_pieces[sq] = (chess.PAWN, PlayerColor.BLACK)
+
         # Green (right-top, pieces on rank 6-7, files g-h, rotated orientation)
-        self.board.set_piece_at(chess.G7, chess.Piece(chess.QUEEN, chess.WHITE))
-        self.board.set_piece_at(chess.H7, chess.Piece(chess.BISHOP, chess.WHITE))
-        self.board.set_piece_at(chess.G6, chess.Piece(chess.KNIGHT, chess.WHITE))
-        self.board.set_piece_at(chess.H6, chess.Piece(chess.ROOK, chess.WHITE))
+        squares_green = [chess.G7, chess.H7, chess.G6, chess.H6]
+        pieces_green = [chess.QUEEN, chess.BISHOP, chess.KNIGHT, chess.ROOK]
+        for sq, piece_type in zip(squares_green, pieces_green):
+            self.board.set_piece_at(sq, chess.Piece(piece_type, chess.WHITE))
+            self.initial_pieces[sq] = (piece_type, PlayerColor.GREEN)
         for rank_idx in range(2, 6):
-            self.board.set_piece_at(chess.Square(7, rank_idx), chess.Piece(chess.PAWN, chess.WHITE))
+            sq = chess.Square(7, rank_idx)
+            self.board.set_piece_at(sq, chess.Piece(chess.PAWN, chess.WHITE))
+            self.initial_pieces[sq] = (chess.PAWN, PlayerColor.GREEN)
     
     def current_player(self):
         """Get the current player"""

@@ -2969,7 +2969,8 @@ function ready() {
             chessGame = null;
             hideRejoinPrompt(); // Hide rejoin button when resigning from AI game
         } else if (chessGame && ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'chess_resign', game_id: chessGame.id }));
+            var messageType = chessGame.is4Player ? 'chess_4player_resign' : 'chess_resign';
+            ws.send(JSON.stringify({ type: messageType, game_id: chessGame.id }));
             flashStatus('Game resigned');
             hideRejoinPrompt(); // Hide rejoin button when resigning from PvP game
         }

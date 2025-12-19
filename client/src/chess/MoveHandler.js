@@ -3,7 +3,7 @@
  * Manages piece selection, move validation, and game flow
  */
 
-import { PIECE_TYPES, PLAYERS } from './FourPlayerChess';
+import { PIECE_TYPES, PLAYERS, PLAYER_NAMES } from './FourPlayerChess';
 
 export class MoveHandler {
   constructor(game, boardRenderer, onMoveCallback) {

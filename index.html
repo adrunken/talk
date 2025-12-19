@@ -1089,7 +1089,7 @@ html {
 
     <div>
         <h3>Game Invites</h3>
-        <button id="chess-settings-button" class="first-login-save" style="width: 100%; margin-bottom: 0.75rem;">Start Chess Game</button>
+        <button id="chess-game-button" class="first-login-save" style="width: 100%; margin-bottom: 0.75rem;">Chess</button>
         <div id="invites"></div>
     </div>
 
@@ -1174,7 +1174,45 @@ html {
   </div>
 </div>
 
-<!-- 4-Player Game Creation Modal -->
+<!-- Chess Game Creation Modal -->
+<div id="chess-game-modal" class="first-login-overlay hidden">
+  <div class="first-login-panel" style="min-width: 450px;">
+    <div class="first-login-title">Create Chess Game</div>
+
+    <div style="margin: 1rem 0;">
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">Game Mode</label>
+        <select id="chess-game-mode" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit;">
+          <option value="2player">2-Player Chess</option>
+          <option value="4player">4-Player Chess</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;">Time Control</label>
+        <select id="chess-time-control" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit;">
+          <option value="1min">1 minute</option>
+          <option value="3min">3 minutes</option>
+          <option value="5min">5 minutes</option>
+          <option value="10min">10 minutes</option>
+          <option value="unlimited">No limit</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-primary); margin-bottom: 0.5rem;" id="chess-players-label">Select 1 player to invite</label>
+        <div id="chess-game-players-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+    </div>
+
+    <div class="first-login-actions">
+      <button id="chess-game-cancel" class="first-login-save">Cancel</button>
+      <button id="chess-game-create" class="first-login-save" disabled>Create Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4-Player Game Creation Modal (kept for backward compatibility if needed) -->
 <div id="chess-4player-modal" class="first-login-overlay hidden">
   <div class="first-login-panel" style="min-width: 400px;">
     <div class="first-login-title">Start 4-Player Chess</div>
@@ -2657,6 +2695,14 @@ function ready() {
         }
     });
 
+    // Close chess game modal when clicking outside
+    $('#chess-game-modal').on('click', function(e) {
+        if (e.target.id === 'chess-game-modal') {
+            $(this).removeClass('show').addClass('hidden');
+            chessGameSelectedPlayers = [];
+        }
+    });
+
     // AI Code Editor - Publish button
     $('#ai-publish-btn').on('click', function(e) {
         e.preventDefault();
@@ -2802,7 +2848,131 @@ function ready() {
         $(this).closest('.invite-item').remove();
     });
 
-    // 4-Player Chess handlers
+    // Chess Game Creation Modal handlers
+    var chessGameSelectedPlayers = [];
+    var chessGameMode = '2player';
+    var chessTimeControl = '1min';
+
+    function updateChessGamePlayersList() {
+        var me = $('#username').text().trim();
+        var allPlayers = [];
+
+        // Add online users
+        if (users && Array.isArray(users)) {
+            users.forEach(function(u) {
+                if (u !== me) {
+                    allPlayers.push({ name: u, online: true });
+                }
+            });
+        }
+
+        // Add offline users
+        if (offlineUsers && Array.isArray(offlineUsers)) {
+            offlineUsers.forEach(function(u) {
+                var username = (typeof u === 'string') ? u : (u.username || u);
+                if (username !== me && !users.includes(username)) {
+                    allPlayers.push({ name: username, online: false });
+                }
+            });
+        }
+
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+
+        var playerListHtml = allPlayers.map(function(player) {
+            var statusIndicator = player.online ?
+                '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:0.25rem;"></span>' :
+                '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9ca3af;margin-right:0.25rem;"></span>';
+            var statusText = player.online ? '' : ' (offline)';
+
+            return '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;border-radius:var(--radius-md);background:var(--bg-tertiary);">' +
+                   '<input type="checkbox" class="chess-game-player-checkbox" value="' + player.name + '" />' +
+                   '<span>' + statusIndicator + player.name + statusText + '</span></label>';
+        }).join('');
+
+        $('#chess-game-players-list').html(playerListHtml || '<div style="color:var(--text-secondary);">No other players available</div>');
+        updateChessGameCreateButton();
+    }
+
+    function updateChessGameCreateButton() {
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        $('#chess-game-create').prop('disabled', chessGameSelectedPlayers.length !== maxPlayers);
+    }
+
+    $('#chess-game-button').on('click', function(e) {
+        e.preventDefault();
+        try {
+            chessGameSelectedPlayers = [];
+            chessGameMode = '2player';
+            chessTimeControl = '1min';
+            $('#chess-game-mode').val('2player');
+            $('#chess-time-control').val('1min');
+            updateChessGamePlayersList();
+            $('#chess-game-modal').removeClass('hidden').addClass('show');
+        } catch(err) {
+            console.error('Error opening chess game modal:', err);
+            flashStatus('Error opening chess settings');
+        }
+    });
+
+    $('#chess-game-mode').on('change', function() {
+        chessGameMode = $(this).val();
+        chessGameSelectedPlayers = [];
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        $('#chess-players-label').text('Select ' + maxPlayers + ' player' + (maxPlayers === 1 ? '' : 's') + ' to invite');
+        $('#chess-game-players-list').find('input[type="checkbox"]').prop('checked', false);
+        updateChessGameCreateButton();
+    });
+
+    $('#chess-time-control').on('change', function() {
+        chessTimeControl = $(this).val();
+    });
+
+    $('#chess-game-players-list').on('change', '.chess-game-player-checkbox', function() {
+        chessGameSelectedPlayers = [];
+        $('#chess-game-players-list').find('.chess-game-player-checkbox:checked').each(function() {
+            chessGameSelectedPlayers.push($(this).val());
+        });
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        if (chessGameSelectedPlayers.length > maxPlayers) {
+            $(this).prop('checked', false);
+            chessGameSelectedPlayers.pop();
+            return;
+        }
+        updateChessGameCreateButton();
+    });
+
+    $('#chess-game-cancel').on('click', function() {
+        $('#chess-game-modal').removeClass('show').addClass('hidden');
+        chessGameSelectedPlayers = [];
+    });
+
+    $('#chess-game-create').on('click', function() {
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        if (chessGameSelectedPlayers.length !== maxPlayers || !ws || ws.readyState !== 1) return;
+
+        // Send invites
+        if (chessGameMode === '2player') {
+            ws.send(JSON.stringify({ type: 'chess_invite', to: chessGameSelectedPlayers[0] }));
+            flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
+        } else {
+            // Send individual invites for 4-player mode
+            chessGameSelectedPlayers.forEach(function(player) {
+                ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: [player] }));
+            });
+            flashStatus('4-Player game invites sent');
+        }
+
+        // Close the game creation modal
+        $('#chess-game-modal').removeClass('show').addClass('hidden');
+
+        // Open the chess modal immediately with waiting message
+        $('#chess-modal').removeClass('hidden');
+        $('#chess-status').text('Waiting for players to accept your invites...');
+
+        chessGameSelectedPlayers = [];
+    });
+
+    // 4-Player Chess handlers (kept for backward compatibility)
     var chess4PlayerSelectedUsers = [];
 
     $('#right').on('click', '.chess-4player-user-btn', function() {
@@ -3079,10 +3249,7 @@ function ready() {
                 }
                 lastSeenAttr = ' data-last-seen="Last Seen: ' + lastSeenDate + '"';
             }
-            if (user.name === me) {
-                return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn chess-4player-user-btn" data-user="' + user.name + '">4-Player</button></div>';
-            }
-            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
+            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
         }).join('');
         $('#connected').html(html);
     }

@@ -31,10 +31,15 @@ class ChessBoard4Player:
         self.board = chess.Board()
         # Clear the standard board first
         self.board.clear()
-        
+
+        # Track piece ownership: piece_id -> player_color
+        # Piece_id is created from position hash to track pieces through moves
+        self.piece_ownership = {}  # (from_square) -> PlayerColor on initial setup
+        self.initial_pieces = {}  # (square) -> (piece_type, player_color) for checking ownership
+
         # Setup pieces for each player
         self._setup_initial_position()
-        
+
         # Track game state
         self.turn_index = 0  # 0=white, 1=red, 2=black, 3=green
         self.player_order = [PlayerColor.WHITE, PlayerColor.RED, PlayerColor.BLACK, PlayerColor.GREEN]

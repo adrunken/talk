@@ -3864,10 +3864,10 @@ function ready() {
             };
             try { localStorage.setItem('active_game_4p', JSON.stringify({ id: chessGame.id, players: chessGame.players })); } catch(e){}
             $('#chess-4player-players').removeClass('hidden').css('display', '');
-            $('#chess-4p-blue').text(data['players'].blue);
-            $('#chess-4p-yellow').text(data['players'].yellow);
-            $('#chess-4p-red').text(data['players'].red);
-            $('#chess-4p-green').text(data['players'].green);
+            $('#chess-4p-white').text(data['players'].white || '—');
+            $('#chess-4p-red').text(data['players'].red || '—');
+            $('#chess-4p-black').text(data['players'].black || '—');
+            $('#chess-4p-blue').text(data['players'].blue || '—');
             $('#chess-white').text('');
             $('#chess-black').text('');
             pendingUserMove = null; premoveQueue = []; updateConfirmButton();

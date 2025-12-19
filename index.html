@@ -1425,6 +1425,11 @@ var currentTentative = null; // {from,to,isPremove}
 var __processingPremoves = false;
 // Chess settings
 var chessSettings = { confirmMoves: true, premoveEnabled: true };
+// Timer state for 4-player games
+var chessTimers = {
+    blue: 60, yellow: 60, red: 60, green: 60,
+    intervalId: null
+};
 
 // Board and Pieces settings
 var boardPiecesSettings = {

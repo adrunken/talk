@@ -31,13 +31,13 @@ export class GameController {
   setupUIElements() {
     // Find and store references to UI elements
     this.UIElements.statusDisplay = document.getElementById('chess-status');
-    
+
     // Player names and timers
     const playerConfigs = [
-      { color: 'blue', nameId: 'chess-blue-name', timerId: 'chess-blue-timer' },
-      { color: 'yellow', nameId: 'chess-yellow-name', timerId: 'chess-yellow-timer' },
+      { color: 'white', nameId: 'chess-white-name', timerId: 'chess-white-timer' },
       { color: 'red', nameId: 'chess-red-name', timerId: 'chess-red-timer' },
-      { color: 'green', nameId: 'chess-green-name', timerId: 'chess-green-timer' },
+      { color: 'black', nameId: 'chess-black-name', timerId: 'chess-black-timer' },
+      { color: 'blue', nameId: 'chess-blue-name', timerId: 'chess-blue-timer' },
     ];
 
     playerConfigs.forEach(config => {
@@ -48,10 +48,10 @@ export class GameController {
     // 4-player display elements
     this.UIElements.fourPlayerStatus = document.getElementById('chess-4player-players');
     this.UIElements.fourPlayerDisplays = {
-      blue: document.getElementById('chess-4p-blue'),
-      yellow: document.getElementById('chess-4p-yellow'),
+      white: document.getElementById('chess-4p-white'),
       red: document.getElementById('chess-4p-red'),
-      green: document.getElementById('chess-4p-green'),
+      black: document.getElementById('chess-4p-black'),
+      blue: document.getElementById('chess-4p-blue'),
     };
   }
 

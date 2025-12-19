@@ -50,26 +50,35 @@ export class FourPlayerChess {
   constructor() {
     this.board = this.createEmptyBoard();
     this.turnIndex = 0;
-    this.playerOrder = [PLAYERS.BLUE, PLAYERS.YELLOW, PLAYERS.RED, PLAYERS.GREEN];
+    this.playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
     this.eliminatedPlayers = new Set();
     this.moveHistory = [];
+    this.boardSnapshots = [];
     this.scores = {
-      [PLAYERS.BLUE]: 0,
-      [PLAYERS.YELLOW]: 0,
+      [PLAYERS.WHITE]: 0,
       [PLAYERS.RED]: 0,
-      [PLAYERS.GREEN]: 0,
+      [PLAYERS.BLACK]: 0,
+      [PLAYERS.BLUE]: 0,
     };
     this.kingPositions = {
-      [PLAYERS.BLUE]: null,
-      [PLAYERS.YELLOW]: null,
+      [PLAYERS.WHITE]: null,
       [PLAYERS.RED]: null,
-      [PLAYERS.GREEN]: null,
+      [PLAYERS.BLACK]: null,
+      [PLAYERS.BLUE]: null,
     };
     this.setupInitialPosition();
   }
 
   createEmptyBoard() {
     return Array(14).fill(null).map(() => Array(14).fill(null));
+  }
+
+  isInvalidSquare(rank, file) {
+    if (rank < 2 && file < 2) return true;
+    if (rank < 2 && file > 11) return true;
+    if (rank > 11 && file < 2) return true;
+    if (rank > 11 && file > 11) return true;
+    return false;
   }
 
   setupInitialPosition() {

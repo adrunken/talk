@@ -239,29 +239,51 @@ export class FourPlayerChess {
   canPawnMove(fromRank, fromFile, toRank, toFile, player) {
     const rankDiff = toRank - fromRank;
     const fileDiff = toFile - fromFile;
+    const rankAbs = Math.abs(rankDiff);
     const fileAbs = Math.abs(fileDiff);
     const target = this.getPiece(toRank, toFile);
+    const piece = this.getPiece(fromRank, fromFile);
 
-    if (player === PLAYERS.BLUE) {
-      // Blue moves up (rank increases)
-      if (fileAbs === 0 && rankDiff === 1 && !target) return true;
-      if (fileAbs === 1 && rankDiff === 1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.RED) {
-      // Red moves down (rank decreases)
+    if (player === PLAYERS.WHITE) {
+      // White moves UP: rank decreases (11 -> 10 -> ... -> 1)
+      // Single forward move
       if (fileAbs === 0 && rankDiff === -1 && !target) return true;
-      if (fileAbs === 1 && rankDiff === -1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.YELLOW) {
-      // Yellow moves right (file increases)
-      const fileDiffForward = toFile - fromFile;
-      const rankAbs = Math.abs(toRank - fromRank);
-      if (rankAbs === 0 && fileDiffForward === 1 && !target) return true;
-      if (rankAbs === 1 && fileDiffForward === 1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.GREEN) {
-      // Green moves left (file decreases)
-      const fileDiffForward = fromFile - toFile;
-      const rankAbs = Math.abs(toRank - fromRank);
-      if (rankAbs === 0 && fileDiffForward === 1 && !target) return true;
-      if (rankAbs === 1 && fileDiffForward === 1 && target && target.player !== player) return true;
+      // Double forward move from starting position
+      if (fileAbs === 0 && rankDiff === -2 && fromRank === 11 && !target && !this.getPiece(fromRank - 1, fromFile)) {
+        return true;
+      }
+      // Capture diagonals: (-1,-1), (+1,-1) in (file, rank) space
+      if (rankDiff === -1 && fileAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.RED) {
+      // Red moves DOWN: rank increases (2 -> 3 -> ... -> 13)
+      // Single forward move
+      if (fileAbs === 0 && rankDiff === 1 && !target) return true;
+      // Double forward move from starting position
+      if (fileAbs === 0 && rankDiff === 2 && fromRank === 2 && !target && !this.getPiece(fromRank + 1, fromFile)) {
+        return true;
+      }
+      // Capture diagonals: (-1,+1), (+1,+1) in (file, rank) space
+      if (rankDiff === 1 && fileAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.BLACK) {
+      // Black moves LEFT: file decreases (11 -> 10 -> ... -> 1)
+      // Single forward move
+      if (rankAbs === 0 && fileDiff === -1 && !target) return true;
+      // Double forward move from starting position
+      if (rankAbs === 0 && fileDiff === -2 && fromFile === 11 && !target && !this.getPiece(fromRank, fromFile - 1)) {
+        return true;
+      }
+      // Capture diagonals: (-1,-1), (-1,+1) in (file, rank) space
+      if (fileDiff === -1 && rankAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.BLUE) {
+      // Blue moves RIGHT: file increases (2 -> 3 -> ... -> 13)
+      // Single forward move
+      if (rankAbs === 0 && fileDiff === 1 && !target) return true;
+      // Double forward move from starting position
+      if (rankAbs === 0 && fileDiff === 2 && fromFile === 2 && !target && !this.getPiece(fromRank, fromFile + 1)) {
+        return true;
+      }
+      // Capture diagonals: (+1,-1), (+1,+1) in (file, rank) space
+      if (fileDiff === 1 && rankAbs === 1 && target && target.player !== player) return true;
     }
 
     return false;

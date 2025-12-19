@@ -2873,14 +2873,20 @@ function ready() {
         $('#chess-game-create').prop('disabled', chessGameSelectedPlayers.length !== maxPlayers);
     }
 
-    $('#chess-game-button').on('click', function() {
-        chessGameSelectedPlayers = [];
-        chessGameMode = '2player';
-        chessTimeControl = '1min';
-        $('#chess-game-mode').val('2player');
-        $('#chess-time-control').val('1min');
-        updateChessGamePlayersList();
-        $('#chess-game-modal').removeClass('hidden');
+    $('#chess-game-button').on('click', function(e) {
+        e.preventDefault();
+        try {
+            chessGameSelectedPlayers = [];
+            chessGameMode = '2player';
+            chessTimeControl = '1min';
+            $('#chess-game-mode').val('2player');
+            $('#chess-time-control').val('1min');
+            updateChessGamePlayersList();
+            $('#chess-game-modal').removeClass('hidden');
+        } catch(err) {
+            console.error('Error opening chess game modal:', err);
+            flashStatus('Error opening chess settings');
+        }
     });
 
     $('#chess-game-mode').on('change', function() {

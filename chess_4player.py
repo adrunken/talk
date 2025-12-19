@@ -334,7 +334,8 @@ class ChessBoard4Player:
             'success': True,
             'move': f"{from_notation}{to_notation}",
             'current_player': self.get_color_name(self.current_player()),
-            'board_state': self.get_board_state()
+            'board_state': self.get_board_state(),
+            'fen': self.get_board_state()
         }
     
     def advance_turn(self):

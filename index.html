@@ -2950,15 +2950,25 @@ function ready() {
         var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
         if (chessGameSelectedPlayers.length !== maxPlayers || !ws || ws.readyState !== 1) return;
 
-        var messageType = (chessGameMode === '2player') ? 'chess_invite' : 'chess_4player_invite';
+        // Send invites
         if (chessGameMode === '2player') {
-            ws.send(JSON.stringify({ type: messageType, to: chessGameSelectedPlayers[0] }));
+            ws.send(JSON.stringify({ type: 'chess_invite', to: chessGameSelectedPlayers[0] }));
             flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
         } else {
-            ws.send(JSON.stringify({ type: messageType, targets: chessGameSelectedPlayers }));
+            // Send individual invites for 4-player mode
+            chessGameSelectedPlayers.forEach(function(player) {
+                ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: [player] }));
+            });
             flashStatus('4-Player game invites sent');
         }
+
+        // Close the game creation modal
         $('#chess-game-modal').removeClass('show').addClass('hidden');
+
+        // Open the chess modal immediately with waiting message
+        $('#chess-modal').removeClass('hidden');
+        $('#chess-status').text('Waiting for players to accept your invites...');
+
         chessGameSelectedPlayers = [];
     });
 

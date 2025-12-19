@@ -1089,6 +1089,7 @@ html {
 
     <div>
         <h3>Game Invites</h3>
+        <button id="chess-settings-button" class="first-login-save" style="width: 100%; margin-bottom: 0.75rem;">Start Chess Game</button>
         <div id="invites"></div>
     </div>
 
@@ -1173,6 +1174,21 @@ html {
   </div>
 </div>
 
+<!-- 4-Player Game Creation Modal -->
+<div id="chess-4player-modal" class="first-login-overlay hidden">
+  <div class="first-login-panel" style="min-width: 400px;">
+    <div class="first-login-title">Start 4-Player Chess</div>
+    <div style="margin: 1rem 0; max-height: 300px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem;">
+      <div id="chess-4player-userlist" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+    </div>
+    <div style="margin: 0.5rem 0; color: var(--text-secondary); font-size: 0.9rem;">Select 3 players to invite</div>
+    <div class="first-login-actions">
+      <button id="chess-4player-cancel" class="first-login-save">Cancel</button>
+      <button id="chess-4player-invite" class="first-login-save" disabled>Send Invites</button>
+    </div>
+  </div>
+</div>
+
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
     <div class="chess-board" id="chess-board"></div>
@@ -1192,6 +1208,13 @@ html {
       <div class="chess-status" id="chess-status"></div>
       <div>White: <span id="chess-white"></span></div>
       <div>Black: <span id="chess-black"></span></div>
+      <div id="chess-4player-players" class="hidden" style="display:none;padding:0.5rem;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:0.5rem;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">4-Player Game</div>
+        <div style="font-size:0.875rem;"><span style="color:white;font-weight:600;">⚪</span> White: <span id="chess-4p-white"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:#e74c3c;font-weight:600;">🔴</span> Red: <span id="chess-4p-red"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:black;font-weight:600;">⬛</span> Black: <span id="chess-4p-black"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:#27ae60;font-weight:600;">🟢</span> Green: <span id="chess-4p-green"></span></div>
+      </div>
       <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
@@ -1820,6 +1843,17 @@ function isPlayersPiece(pieceCode) {
         var playerColorLetter = stockfishGame.color === 'w' ? 'w' : 'b';
         return pieceCode.charAt(0) === playerColorLetter;
     }
+
+    if (chessGame.is4Player) {
+        // In 4-player chess, white and green use white pieces, red and black use black pieces
+        if (chessGame.color === 'white' || chessGame.color === 'green') {
+            return pieceCode.charAt(0) === 'w';
+        } else if (chessGame.color === 'red' || chessGame.color === 'black') {
+            return pieceCode.charAt(0) === 'b';
+        }
+        return false;
+    }
+
     if (pieceCode.charAt(0) === 'w') return chessGame.color === 'white';
     if (pieceCode.charAt(0) === 'b') return chessGame.color === 'black';
     return false;
@@ -1871,7 +1905,10 @@ function sendMove(from, to, promotion) {
         return;
     }
     if (!ws || ws.readyState !== 1) return;
-    var payload = { type: 'chess_move', game_id: chessGame.id, from: from, to: to };
+
+    // Determine message type based on game type
+    var messageType = chessGame.is4Player ? 'chess_4player_move' : 'chess_move';
+    var payload = { type: messageType, game_id: chessGame.id, from: from, to: to };
     if (promotion) payload.promotion = promotion;
     ws.send(JSON.stringify(payload));
     clearSelection();
@@ -2136,7 +2173,23 @@ function onPromotionChoice() {
 
 function updateChessStatus() {
     if (!chessGame) { $('#chess-status').text(''); return; }
-    var turnName = (chessGame.turn === 'white') ? chessGame.white : chessGame.black;
+
+    var turnName;
+    if (chessGame.is4Player) {
+        // In 4-player, turn is a color name (white, red, black, green)
+        var colorMap = {
+            'white': '⚪ White',
+            'red': '🔴 Red',
+            'black': '⬛ Black',
+            'green': '🟢 Green'
+        };
+        turnName = colorMap[chessGame.turn] || chessGame.turn;
+        var playerName = chessGame.players && chessGame.players[chessGame.turn] ? chessGame.players[chessGame.turn] : '';
+        if (playerName) turnName += ' (' + playerName + ')';
+    } else {
+        turnName = (chessGame.turn === 'white') ? chessGame.white : chessGame.black;
+    }
+
     var suffix = chessGame && chessGame.inCheck ? ' (check)' : '';
     $('#chess-status').text('Turn: ' + turnName + suffix);
 }
@@ -2749,6 +2802,41 @@ function ready() {
         $(this).closest('.invite-item').remove();
     });
 
+    // 4-Player Chess handlers
+    var chess4PlayerSelectedUsers = [];
+
+    $('#right').on('click', '.chess-4player-user-btn', function() {
+        chess4PlayerSelectedUsers = [];
+        var me = $('#username').text().trim();
+        var userListHtml = users.filter(function(u) { return u !== me; }).map(function(u) {
+            return '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;border-radius:var(--radius-md);background:var(--bg-tertiary);">' +
+                   '<input type="checkbox" class="chess-4player-checkbox" value="' + u + '" />' +
+                   '<span>' + u + '</span></label>';
+        }).join('');
+        $('#chess-4player-userlist').html(userListHtml || '<div style="color:var(--text-secondary);">No other players available</div>');
+        $('#chess-4player-modal').removeClass('hidden');
+    });
+
+    $('#chess-4player-modal').on('change', '.chess-4player-checkbox', function() {
+        chess4PlayerSelectedUsers = [];
+        $('#chess-4player-modal').find('.chess-4player-checkbox:checked').each(function() {
+            chess4PlayerSelectedUsers.push($(this).val());
+        });
+        $('#chess-4player-invite').prop('disabled', chess4PlayerSelectedUsers.length !== 3);
+    });
+
+    $('#chess-4player-cancel').on('click', function() {
+        $('#chess-4player-modal').addClass('hidden');
+        chess4PlayerSelectedUsers = [];
+    });
+
+    $('#chess-4player-invite').on('click', function() {
+        if (chess4PlayerSelectedUsers.length !== 3 || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: chess4PlayerSelectedUsers }));
+        flashStatus('4-Player game invites sent');
+        $('#chess-4player-modal').addClass('hidden');
+    });
+
     // Sidebar toggle (mobile)
     $('#sidebar-toggle').on('click', function(){ $('#right').toggleClass('open'); });
 
@@ -2882,7 +2970,8 @@ function ready() {
             chessGame = null;
             hideRejoinPrompt(); // Hide rejoin button when resigning from AI game
         } else if (chessGame && ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'chess_resign', game_id: chessGame.id }));
+            var messageType = chessGame.is4Player ? 'chess_4player_resign' : 'chess_resign';
+            ws.send(JSON.stringify({ type: messageType, game_id: chessGame.id }));
             flashStatus('Game resigned');
             hideRejoinPrompt(); // Hide rejoin button when resigning from PvP game
         }
@@ -2991,7 +3080,7 @@ function ready() {
                 lastSeenAttr = ' data-last-seen="Last Seen: ' + lastSeenDate + '"';
             }
             if (user.name === me) {
-                return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
+                return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn chess-4player-user-btn" data-user="' + user.name + '">4-Player</button></div>';
             }
             return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
         }).join('');
@@ -3257,6 +3346,81 @@ function ready() {
         }
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
+        }
+        else if (data['type'] === 'chess_4player_invite') {
+            addInvite(data['from']);
+            if (document.hidden) { __chessUnread += 1; __updateTitleBadge(); }
+        }
+        else if (data['type'] === 'chess_4player_start') {
+            var me = $('#username').text();
+            chessGame = {
+                id: data['game_id'],
+                players: data['players'],
+                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
+                fen: data['fen'],
+                turn: data['turn'],
+                lastMove: null,
+                over: false,
+                is4Player: true,
+                moveHistory: []
+            };
+            try { localStorage.setItem('active_game_4p', JSON.stringify({ id: chessGame.id, players: chessGame.players })); } catch(e){}
+            $('#chess-4player-players').removeClass('hidden').css('display', '');
+            $('#chess-4p-white').text(data['players'].white);
+            $('#chess-4p-red').text(data['players'].red);
+            $('#chess-4p-black').text(data['players'].black);
+            $('#chess-4p-green').text(data['players'].green);
+            $('#chess-white').text('');
+            $('#chess-black').text('');
+            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+            renderBoard();
+            updateChessStatus();
+            $('#chess-modal').removeClass('hidden');
+            __chessUnread = 0; __updateTitleBadge();
+        }
+        else if (data['type'] === 'chess_4player_move') {
+            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.lastMove = { from: data['from'], to: data['to'] };
+                chessGame.moveHistory = chessGame.moveHistory || [];
+                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
+                renderBoard();
+                updateChessStatus();
+                clearPendingMove();
+                if (document.hidden && chessGame.turn === chessGame.color) { __chessUnread += 1; __updateTitleBadge(); }
+            }
+        }
+        else if (data['type'] === 'chess_4player_over') {
+            try { localStorage.removeItem('active_game_4p'); } catch(e){}
+            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
+                chessGame.over = true;
+                $('#chess-status').text('Game over - Winner: ' + data['winner'] + ' (' + data['reason'] + ')');
+                hideRejoinPrompt();
+            }
+        }
+        else if (data['type'] === 'chess_4player_resume') {
+            var me = $('#username').text();
+            chessGame = {
+                id: data['game_id'],
+                players: data['players'],
+                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
+                fen: data['fen'],
+                turn: data['turn'],
+                lastMove: null,
+                over: false,
+                is4Player: true,
+                moveHistory: []
+            };
+            $('#chess-4player-players').removeClass('hidden').css('display', '');
+            $('#chess-4p-white').text(data['players'].white);
+            $('#chess-4p-red').text(data['players'].red);
+            $('#chess-4p-black').text(data['players'].black);
+            $('#chess-4p-green').text(data['players'].green);
+            $('#chess-white').text('');
+            $('#chess-black').text('');
+            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
+            showRejoinPrompt();
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

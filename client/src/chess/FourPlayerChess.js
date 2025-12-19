@@ -82,89 +82,70 @@ export class FourPlayerChess {
   }
 
   setupInitialPosition() {
-    // BLUE (bottom): ranks 0-1, files 0-13
-    // Rank 1: Blue's pawns
-    for (let f = 0; f < 14; f++) {
-      this.placePiece(1, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLUE });
-    }
-
-    // Rank 0: Blue's back row
-    const blueBack = [
+    // Standard back row pattern: R N B Q K B N R R N B R Q B (14 pieces, 1 king)
+    const standardBackRow = [
       PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
       PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK,
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP,
+      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.ROOK,
+      PIECE_TYPES.QUEEN, PIECE_TYPES.BISHOP,
     ];
+
+    // WHITE (bottom): rank 12=back, rank 11=pawns, moves UP (dy=-1)
     for (let f = 0; f < 14; f++) {
-      const piece = { type: blueBack[f], player: PLAYERS.BLUE };
-      this.placePiece(0, f, piece);
-      if (blueBack[f] === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.BLUE] = [0, f];
+      this.placePiece(11, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.WHITE, hasMoved: false });
+    }
+    for (let f = 0; f < 14; f++) {
+      const piece = { type: standardBackRow[f], player: PLAYERS.WHITE };
+      this.placePiece(12, f, piece);
+      if (standardBackRow[f] === PIECE_TYPES.KING) {
+        this.kingPositions[PLAYERS.WHITE] = [12, f];
       }
     }
 
-    // YELLOW (left): files 0-1, ranks 0-13
-    // File 0: Yellow's pawns (ranks 2-11)
-    for (let r = 2; r < 12; r++) {
-      this.placePiece(r, 0, { type: PIECE_TYPES.PAWN, player: PLAYERS.YELLOW });
+    // RED (top): rank 1=back, rank 2=pawns, moves DOWN (dy=+1)
+    // Place reversed to face opposite direction
+    for (let f = 0; f < 14; f++) {
+      this.placePiece(2, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.RED, hasMoved: false });
     }
-
-    // File 1: Yellow's back row
-    const yellowBack = [
-      [0, PIECE_TYPES.ROOK], [1, PIECE_TYPES.KNIGHT], [13, PIECE_TYPES.BISHOP],
-      [12, PIECE_TYPES.QUEEN], [11, PIECE_TYPES.KING], [10, PIECE_TYPES.BISHOP],
-      [9, PIECE_TYPES.KNIGHT], [8, PIECE_TYPES.ROOK], [7, PIECE_TYPES.ROOK],
-      [6, PIECE_TYPES.KNIGHT], [5, PIECE_TYPES.BISHOP], [4, PIECE_TYPES.QUEEN],
-      [3, PIECE_TYPES.KING], [2, PIECE_TYPES.BISHOP],
-    ];
-    for (const [r, type] of yellowBack) {
-      const piece = { type, player: PLAYERS.YELLOW };
-      this.placePiece(r, 1, piece);
-      if (type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.YELLOW] = [r, 1];
+    for (let f = 0; f < 14; f++) {
+      const piece = { type: standardBackRow[13 - f], player: PLAYERS.RED };
+      this.placePiece(1, f, piece);
+      if (standardBackRow[13 - f] === PIECE_TYPES.KING) {
+        this.kingPositions[PLAYERS.RED] = [1, f];
       }
     }
 
-    // RED (top): ranks 12-13, files 0-13
-    // Rank 12: Red's pawns (opposite of Blue)
-    for (let f = 0; f < 14; f++) {
-      this.placePiece(12, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.RED });
+    // BLACK (right): file 12=back, file 11=pawns, moves LEFT (dx=-1)
+    // Place vertically from rank 0 to 13
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 11)) {
+        this.placePiece(r, 11, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLACK, hasMoved: false });
+      }
     }
-
-    // Rank 13: Red's back row (reversed, facing down)
-    const redBack = [
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK,
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP,
-    ];
-    for (let f = 0; f < 14; f++) {
-      const piece = { type: redBack[13 - f], player: PLAYERS.RED };
-      this.placePiece(13, f, piece);
-      if (piece.type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.RED] = [13, f];
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 12)) {
+        const piece = { type: standardBackRow[13 - r], player: PLAYERS.BLACK };
+        this.placePiece(r, 12, piece);
+        if (standardBackRow[13 - r] === PIECE_TYPES.KING) {
+          this.kingPositions[PLAYERS.BLACK] = [r, 12];
+        }
       }
     }
 
-    // GREEN (right): files 12-13, ranks 0-13
-    // File 13: Green's pawns (ranks 2-11)
-    for (let r = 2; r < 12; r++) {
-      this.placePiece(r, 13, { type: PIECE_TYPES.PAWN, player: PLAYERS.GREEN });
+    // BLUE (left): file 1=back, file 2=pawns, moves RIGHT (dx=+1)
+    // Place vertically from rank 0 to 13
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 2)) {
+        this.placePiece(r, 2, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLUE, hasMoved: false });
+      }
     }
-
-    // File 12: Green's back row (facing left)
-    const greenBack = [
-      [0, PIECE_TYPES.ROOK], [1, PIECE_TYPES.KNIGHT], [13, PIECE_TYPES.BISHOP],
-      [12, PIECE_TYPES.QUEEN], [11, PIECE_TYPES.KING], [10, PIECE_TYPES.BISHOP],
-      [9, PIECE_TYPES.KNIGHT], [8, PIECE_TYPES.ROOK], [7, PIECE_TYPES.ROOK],
-      [6, PIECE_TYPES.KNIGHT], [5, PIECE_TYPES.BISHOP], [4, PIECE_TYPES.QUEEN],
-      [3, PIECE_TYPES.KING], [2, PIECE_TYPES.BISHOP],
-    ];
-    for (const [r, type] of greenBack) {
-      const piece = { type, player: PLAYERS.GREEN };
-      this.placePiece(r, 12, piece);
-      if (type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.GREEN] = [r, 12];
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 1)) {
+        const piece = { type: standardBackRow[r], player: PLAYERS.BLUE };
+        this.placePiece(r, 1, piece);
+        if (standardBackRow[r] === PIECE_TYPES.KING) {
+          this.kingPositions[PLAYERS.BLUE] = [r, 1];
+        }
       }
     }
   }

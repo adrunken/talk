@@ -1922,24 +1922,25 @@ function renderBoard() {
 
 function render4PlayerBoard() {
     var board = $('#chess-board');
+    board.empty();
 
-    // Parse FEN
+    // Parse FEN (14x14 board representation)
     var parts = chessGame.fen.split(' ');
     var ranksFEN = parts[0].split('/');
-    var files = ['a','b','c','d','e','f','g','h'];
+    var files = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n'];
 
     chessGame.squareMap = {};
 
-    for (var r = 0; r < 8; r++) {
+    for (var r = 0; r < 14; r++) {
         var row = ranksFEN[r];
         var fileIndex = 0;
         for (var i = 0; i < row.length; i++) {
             var ch = row[i];
-            if (/[1-8]/.test(ch)) {
+            if (/[1-9]/.test(ch)) {
                 fileIndex += parseInt(ch, 10);
             } else {
                 var file = files[fileIndex];
-                var rank = 8 - r;
+                var rank = 14 - r;
                 var sq = file + String(rank);
                 chessGame.squareMap[sq] = ch;
                 fileIndex++;
@@ -1947,33 +1948,36 @@ function render4PlayerBoard() {
         }
     }
 
-    // Map position to color based on piece placement in 4-player setup
-    // White pieces (uppercase): white (a1-d2) and green (g7-h6)
-    // Black pieces (lowercase): red (a2-a6, b2-b3) and black (e7-h8)
+    // Map position to player color based on piece placement in 4-player 14x14 setup
+    // Blue: ranks 1-2, files a-n
+    // Yellow: files a-b, ranks 1-14
+    // Red: ranks 13-14, files a-n
+    // Green: files m-n, ranks 1-14
     function getPlayerColor(sq) {
-        var f = sq.charCodeAt(0) - 97; // 0-7 for a-h
-        var r = parseInt(sq.charAt(1), 10); // 1-8
+        var f = sq.charCodeAt(0) - 97; // 0-13 for a-n
+        var r = parseInt(sq.charAt(1), 10); // 1-14
 
-        if (f >= 0 && f <= 3 && r >= 1 && r <= 2) return 'white';
-        if (f >= 4 && f <= 7 && r >= 7 && r <= 8) return 'black';
-        if (f === 0 && r >= 2 && r <= 5) return 'red';
-        if (f === 7 && r >= 3 && r <= 6) return 'green';
+        if (r >= 1 && r <= 2) return 'blue';
+        if (r >= 13 && r <= 14) return 'red';
+        if (f === 0 || f === 1) return 'yellow';
+        if (f === 12 || f === 13) return 'green';
         return null;
     }
 
-    // Build 4-player board grid
+    // Build 14x14 board grid
     board.css('display', 'grid');
-    board.css('gridTemplateColumns', 'repeat(8, 1fr)');
-    board.css('gridTemplateRows', 'repeat(8, 1fr)');
+    board.css('gridTemplateColumns', 'repeat(14, 1fr)');
+    board.css('gridTemplateRows', 'repeat(14, 1fr)');
     board.css('width', '100%');
     board.css('aspectRatio', '1');
     board.css('backgroundColor', '#8b7355');
     board.css('backgroundImage', 'none');
 
-    for (var r = 0; r < 8; r++) {
-        for (var f = 0; f < 8; f++) {
+    // Render all 14x14 squares
+    for (var r = 13; r >= 0; r--) {
+        for (var f = 0; f < 14; f++) {
             var file = files[f];
-            var rank = 8 - r;
+            var rank = 14 - r;
             var sq = file + String(rank);
 
             var light = ((f + rank) % 2) === 0;
@@ -1985,13 +1989,12 @@ function render4PlayerBoard() {
 
             var piece = chessGame.squareMap[sq];
             if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {
-                var isUppercase = /[A-Z]/.test(piece);
                 var pieceType = piece.toLowerCase();
 
                 // Determine the color code for piece image
-                // White and green use white pieces ('w'), red and black use black pieces ('b')
+                // Blue and Green use white pieces ('w'), Yellow and Red use black pieces ('b')
                 var playerCol = getPlayerColor(sq);
-                var pieceColor = (playerCol === 'white' || playerCol === 'green') ? 'w' : 'b';
+                var pieceColor = (playerCol === 'blue' || playerCol === 'green') ? 'w' : 'b';
 
                 var pieceEl = $('<div/>').css({
                     width: '85%',

@@ -2919,7 +2919,7 @@ function ready() {
         chessGameSelectedPlayers = [];
         var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
         $('#chess-players-label').text('Select ' + maxPlayers + ' player' + (maxPlayers === 1 ? '' : 's') + ' to invite');
-        $('#chess-game-players-list').find('input[type="checkbox"]').prop('checked', false);
+        updateChessGamePlayersList();
         updateChessGameCreateButton();
     });
 

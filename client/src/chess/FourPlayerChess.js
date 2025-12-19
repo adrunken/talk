@@ -1,16 +1,19 @@
 /**
  * 4-Player Chess Game Engine
  * Supports 4 independent players on a 14x14 board
- * 
+ *
  * Board Layout:
  * - Files: a-n (0-13)
  * - Ranks: 1-14 (0-13, where 0=rank1, 13=rank14)
- * 
- * Player Positions:
- * - Blue: ranks 0-1, files 0-13 (bottom)
- * - Yellow: files 0-1, ranks 0-13 (left)
- * - Red: ranks 12-13, files 0-13 (top)
- * - Green: files 12-13, ranks 0-13 (right)
+ *
+ * Player Positions (Free-For-All):
+ * - White: ranks 12-13, files 0-13 (bottom, moves UP/dy=-1)
+ * - Red: ranks 0-1, files 0-13 (top, moves DOWN/dy=+1)
+ * - Black: files 12-13, ranks 0-13 (right, moves LEFT/dx=-1)
+ * - Blue: files 0-1, ranks 0-13 (left, moves RIGHT/dx=+1)
+ *
+ * Turn order: White → Red → Black → Blue
+ * Invalid squares: corners (row<2 && col<2), (row<2 && col>11), (row>11 && col<2), (row>11 && col>11)
  */
 
 const PIECE_TYPES = {
@@ -23,24 +26,24 @@ const PIECE_TYPES = {
 };
 
 const PLAYERS = {
-  BLUE: 0,
-  YELLOW: 1,
-  RED: 2,
-  GREEN: 3,
+  WHITE: 0,
+  RED: 1,
+  BLACK: 2,
+  BLUE: 3,
 };
 
 const PLAYER_NAMES = {
-  [PLAYERS.BLUE]: 'blue',
-  [PLAYERS.YELLOW]: 'yellow',
+  [PLAYERS.WHITE]: 'white',
   [PLAYERS.RED]: 'red',
-  [PLAYERS.GREEN]: 'green',
+  [PLAYERS.BLACK]: 'black',
+  [PLAYERS.BLUE]: 'blue',
 };
 
 const PLAYER_COLORS = {
-  [PLAYERS.BLUE]: '#3498db',
-  [PLAYERS.YELLOW]: '#ffd700',
+  [PLAYERS.WHITE]: '#f5f5dc',
   [PLAYERS.RED]: '#e74c3c',
-  [PLAYERS.GREEN]: '#27ae60',
+  [PLAYERS.BLACK]: '#2c3e50',
+  [PLAYERS.BLUE]: '#3498db',
 };
 
 export class FourPlayerChess {

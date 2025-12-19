@@ -1884,9 +1884,6 @@ function render4PlayerBoard() {
     var ranksFEN = parts[0].split('/');
     var files = ['a','b','c','d','e','f','g','h'];
 
-    // Map piece FEN to color/type
-    // In 4-player: white/green use 'w' pieces, red/black use 'b' pieces
-    var mapPiece = { 'P':'p','N':'n','B':'b','R':'r','Q':'q','K':'k','p':'p','n':'n','b':'b','r':'r','q':'q','k':'k' };
     chessGame.squareMap = {};
 
     for (var r = 0; r < 8; r++) {
@@ -1900,19 +1897,33 @@ function render4PlayerBoard() {
                 var file = files[fileIndex];
                 var rank = 8 - r;
                 var sq = file + String(rank);
-                chessGame.squareMap[sq] = ch; // Store raw FEN piece
+                chessGame.squareMap[sq] = ch;
                 fileIndex++;
             }
         }
     }
 
-    // Build 4-player board grid - render all squares with pieces
+    // Map position to color based on piece placement in 4-player setup
+    // White pieces (uppercase): white (a1-d2) and green (g7-h6)
+    // Black pieces (lowercase): red (a2-a6, b2-b3) and black (e7-h8)
+    function getPlayerColor(sq) {
+        var f = sq.charCodeAt(0) - 97; // 0-7 for a-h
+        var r = parseInt(sq.charAt(1), 10); // 1-8
+
+        if (f >= 0 && f <= 3 && r >= 1 && r <= 2) return 'white';
+        if (f >= 4 && f <= 7 && r >= 7 && r <= 8) return 'black';
+        if (f === 0 && r >= 2 && r <= 5) return 'red';
+        if (f === 7 && r >= 3 && r <= 6) return 'green';
+        return null;
+    }
+
+    // Build 4-player board grid
     board.css('display', 'grid');
     board.css('gridTemplateColumns', 'repeat(8, 1fr)');
     board.css('gridTemplateRows', 'repeat(8, 1fr)');
     board.css('width', '100%');
     board.css('aspectRatio', '1');
-    board.css('backgroundColor', '#e8d4b8');
+    board.css('backgroundColor', '#8b7355');
 
     for (var r = 0; r < 8; r++) {
         for (var f = 0; f < 8; f++) {
@@ -1927,23 +1938,29 @@ function render4PlayerBoard() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                position: 'relative'
+                position: 'relative',
+                boxSizing: 'border-box'
             }).attr('data-square', sq);
 
             var piece = chessGame.squareMap[sq];
             if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {
+                var isUppercase = /[A-Z]/.test(piece);
+                var pieceType = piece.toLowerCase();
+
+                // Determine the color code for piece image
+                // White and green use white pieces ('w'), red and black use black pieces ('b')
+                var playerCol = getPlayerColor(sq);
+                var pieceColor = (playerCol === 'white' || playerCol === 'green') ? 'w' : 'b';
+
                 var pieceEl = $('<div/>').css({
-                    width: '80%',
-                    height: '80%',
+                    width: '85%',
+                    height: '85%',
                     backgroundSize: 'contain',
                     backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'center'
-                }).addClass('chess-piece').attr('data-square', sq).attr('data-piece', piece);
+                    backgroundPosition: 'center',
+                    pointerEvents: 'none'
+                }).addClass('chess-piece').attr('data-square', sq).attr('data-piece', pieceColor + pieceType);
 
-                // Determine piece color based on owner
-                var isWhitePiece = /[A-Z]/.test(piece);
-                var pieceType = piece.toLowerCase();
-                var pieceColor = isWhitePiece ? 'w' : 'b';
                 pieceEl.addClass('piece-' + pieceColor + pieceType);
 
                 // Apply custom piece image if available

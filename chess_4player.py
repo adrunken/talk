@@ -378,8 +378,12 @@ class ChessBoard4Player:
             if empty_count > 0:
                 row += str(empty_count)
             fen_rows.append(row)
-        
+
         return '/'.join(fen_rows)
+
+    def fen(self):
+        """Alias for get_board_state() for compatibility"""
+        return self.get_board_state()
     
     def get_game_state(self):
         """Get complete game state"""

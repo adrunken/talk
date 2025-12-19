@@ -14,3 +14,112 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Chess Board Styling */
+#chess-board {
+  display: inline-grid;
+  grid-gap: 0;
+  background-color: #555;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.chess-square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  border: 1px solid #999;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.chess-square.light {
+  background-color: #f0d9b5;
+}
+
+.chess-square.dark {
+  background-color: #b58863;
+}
+
+.chess-square.selected {
+  background-color: #baca44 !important;
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.chess-square.legal-move {
+  background: radial-gradient(circle, #baca44 30%, transparent 30%);
+}
+
+.chess-square.legal-move.can-capture {
+  background: radial-gradient(circle, #e74c3c 30%, transparent 30%);
+}
+
+.chess-square.lastmove {
+  background-color: #baca44;
+  opacity: 0.5;
+}
+
+.chess-square.in-check {
+  background-color: #e74c3c !important;
+  box-shadow: inset 0 0 0 3px #e74c3c;
+}
+
+.chess-piece {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: grab;
+  user-select: none;
+}
+
+.chess-piece:active {
+  cursor: grabbing;
+}
+
+/* Piece styling by color and type */
+.chess-piece.piece-wp,
+.chess-piece.piece-wn,
+.chess-piece.piece-wb,
+.chess-piece.piece-wr,
+.chess-piece.piece-wq,
+.chess-piece.piece-wk {
+  color: #f0f0f0;
+  text-shadow: 1px 1px 2px #333;
+}
+
+.chess-piece.piece-rp,
+.chess-piece.piece-rn,
+.chess-piece.piece-rb,
+.chess-piece.piece-rr,
+.chess-piece.piece-rq,
+.chess-piece.piece-rk {
+  color: #e74c3c;
+  text-shadow: 1px 1px 2px #333;
+}
+
+.chess-piece.piece-bp,
+.chess-piece.piece-bn,
+.chess-piece.piece-bb,
+.chess-piece.piece-br,
+.chess-piece.piece-bq,
+.chess-piece.piece-bk {
+  color: #2c3e50;
+  text-shadow: 1px 1px 1px #bbb;
+}
+
+.chess-piece.piece-up,
+.chess-piece.piece-un,
+.chess-piece.piece-ub,
+.chess-piece.piece-ur,
+.chess-piece.piece-uq,
+.chess-piece.piece-uk {
+  color: #3498db;
+  text-shadow: 1px 1px 2px #333;
+}

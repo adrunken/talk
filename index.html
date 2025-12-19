@@ -2415,6 +2415,58 @@ function updateChessStatus() {
     $('#chess-status').text('Turn: ' + turnName + suffix);
 }
 
+function formatTimer(seconds) {
+    var mins = Math.floor(seconds / 60);
+    var secs = seconds % 60;
+    return ('0' + mins).slice(-2) + ':' + ('0' + secs).slice(-2);
+}
+
+function updateTimerDisplay() {
+    $('#chess-blue-timer').text(formatTimer(chessTimers.blue));
+    $('#chess-yellow-timer').text(formatTimer(chessTimers.yellow));
+    $('#chess-red-timer').text(formatTimer(chessTimers.red));
+    $('#chess-green-timer').text(formatTimer(chessTimers.green));
+}
+
+function startChessTimer() {
+    if (!chessGame || !chessGame.is4Player) return;
+    if (chessTimers.intervalId) clearInterval(chessTimers.intervalId);
+
+    chessTimers.intervalId = setInterval(function() {
+        if (!chessGame || !chessGame.is4Player || chessGame.over) {
+            clearInterval(chessTimers.intervalId);
+            chessTimers.intervalId = null;
+            return;
+        }
+
+        var currentPlayer = chessGame.turn;
+        if (chessTimers[currentPlayer] > 0) {
+            chessTimers[currentPlayer]--;
+            updateTimerDisplay();
+
+            if (chessTimers[currentPlayer] === 0) {
+                $('#chess-status').text('Time expired for ' + currentPlayer);
+            }
+        }
+    }, 1000);
+}
+
+function stopChessTimer() {
+    if (chessTimers.intervalId) {
+        clearInterval(chessTimers.intervalId);
+        chessTimers.intervalId = null;
+    }
+}
+
+function resetChessTimers(timeSeconds) {
+    stopChessTimer();
+    chessTimers.blue = timeSeconds;
+    chessTimers.yellow = timeSeconds;
+    chessTimers.red = timeSeconds;
+    chessTimers.green = timeSeconds;
+    updateTimerDisplay();
+}
+
 // Clear any premove preview visuals
 function clearPremovePreviews(){
     $('#chess-board .chess-square').removeClass('premove');

@@ -3830,6 +3830,8 @@ function ready() {
             pendingUserMove = null; premoveQueue = []; updateConfirmButton();
             renderBoard();
             updateChessStatus();
+            resetChessTimers(60);
+            startChessTimer();
             $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
         }

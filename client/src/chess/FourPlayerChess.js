@@ -309,6 +309,15 @@ export class FourPlayerChess {
     return false;
   }
 
+  shouldPromotePawn(rank, player) {
+    // Check if pawn reached promotion rank for each player
+    if (player === PLAYERS.BLUE && rank === 13) return true;
+    if (player === PLAYERS.RED && rank === 0) return true;
+    if (player === PLAYERS.YELLOW && rank === 13) return true;
+    if (player === PLAYERS.GREEN && rank === 0) return true;
+    return false;
+  }
+
   makeMove(fromNotation, toNotation, promotionType = null) {
     const fromCoords = this.notationToCoords(fromNotation);
     const toCoords = this.notationToCoords(toNotation);
@@ -327,6 +336,19 @@ export class FourPlayerChess {
 
     const piece = this.getPiece(fromRank, fromFile);
     const captured = this.getPiece(toRank, toFile);
+
+    // Check if pawn promotion is needed
+    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromotePawn(toRank, player)) {
+      if (!promotionType) {
+        return {
+          success: false,
+          error: 'Promotion required',
+          requiresPromotion: true,
+          from: fromNotation,
+          to: toNotation,
+        };
+      }
+    }
 
     // Make the move
     this.board[toRank][toFile] = piece;

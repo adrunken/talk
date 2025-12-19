@@ -23,6 +23,7 @@ from geventwebsocket.handler import WebSocketHandler
 from geventwebsocket.exceptions import WebSocketError
 from collections import deque
 from config import PORT, HOST, ADMINNAME, ADMINHIDDENNAME, ALLOWEDTAGS
+from chess_4player import ChessBoard4Player, PlayerColor
 
 idx = 0
 next_game_id = 1

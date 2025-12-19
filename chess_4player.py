@@ -134,20 +134,19 @@ class ChessBoard4Player:
         
         return self.board.is_attacked_by(not piece_color, king_square)
     
+    def _get_piece_owner(self, square):
+        """Get the player who owns the piece at this square based on initial positions"""
+        # Check if this square had a piece in initial setup
+        if square in self.initial_pieces:
+            return self.initial_pieces[square][1]
+
+        # If piece is not in initial setup, it doesn't belong to anyone (shouldn't happen in normal play)
+        return None
+
     def _square_belongs_to_player(self, square, player_color):
-        """Determine if a square is in a player's home territory"""
-        file, rank = square % 8, square // 8
-        
-        if player_color == PlayerColor.WHITE:
-            return rank <= 1 and file <= 3
-        elif player_color == PlayerColor.RED:
-            return rank >= 0 and rank <= 3 and file <= 1
-        elif player_color == PlayerColor.BLACK:
-            return rank >= 6 and file >= 4
-        elif player_color == PlayerColor.GREEN:
-            return rank >= 4 and rank <= 7 and file >= 6
-        
-        return False
+        """Determine if a piece at this square belongs to a player"""
+        owner = self._get_piece_owner(square)
+        return owner == player_color
     
     def is_player_checkmated(self, player_color):
         """Check if a specific player is checkmated"""

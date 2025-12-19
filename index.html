@@ -3369,21 +3369,37 @@ function ready() {
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();
-        chessGame = {
-            id: data['game_id'],
-            white: data['white'],
-            black: data['black'],
-            color: (data['white'] === me) ? 'white' : 'black',
-            fen: data['fen'],
-            turn: data['turn'],
-            lastMove: null,
-            over: false,
-            moveHistory: [{ fen: data['fen'], from: null, to: null }],
-            historyIndex: 0
-        };
+
+        // Check if we already have a preliminary game (inviter case)
+        var hasExistingGame = chessGame && chessGame.id === null && chessGame.white && chessGame.black;
+
+        if (hasExistingGame) {
+            // Update the preliminary game with the actual game ID and FEN from server
+            chessGame.id = data['game_id'];
+            chessGame.fen = data['fen'];
+            chessGame.turn = data['turn'];
+            chessGame.moveHistory = [{ fen: data['fen'], from: null, to: null }];
+            chessGame.historyIndex = 0;
+            chessGame.lastMove = null;
+        } else {
+            // Create new game object
+            chessGame = {
+                id: data['game_id'],
+                white: data['white'],
+                black: data['black'],
+                color: (data['white'] === me) ? 'white' : 'black',
+                fen: data['fen'],
+                turn: data['turn'],
+                lastMove: null,
+                over: false,
+                moveHistory: [{ fen: data['fen'], from: null, to: null }],
+                historyIndex: 0
+            };
+            $('#chess-white').text(chessGame.white);
+            $('#chess-black').text(chessGame.black);
+        }
+
         hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
-        $('#chess-white').text(chessGame.white);
-        $('#chess-black').text(chessGame.black);
         $('#chess-status').text('Your color: ' + chessGame.color);
         pendingUserMove = null; premoveQueue = []; updateConfirmButton();
 

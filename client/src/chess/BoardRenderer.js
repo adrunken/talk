@@ -49,15 +49,14 @@ export class BoardRenderer {
     square.className = 'chess-square';
     square.dataset.rank = rank;
     square.dataset.file = file;
+    square.style.width = '40px';
+    square.style.height = '40px';
+    square.style.boxSizing = 'border-box';
+    square.style.position = 'relative';
 
     // Determine square color based on position
     const isLightSquare = (rank + file) % 2 === 0;
     square.classList.add(isLightSquare ? 'light' : 'dark');
-
-    // Mark invalid corner squares
-    if ((rank < 2 && file < 2) || (rank < 2 && file > 11) || (rank > 11 && file < 2) || (rank > 11 && file > 11)) {
-      square.classList.add('invalid-square');
-    }
 
     // Add board zone indicators
     if (rank > 11) {

@@ -59,6 +59,10 @@ def main():
     invites = {}              # key: (inviter, target) -> timestamp
     games = {}                # key: game_id -> {'board': chess.Board(), 'white': str, 'black': str, 'over': bool}
 
+    # 4-player chess support
+    invites_4player = {}      # key: (inviter, mode) -> {'players': [inviter, ...], 'timestamp': time, 'accepted_by': set()}
+    games_4player = {}        # key: game_id -> {'board': ChessBoard4Player(), 'players': {color: username}, 'over': bool}
+
     def send_userlist():
         for u in users.keys():
             if not u.closed:

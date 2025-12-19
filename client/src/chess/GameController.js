@@ -231,16 +231,17 @@ export class GameController {
   }
 
   updatePlayerDisplay() {
-    const playerNames = [PLAYERS.BLUE, PLAYERS.YELLOW, PLAYERS.RED, PLAYERS.GREEN];
-    const colors = ['blue', 'yellow', 'red', 'green'];
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+    const colors = ['white', 'red', 'black', 'blue'];
 
-    playerNames.forEach((player, index) => {
+    playerOrder.forEach((player, index) => {
       const color = colors[index];
       const nameElement = this.UIElements.playerNames[color];
+      const playerName = PLAYER_NAMES[player];
       const status = this.game.eliminatedPlayers.has(player) ? ' (eliminated)' : '';
 
       if (nameElement) {
-        nameElement.textContent = `Player ${index + 1}${status}`;
+        nameElement.textContent = `${playerName}${status}`;
       }
     });
   }
@@ -250,12 +251,16 @@ export class GameController {
       this.UIElements.fourPlayerStatus.style.display = 'block';
     }
 
-    const colors = ['blue', 'yellow', 'red', 'green'];
-    colors.forEach((color, index) => {
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+    const colors = ['white', 'red', 'black', 'blue'];
+
+    playerOrder.forEach((player, index) => {
+      const color = colors[index];
       const display = this.UIElements.fourPlayerDisplays[color];
-      const score = this.game.scores[index];
+      const score = this.game.scores[player];
+      const playerName = PLAYER_NAMES[player];
       if (display) {
-        display.textContent = `Player ${index + 1} - Score: ${score}`;
+        display.textContent = `${playerName} - Score: ${score}`;
       }
     });
   }

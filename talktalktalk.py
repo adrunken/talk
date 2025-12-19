@@ -298,16 +298,16 @@ def main():
                                             # Initialize 4-player board
                                             board_4p = ChessBoard4Player()
 
-                                            # Map players to colors
+                                            # Map players to colors (14x14 4-player chess: blue, yellow, red, green)
                                             players_list = invite['players']
                                             players_dict = {
-                                                'white': players_list[0],
-                                                'red': players_list[1],
-                                                'black': players_list[2],
+                                                'blue': players_list[0],
+                                                'yellow': players_list[1],
+                                                'red': players_list[2],
                                                 'green': players_list[3]
                                             }
 
-                                            g = {'board': board_4p, 'players': players_dict, 'over': False, 'colors': ['white', 'red', 'black', 'green']}
+                                            g = {'board': board_4p, 'players': players_dict, 'over': False, 'colors': ['blue', 'yellow', 'red', 'green']}
                                             games_4player[gid] = g
 
                                             # Notify all players

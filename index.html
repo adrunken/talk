@@ -2961,12 +2961,17 @@ function ready() {
             flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
 
             // Show board immediately with preliminary game state
+            // Deterministically assign colors based on player names
             var board = new Chess();
-            var isWhite = Math.random() < 0.5;
+            var opponent = chessGameSelectedPlayers[0];
+            var meStr = me + opponent;
+            var oppStr = opponent + me;
+            var isWhite = meStr < oppStr; // Alphabetical comparison for deterministic assignment
+
             chessGame = {
                 id: null,
-                white: isWhite ? me : chessGameSelectedPlayers[0],
-                black: isWhite ? chessGameSelectedPlayers[0] : me,
+                white: isWhite ? me : opponent,
+                black: isWhite ? opponent : me,
                 color: isWhite ? 'white' : 'black',
                 fen: board.fen(),
                 turn: 'white',

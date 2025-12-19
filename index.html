@@ -2953,22 +2953,53 @@ function ready() {
         var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
         if (chessGameSelectedPlayers.length !== maxPlayers || !ws || ws.readyState !== 1) return;
 
+        var me = $('#username').text();
+
         // Send invites
         if (chessGameMode === '2player') {
             ws.send(JSON.stringify({ type: 'chess_invite', to: chessGameSelectedPlayers[0] }));
             flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
+
+            // Show board immediately with preliminary game state
+            var board = new Chess();
+            var isWhite = Math.random() < 0.5;
+            chessGame = {
+                id: null,
+                white: isWhite ? me : chessGameSelectedPlayers[0],
+                black: isWhite ? chessGameSelectedPlayers[0] : me,
+                color: isWhite ? 'white' : 'black',
+                fen: board.fen(),
+                turn: 'white',
+                lastMove: null,
+                over: false,
+                moveHistory: [{ fen: board.fen(), from: null, to: null }],
+                historyIndex: 0
+            };
+            $('#chess-white').text(chessGame.white);
+            $('#chess-black').text(chessGame.black);
+            $('#chess-status').text('Your color: ' + chessGame.color + ' | Waiting for opponent to accept...');
+            pendingUserMove = null;
+            premoveQueue = [];
+            updateConfirmButton();
+            renderBoard();
+            updateHistoryControls && updateHistoryControls();
         } else {
             // Send 4-player invite with all 3 selected players
             ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: chessGameSelectedPlayers }));
             flashStatus('4-Player game invites sent');
+
+            // Show waiting screen for 4-player
+            $('#chess-4player-players').addClass('hidden').css('display', 'none');
+            $('#chess-white').text('');
+            $('#chess-black').text('');
+            $('#chess-status').text('Invites sent. Waiting for players to accept...');
         }
 
         // Close the game creation modal
         $('#chess-game-modal').removeClass('show').addClass('hidden');
 
-        // Open the chess modal immediately with waiting message
+        // Open the chess modal immediately
         $('#chess-modal').removeClass('hidden');
-        $('#chess-status').text('Waiting for players to accept your invites...');
 
         chessGameSelectedPlayers = [];
     });

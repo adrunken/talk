@@ -21,26 +21,22 @@ export class BoardRenderer {
     this.pieces.clear();
     this.squares.clear();
 
-    // Set up CSS Grid for cross-shaped board
-    this.boardElement.style.display = 'grid';
+    // Use CSS Grid with specific positioning for cross-shaped board
+    this.boardElement.style.display = 'inline-grid';
     this.boardElement.style.gridTemplateColumns = 'repeat(14, 40px)';
     this.boardElement.style.gridTemplateRows = 'repeat(14, 40px)';
     this.boardElement.style.gap = '0';
 
-    // Create 14x14 grid - only valid squares are visible
-    for (let rank = 13; rank >= 0; rank--) {
+    // Create only valid squares for cross-shaped board
+    for (let rank = 0; rank < 14; rank++) {
       for (let file = 0; file < 14; file++) {
-        const squareElement = this.createSquare(rank, file);
-        this.boardElement.appendChild(squareElement);
-
         if (!this.game.isInvalidSquare(rank, file)) {
-          // Position valid squares in the grid
+          const squareElement = this.createSquare(rank, file);
+          // Position in grid: column = file + 1 (1-indexed), row = rank + 1
           squareElement.style.gridColumn = (file + 1).toString();
-          squareElement.style.gridRow = (14 - rank).toString();
+          squareElement.style.gridRow = (rank + 1).toString();
+          this.boardElement.appendChild(squareElement);
           this.squares.set(`${rank},${file}`, squareElement);
-        } else {
-          // Hide invalid squares
-          squareElement.style.display = 'none';
         }
       }
     }

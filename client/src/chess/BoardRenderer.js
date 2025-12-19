@@ -43,19 +43,24 @@ export class BoardRenderer {
     const isLightSquare = (rank + file) % 2 === 0;
     square.classList.add(isLightSquare ? 'light' : 'dark');
 
+    // Mark invalid corner squares
+    if ((rank < 2 && file < 2) || (rank < 2 && file > 11) || (rank > 11 && file < 2) || (rank > 11 && file > 11)) {
+      square.classList.add('invalid-square');
+    }
+
     // Add board zone indicators
-    if (rank < 2) {
-      square.dataset.zone = 'blue';
-    } else if (rank > 11) {
+    if (rank > 11) {
+      square.dataset.zone = 'white';
+    } else if (rank < 2) {
       square.dataset.zone = 'red';
     }
 
     if (file < 2) {
       const zoneAttr = square.dataset.zone || '';
-      square.dataset.zone = zoneAttr ? `${zoneAttr}-yellow` : 'yellow';
+      square.dataset.zone = zoneAttr ? `${zoneAttr}-blue` : 'blue';
     } else if (file > 11) {
       const zoneAttr = square.dataset.zone || '';
-      square.dataset.zone = zoneAttr ? `${zoneAttr}-green` : 'green';
+      square.dataset.zone = zoneAttr ? `${zoneAttr}-black` : 'black';
     }
 
     return square;

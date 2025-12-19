@@ -3484,6 +3484,9 @@ function ready() {
             __chessUnread = 0; __updateTitleBadge();
             renderBoard();
             updateChessStatus();
+            if (chessGame.is4Player) {
+                startChessTimer();
+            }
             updateSettingUI('confirm-moves');
         }
     });

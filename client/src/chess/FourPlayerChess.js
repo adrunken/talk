@@ -330,12 +330,16 @@ export class FourPlayerChess {
     return false;
   }
 
-  shouldPromotePawn(rank, player) {
-    // Check if pawn reached promotion rank for each player
-    if (player === PLAYERS.BLUE && rank === 13) return true;
-    if (player === PLAYERS.RED && rank === 0) return true;
-    if (player === PLAYERS.YELLOW && rank === 13) return true;
-    if (player === PLAYERS.GREEN && rank === 0) return true;
+  shouldPromotePawn(rank, file, player) {
+    // Check if pawn reached promotion rank/file for each player
+    // White: pawns move up, promotion at rank 1 (farthest from start)
+    if (player === PLAYERS.WHITE && rank === 1) return true;
+    // Red: pawns move down, promotion at rank 13 (farthest from start)
+    if (player === PLAYERS.RED && rank === 13) return true;
+    // Black: pawns move left, promotion at file 1 (farthest from start)
+    if (player === PLAYERS.BLACK && file === 1) return true;
+    // Blue: pawns move right, promotion at file 13 (farthest from start)
+    if (player === PLAYERS.BLUE && file === 13) return true;
     return false;
   }
 

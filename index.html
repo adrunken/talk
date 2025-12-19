@@ -3852,6 +3852,7 @@ function ready() {
             try { localStorage.removeItem('active_game_4p'); } catch(e){}
             if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
                 chessGame.over = true;
+                stopChessTimer();
                 $('#chess-status').text('Game over - Winner: ' + data['winner'] + ' (' + data['reason'] + ')');
                 hideRejoinPrompt();
             }

@@ -492,10 +492,34 @@ export class FourPlayerChess {
         if (piece && piece.player === player) {
           for (let tr = 0; tr < 14; tr++) {
             for (let tf = 0; tf < 14; tf++) {
-              if (this.canMovePiece(r, f, tr, tf, player)) {
-                const fromNotation = this.coordsToNotation(r, f);
-                const toNotation = this.coordsToNotation(tr, tf);
-                moves.push({ from: fromNotation, to: toNotation, piece: piece.type });
+              if (this.isValidPosition(tr, tf) && this.canMovePiece(r, f, tr, tf, player)) {
+                // Simulate the move to check if it leaves king in check
+                const captured = this.getPiece(tr, tf);
+                const movedPiece = this.getPiece(r, f);
+
+                // Temporarily make the move
+                this.board[tr][tf] = movedPiece;
+                this.board[r][f] = null;
+                if (movedPiece.type === PIECE_TYPES.KING) {
+                  this.kingPositions[player] = [tr, tf];
+                }
+
+                // Check if player's king is in check after this move
+                const isInCheck = this.isKingInCheck(player);
+
+                // Undo the move
+                this.board[r][f] = movedPiece;
+                this.board[tr][tf] = captured;
+                if (movedPiece.type === PIECE_TYPES.KING) {
+                  this.kingPositions[player] = [r, f];
+                }
+
+                // Only add move if it doesn't leave king in check
+                if (!isInCheck) {
+                  const fromNotation = this.coordsToNotation(r, f);
+                  const toNotation = this.coordsToNotation(tr, tf);
+                  moves.push({ from: fromNotation, to: toNotation, piece: piece.type });
+                }
               }
             }
           }

@@ -7,7 +7,7 @@ const WebSocket = require('ws');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
-const { createHumanChessAI } = require('./human-like-chess-ai');
+// AI opponents removed - 2-player chess is now player-vs-player only
 const { queryOllama } = require('./server/ollama');
 const { commitFileToGitHub, createPullRequest } = require('./server/github');
 const { validateHTMLOutput } = require('./server/validation');
@@ -18,46 +18,7 @@ const PORT = process.env.PORT || 12000;
 const ADMINNAME = 'admin';
 const ADMINHIDDENNAME = 'adminxyz';
 
-// Human-like AI bot cache (game_id -> bot instance)
-const aiBotsCache = new Map();
-
-// Create a human-like AI bot for a game
-async function createAIBotForGame(board, aiElo) {
-  try {
-    const bot = await createHumanChessAI({
-      mode: 'api',
-      apiUrl: 'https://chess-api.com/v1',
-      elo: aiElo,
-      contempt: 10,
-      multipv: 3,
-      book: null, // we use our own opening book via the existing system
-      maxBookPlies: 0
-    });
-
-    // Create game adapter that wraps the Chess board
-    const gameAdapter = {
-      fen: () => board.fen(),
-      move: (move) => {
-        if (typeof move === 'string') {
-          return board.move(move);
-        } else if (move && typeof move === 'object') {
-          return board.move({ from: move.from, to: move.to, promotion: move.promotion });
-        }
-        return null;
-      },
-      moves: (options) => board.moves(options),
-      turn: () => board.turn(),
-      in_check: () => board.in_check(),
-      history: () => board.history()
-    };
-
-    bot.bindGame(gameAdapter);
-    return bot;
-  } catch (err) {
-    console.error('[ai] Failed to create human-like bot:', err.message);
-    return null;
-  }
-}
+// AI bot cache removed - AI opponents no longer supported
 
 // Opening book
 let openingsBook = { openings: [] };

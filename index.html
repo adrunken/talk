@@ -2882,7 +2882,7 @@ function ready() {
             $('#chess-game-mode').val('2player');
             $('#chess-time-control').val('1min');
             updateChessGamePlayersList();
-            $('#chess-game-modal').removeClass('hidden');
+            $('#chess-game-modal').removeClass('hidden').addClass('show');
         } catch(err) {
             console.error('Error opening chess game modal:', err);
             flashStatus('Error opening chess settings');

@@ -461,6 +461,45 @@ export class FourPlayerChess {
     }
     return moves;
   }
+
+  isCheckmate(player) {
+    if (!this.isKingInCheck(player)) {
+      return false;
+    }
+    return this.getAvailableMoves(player).length === 0;
+  }
+
+  isStalemate(player) {
+    if (this.isKingInCheck(player)) {
+      return false;
+    }
+    return this.getAvailableMoves(player).length === 0;
+  }
+
+  getGameStatus() {
+    const currentPlayer = this.getCurrentPlayer();
+    const status = {
+      currentPlayer,
+      playerName: this.getPlayerName(currentPlayer),
+      isCheck: this.isKingInCheck(currentPlayer),
+      isCheckmate: this.isCheckmate(currentPlayer),
+      isStalemate: this.isStalemate(currentPlayer),
+      isGameOver: this.isGameOver(),
+      winner: this.getWinner(),
+      eliminatedPlayers: Array.from(this.eliminatedPlayers),
+      scores: { ...this.scores },
+    };
+
+    if (this.isCheckmate(currentPlayer)) {
+      status.message = `${status.playerName} is checkmated!`;
+    } else if (this.isStalemate(currentPlayer)) {
+      status.message = `${status.playerName} is stalemated!`;
+    } else if (status.isCheck) {
+      status.message = `${status.playerName} is in check!`;
+    }
+
+    return status;
+  }
 }
 
 export { PIECE_TYPES, PLAYERS, PLAYER_NAMES, PLAYER_COLORS };

@@ -247,6 +247,203 @@ def main():
                                 result = '1-0' if winner == g['white'] else '0-1'
                                 broadcast_game(g, {'type': 'chess_over', 'game_id': gid, 'result': result, 'reason': 'resign', 'fen': g['board'].fen()})
 
+                        elif msg['type'] == 'chess_4player_invite':
+                            inviter = users.get(ws)
+                            targets = msg.get('targets', [])
+                            if not inviter or not isinstance(targets, list) or len(targets) != 3:
+                                ws.send(json.dumps({'type': 'chess_error', 'message': 'Need exactly 3 other players'}))
+                            elif inviter in targets:
+                                ws.send(json.dumps({'type': 'chess_error', 'message': 'Cannot invite yourself'}))
+                            else:
+                                # Check all targets exist
+                                all_exist = all(send_to_username(t, {'type': 'chess_4player_invite', 'from': inviter}) for t in targets)
+                                if not all_exist:
+                                    ws.send(json.dumps({'type': 'chess_error', 'message': 'Not all players available'}))
+                                else:
+                                    # Store the invite group
+                                    key = (inviter, 'group')
+                                    invites_4player[key] = {
+                                        'inviter': inviter,
+                                        'players': [inviter] + targets,
+                                        'timestamp': time.time(),
+                                        'accepted_by': set([inviter])
+                                    }
+
+                        elif msg['type'] == 'chess_4player_invite_accept':
+                            acceptor = users.get(ws)
+                            inviter = msg.get('from', '')
+                            if not inviter or not acceptor:
+                                ws.send(json.dumps({'type': 'chess_error', 'message': 'Invalid game invite'}))
+                            else:
+                                key = (inviter, 'group')
+                                if key not in invites_4player:
+                                    ws.send(json.dumps({'type': 'chess_error', 'message': 'Invite not found'}))
+                                else:
+                                    invite = invites_4player[key]
+                                    if acceptor not in invite['players']:
+                                        ws.send(json.dumps({'type': 'chess_error', 'message': 'Not in this invite'}))
+                                    else:
+                                        invite['accepted_by'].add(acceptor)
+
+                                        # Check if all players accepted
+                                        if len(invite['accepted_by']) == 4:
+                                            # Create game
+                                            global next_game_id
+                                            gid = next_game_id
+                                            next_game_id += 1
+
+                                            # Initialize 4-player board
+                                            board_4p = ChessBoard4Player()
+
+                                            # Map players to colors
+                                            players_list = invite['players']
+                                            players_dict = {
+                                                'white': players_list[0],
+                                                'red': players_list[1],
+                                                'black': players_list[2],
+                                                'green': players_list[3]
+                                            }
+
+                                            g = {'board': board_4p, 'players': players_dict, 'over': False, 'colors': ['white', 'red', 'black', 'green']}
+                                            games_4player[gid] = g
+
+                                            # Notify all players
+                                            for color, player in players_dict.items():
+                                                player_ws = get_ws_by_username(player)
+                                                if player_ws and not player_ws.closed:
+                                                    player_ws.send(json.dumps({
+                                                        'type': 'chess_4player_start',
+                                                        'game_id': gid,
+                                                        'players': players_dict,
+                                                        'your_color': color,
+                                                        'fen': board_4p.fen(),
+                                                        'turn': board_4p.get_color_name(board_4p.current_player())
+                                                    }))
+
+                                            del invites_4player[key]
+
+                        elif msg['type'] == 'chess_4player_move':
+                            gid = msg.get('game_id')
+                            src = msg.get('from')
+                            dst = msg.get('to')
+                            promo = (msg.get('promotion') or '').lower()
+                            player = users.get(ws)
+
+                            if gid not in games_4player:
+                                ws.send(json.dumps({'type': 'chess_error', 'message': 'Game not found'}))
+                            else:
+                                g = games_4player[gid]
+                                if g['over']:
+                                    ws.send(json.dumps({'type': 'chess_error', 'message': 'Game over'}))
+                                else:
+                                    board_4p = g['board']
+                                    expected_player = None
+                                    for color, pname in g['players'].items():
+                                        if board_4p.get_color_name(board_4p.current_player()) == color:
+                                            expected_player = pname
+                                            break
+
+                                    if player != expected_player:
+                                        ws.send(json.dumps({'type': 'chess_error', 'message': 'Not your turn'}))
+                                    else:
+                                        try:
+                                            from_square = chess.parse_square(src)
+                                            to_square = chess.parse_square(dst)
+
+                                            result = board_4p.make_move(from_square, to_square, promo if promo in ['q','r','b','n'] else None)
+
+                                            if not result['success']:
+                                                ws.send(json.dumps({'type': 'chess_illegal', 'reason': 'illegal', 'message': result['message']}))
+                                            else:
+                                                payload = {
+                                                    'type': 'chess_4player_move',
+                                                    'game_id': gid,
+                                                    'from': src,
+                                                    'to': dst,
+                                                    'promotion': promo or None,
+                                                    'fen': result['fen'],
+                                                    'turn': result['current_player'],
+                                                    'eliminated': result.get('eliminated', False)
+                                                }
+
+                                                # Broadcast to all players
+                                                for color, pname in g['players'].items():
+                                                    player_ws = get_ws_by_username(pname)
+                                                    if player_ws and not player_ws.closed:
+                                                        player_ws.send(json.dumps(payload))
+
+                                                # Check if game over
+                                                if board_4p.is_game_over():
+                                                    g['over'] = True
+                                                    winner = board_4p.get_winner()
+                                                    over_payload = {
+                                                        'type': 'chess_4player_over',
+                                                        'game_id': gid,
+                                                        'winner': winner,
+                                                        'reason': 'checkmate',
+                                                        'fen': board_4p.fen()
+                                                    }
+                                                    for color, pname in g['players'].items():
+                                                        player_ws = get_ws_by_username(pname)
+                                                        if player_ws and not player_ws.closed:
+                                                            player_ws.send(json.dumps(over_payload))
+                                        except ValueError:
+                                            ws.send(json.dumps({'type': 'chess_illegal', 'reason': 'parse'}))
+
+                        elif msg['type'] == 'chess_4player_resign':
+                            gid = msg.get('game_id')
+                            player = users.get(ws)
+                            if gid in games_4player and not games_4player[gid]['over']:
+                                g = games_4player[gid]
+                                g['over'] = True
+                                # Find winner (last non-resigned player)
+                                remaining = [color for color, pname in g['players'].items() if pname != player]
+                                winner = remaining[0] if remaining else None
+
+                                over_payload = {
+                                    'type': 'chess_4player_over',
+                                    'game_id': gid,
+                                    'winner': winner,
+                                    'reason': 'resign',
+                                    'fen': g['board'].fen()
+                                }
+                                for color, pname in g['players'].items():
+                                    player_ws = get_ws_by_username(pname)
+                                    if player_ws and not player_ws.closed:
+                                        player_ws.send(json.dumps(over_payload))
+
+                        elif msg['type'] == 'chess_4player_resume_request':
+                            gid = msg.get('game_id')
+                            try:
+                                if gid in games_4player:
+                                    g = games_4player[gid]
+                                    if not g['over']:
+                                        board_4p = g['board']
+                                        ws.send(json.dumps({
+                                            'type': 'chess_4player_resume',
+                                            'game_id': gid,
+                                            'players': g['players'],
+                                            'fen': board_4p.fen(),
+                                            'turn': board_4p.get_color_name(board_4p.current_player())
+                                        }))
+                                else:
+                                    # Find any active 4-player game for this user
+                                    username = users.get(ws)
+                                    if username:
+                                        for gid2, g in games_4player.items():
+                                            if not g['over'] and username in g['players'].values():
+                                                board_4p = g['board']
+                                                ws.send(json.dumps({
+                                                    'type': 'chess_4player_resume',
+                                                    'game_id': gid2,
+                                                    'players': g['players'],
+                                                    'fen': board_4p.fen(),
+                                                    'turn': board_4p.get_color_name(board_4p.current_player())
+                                                }))
+                                                break
+                            except Exception:
+                                pass
+
                         elif msg['type'] == 'messagesbefore':
                             idbefore = msg['id']
                             ws.send(json.dumps({'type' : 'messages', 'before': 1, 'messages': [db_get_str(i) for i in range(max(0,idbefore - 100),idbefore)]}))

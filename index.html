@@ -2840,9 +2840,12 @@ function ready() {
         setTimeout(function(){ msg.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     });
     $('#invites').on('click', '.invite-accept', function() {
-        var fromUser = $(this).closest('.invite-item').data('from');
-        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'chess_invite_accept', from: fromUser }));
-        $(this).closest('.invite-item').remove();
+        var item = $(this).closest('.invite-item');
+        var fromUser = item.data('from');
+        var inviteType = item.data('invite-type') || '2player';
+        var messageType = (inviteType === '4player') ? 'chess_4player_invite_accept' : 'chess_invite_accept';
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: messageType, from: fromUser }));
+        item.remove();
     });
     $('#invites').on('click', '.invite-decline', function() {
         $(this).closest('.invite-item').remove();
@@ -3252,8 +3255,8 @@ function ready() {
         $('#connected').html(html);
     }
 
-    function addInvite(fromUser) {
-        var item = $('<div class="invite-item" />').attr('data-from', fromUser).text('Invite from ' + fromUser);
+    function addInvite(fromUser, inviteType) {
+        var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-invite-type', inviteType || '2player').text('Invite from ' + fromUser);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');
         actions.append('<button class="invite-btn invite-decline">Decline</button>');
@@ -3447,7 +3450,7 @@ function ready() {
             renderUserLists();
         }
         else if (data['type'] === 'chess_invite') {
-            addInvite(data['from']);
+            addInvite(data['from'], '2player');
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
         }
         else if (data['type'] === 'admin_delete_users_modal') {
@@ -3513,7 +3516,7 @@ function ready() {
             flashStatus(data['message'] || 'Error');
         }
         else if (data['type'] === 'chess_4player_invite') {
-            addInvite(data['from']);
+            addInvite(data['from'], '4player');
             if (document.hidden) { __chessUnread += 1; __updateTitleBadge(); }
         }
         else if (data['type'] === 'chess_4player_start') {

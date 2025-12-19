@@ -649,6 +649,7 @@ html {
 .chess-square.dark { background-color: transparent !important; }
 .chess-square.selected { outline: 3px solid var(--accent-primary); outline-offset: -3px; }
 .chess-square.lastmove { box-shadow: inset 0 0 0 3px rgba(246, 223, 99, 0.45); }
+.chess-square.legal-move { box-shadow: inset 0 0 0 2px rgba(52, 152, 219, 0.5); background: radial-gradient(circle, rgba(52, 152, 219, 0.15) 30%, transparent 70%) !important; }
 .chess-square.drag-over { outline: 3px solid var(--accent-primary); outline-offset: -3px; }
 .chess-square.in-check { box-shadow: inset 0 0 0 3px rgba(220, 53, 69, 0.6); }
 .chess-panel { border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 0.75rem; height: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -735,6 +736,39 @@ html {
 .piece-bb { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/bB.png'); }
 .piece-bn { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/bN.png'); }
 .piece-bp { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/bP.png'); }
+
+/* 4-Player Chess Pieces */
+/* Blue Pieces - use white pieces with blue tint */
+.piece-bk { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wK.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-bq { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wQ.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-br { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wR.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-bb { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wB.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-bn { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wN.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-bp { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wP.png'); filter: hue-rotate(200deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+
+/* Yellow Pieces */
+.piece-yk { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wK.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-yq { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wQ.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-yr { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wR.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-yb { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wB.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-yn { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wN.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-yp { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wP.png'); filter: hue-rotate(45deg) brightness(1.15) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+
+/* Red Pieces */
+.piece-rk { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wK.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-rq { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wQ.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-rr { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wR.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-rb { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wB.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-rn { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wN.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-rp { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wP.png'); filter: hue-rotate(-10deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+
+/* Green Pieces */
+.piece-gk { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wK.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-gq { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wQ.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-gr { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wR.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-gb { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wB.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-gn { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wN.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+.piece-gp { background-image: url('https://chessboardjs.com/img/chesspieces/wikipedia/wP.png'); filter: hue-rotate(130deg) brightness(1.1) drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
 
 .promotion-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; }
 .promotion-overlay::after { content: ''; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.35); }

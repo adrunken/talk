@@ -2840,7 +2840,90 @@ function ready() {
         $(this).closest('.invite-item').remove();
     });
 
-    // 4-Player Chess handlers
+    // Chess Game Creation Modal handlers
+    var chessGameSelectedPlayers = [];
+    var chessGameMode = '2player';
+    var chessTimeControl = '1min';
+
+    function updateChessGamePlayersList() {
+        var me = $('#username').text().trim();
+        var otherUsers = users.filter(function(u) { return u !== me; });
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+
+        var playerListHtml = otherUsers.map(function(u) {
+            return '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;border-radius:var(--radius-md);background:var(--bg-tertiary);">' +
+                   '<input type="checkbox" class="chess-game-player-checkbox" value="' + u + '" />' +
+                   '<span>' + u + '</span></label>';
+        }).join('');
+
+        $('#chess-game-players-list').html(playerListHtml || '<div style="color:var(--text-secondary);">No other players available</div>');
+        updateChessGameCreateButton();
+    }
+
+    function updateChessGameCreateButton() {
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        $('#chess-game-create').prop('disabled', chessGameSelectedPlayers.length !== maxPlayers);
+    }
+
+    $('#chess-game-button').on('click', function() {
+        chessGameSelectedPlayers = [];
+        chessGameMode = '2player';
+        chessTimeControl = '1min';
+        $('#chess-game-mode').val('2player');
+        $('#chess-time-control').val('1min');
+        updateChessGamePlayersList();
+        $('#chess-game-modal').removeClass('hidden');
+    });
+
+    $('#chess-game-mode').on('change', function() {
+        chessGameMode = $(this).val();
+        chessGameSelectedPlayers = [];
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        $('#chess-players-label').text('Select ' + maxPlayers + ' player' + (maxPlayers === 1 ? '' : 's') + ' to invite');
+        $('#chess-game-players-list').find('input[type="checkbox"]').prop('checked', false);
+        updateChessGameCreateButton();
+    });
+
+    $('#chess-time-control').on('change', function() {
+        chessTimeControl = $(this).val();
+    });
+
+    $('#chess-game-players-list').on('change', '.chess-game-player-checkbox', function() {
+        chessGameSelectedPlayers = [];
+        $('#chess-game-players-list').find('.chess-game-player-checkbox:checked').each(function() {
+            chessGameSelectedPlayers.push($(this).val());
+        });
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        if (chessGameSelectedPlayers.length > maxPlayers) {
+            $(this).prop('checked', false);
+            chessGameSelectedPlayers.pop();
+            return;
+        }
+        updateChessGameCreateButton();
+    });
+
+    $('#chess-game-cancel').on('click', function() {
+        $('#chess-game-modal').addClass('hidden');
+        chessGameSelectedPlayers = [];
+    });
+
+    $('#chess-game-create').on('click', function() {
+        var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
+        if (chessGameSelectedPlayers.length !== maxPlayers || !ws || ws.readyState !== 1) return;
+
+        var messageType = (chessGameMode === '2player') ? 'chess_invite' : 'chess_4player_invite';
+        if (chessGameMode === '2player') {
+            ws.send(JSON.stringify({ type: messageType, to: chessGameSelectedPlayers[0] }));
+            flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
+        } else {
+            ws.send(JSON.stringify({ type: messageType, targets: chessGameSelectedPlayers }));
+            flashStatus('4-Player game invites sent');
+        }
+        $('#chess-game-modal').addClass('hidden');
+        chessGameSelectedPlayers = [];
+    });
+
+    // 4-Player Chess handlers (kept for backward compatibility)
     var chess4PlayerSelectedUsers = [];
 
     $('#right').on('click', '.chess-4player-user-btn', function() {

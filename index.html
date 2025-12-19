@@ -2855,13 +2855,38 @@ function ready() {
 
     function updateChessGamePlayersList() {
         var me = $('#username').text().trim();
-        var otherUsers = (users && Array.isArray(users)) ? users.filter(function(u) { return u !== me; }) : [];
+        var allPlayers = [];
+
+        // Add online users
+        if (users && Array.isArray(users)) {
+            users.forEach(function(u) {
+                if (u !== me) {
+                    allPlayers.push({ name: u, online: true });
+                }
+            });
+        }
+
+        // Add offline users
+        if (offlineUsers && Array.isArray(offlineUsers)) {
+            offlineUsers.forEach(function(u) {
+                var username = (typeof u === 'string') ? u : (u.username || u);
+                if (username !== me && !users.includes(username)) {
+                    allPlayers.push({ name: username, online: false });
+                }
+            });
+        }
+
         var maxPlayers = (chessGameMode === '2player') ? 1 : 3;
 
-        var playerListHtml = otherUsers.map(function(u) {
+        var playerListHtml = allPlayers.map(function(player) {
+            var statusIndicator = player.online ?
+                '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:0.25rem;"></span>' :
+                '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9ca3af;margin-right:0.25rem;"></span>';
+            var statusText = player.online ? '' : ' (offline)';
+
             return '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;border-radius:var(--radius-md);background:var(--bg-tertiary);">' +
-                   '<input type="checkbox" class="chess-game-player-checkbox" value="' + u + '" />' +
-                   '<span>' + u + '</span></label>';
+                   '<input type="checkbox" class="chess-game-player-checkbox" value="' + player.name + '" />' +
+                   '<span>' + statusIndicator + player.name + statusText + '</span></label>';
         }).join('');
 
         $('#chess-game-players-list').html(playerListHtml || '<div style="color:var(--text-secondary);">No other players available</div>');

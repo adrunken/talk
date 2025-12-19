@@ -1842,6 +1842,17 @@ function isPlayersPiece(pieceCode) {
         var playerColorLetter = stockfishGame.color === 'w' ? 'w' : 'b';
         return pieceCode.charAt(0) === playerColorLetter;
     }
+
+    if (chessGame.is4Player) {
+        // In 4-player chess, white and green use white pieces, red and black use black pieces
+        if (chessGame.color === 'white' || chessGame.color === 'green') {
+            return pieceCode.charAt(0) === 'w';
+        } else if (chessGame.color === 'red' || chessGame.color === 'black') {
+            return pieceCode.charAt(0) === 'b';
+        }
+        return false;
+    }
+
     if (pieceCode.charAt(0) === 'w') return chessGame.color === 'white';
     if (pieceCode.charAt(0) === 'b') return chessGame.color === 'black';
     return false;

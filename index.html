@@ -1173,6 +1173,21 @@ html {
   </div>
 </div>
 
+<!-- 4-Player Game Creation Modal -->
+<div id="chess-4player-modal" class="first-login-overlay hidden">
+  <div class="first-login-panel" style="min-width: 400px;">
+    <div class="first-login-title">Start 4-Player Chess</div>
+    <div style="margin: 1rem 0; max-height: 300px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem;">
+      <div id="chess-4player-userlist" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+    </div>
+    <div style="margin: 0.5rem 0; color: var(--text-secondary); font-size: 0.9rem;">Select 3 players to invite</div>
+    <div class="first-login-actions">
+      <button id="chess-4player-cancel" class="first-login-save">Cancel</button>
+      <button id="chess-4player-invite" class="first-login-save" disabled>Send Invites</button>
+    </div>
+  </div>
+</div>
+
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
     <div class="chess-board" id="chess-board"></div>
@@ -1192,6 +1207,13 @@ html {
       <div class="chess-status" id="chess-status"></div>
       <div>White: <span id="chess-white"></span></div>
       <div>Black: <span id="chess-black"></span></div>
+      <div id="chess-4player-players" class="hidden" style="display:none;padding:0.5rem;background:var(--bg-tertiary);border-radius:var(--radius-md);margin-bottom:0.5rem;">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">4-Player Game</div>
+        <div style="font-size:0.875rem;"><span style="color:white;font-weight:600;">⚪</span> White: <span id="chess-4p-white"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:#e74c3c;font-weight:600;">🔴</span> Red: <span id="chess-4p-red"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:black;font-weight:600;">⬛</span> Black: <span id="chess-4p-black"></span></div>
+        <div style="font-size:0.875rem;"><span style="color:#27ae60;font-weight:600;">🟢</span> Green: <span id="chess-4p-green"></span></div>
+      </div>
       <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>

@@ -486,6 +486,19 @@ def main():
                                         turn = 'white' if g['board'].turn == chess.WHITE else 'black'
                                         ws.send(json.dumps({'type': 'chess_resume', 'game_id': gid, 'white': g['white'], 'black': g['black'], 'fen': g['board'].fen(), 'turn': turn}))
                                         break
+
+                                # Also check 4-player games
+                                for gid, g in games_4player.items():
+                                    if not g['over'] and username in g['players'].values():
+                                        board_4p = g['board']
+                                        ws.send(json.dumps({
+                                            'type': 'chess_4player_resume',
+                                            'game_id': gid,
+                                            'players': g['players'],
+                                            'fen': board_4p.fen(),
+                                            'turn': board_4p.get_color_name(board_4p.current_player())
+                                        }))
+                                        break
                             except Exception:
                                 pass
                 else:

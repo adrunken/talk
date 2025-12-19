@@ -21,12 +21,23 @@ export class BoardRenderer {
     this.pieces.clear();
     this.squares.clear();
 
-    // Create 14x14 grid
-    for (let rank = 13; rank >= 0; rank--) {
+    // Use CSS Grid with specific positioning for cross-shaped board
+    this.boardElement.style.display = 'inline-grid';
+    this.boardElement.style.gridTemplateColumns = 'repeat(14, 40px)';
+    this.boardElement.style.gridTemplateRows = 'repeat(14, 40px)';
+    this.boardElement.style.gap = '0';
+
+    // Create only valid squares for cross-shaped board
+    for (let rank = 0; rank < 14; rank++) {
       for (let file = 0; file < 14; file++) {
-        const squareElement = this.createSquare(rank, file);
-        this.boardElement.appendChild(squareElement);
-        this.squares.set(`${rank},${file}`, squareElement);
+        if (!this.game.isInvalidSquare(rank, file)) {
+          const squareElement = this.createSquare(rank, file);
+          // Position in grid: column = file + 1 (1-indexed), row = rank + 1
+          squareElement.style.gridColumn = (file + 1).toString();
+          squareElement.style.gridRow = (rank + 1).toString();
+          this.boardElement.appendChild(squareElement);
+          this.squares.set(`${rank},${file}`, squareElement);
+        }
       }
     }
 
@@ -38,24 +49,28 @@ export class BoardRenderer {
     square.className = 'chess-square';
     square.dataset.rank = rank;
     square.dataset.file = file;
+    square.style.width = '40px';
+    square.style.height = '40px';
+    square.style.boxSizing = 'border-box';
+    square.style.position = 'relative';
 
     // Determine square color based on position
     const isLightSquare = (rank + file) % 2 === 0;
     square.classList.add(isLightSquare ? 'light' : 'dark');
 
     // Add board zone indicators
-    if (rank < 2) {
-      square.dataset.zone = 'blue';
-    } else if (rank > 11) {
+    if (rank > 11) {
+      square.dataset.zone = 'white';
+    } else if (rank < 2) {
       square.dataset.zone = 'red';
     }
 
     if (file < 2) {
       const zoneAttr = square.dataset.zone || '';
-      square.dataset.zone = zoneAttr ? `${zoneAttr}-yellow` : 'yellow';
+      square.dataset.zone = zoneAttr ? `${zoneAttr}-blue` : 'blue';
     } else if (file > 11) {
       const zoneAttr = square.dataset.zone || '';
-      square.dataset.zone = zoneAttr ? `${zoneAttr}-green` : 'green';
+      square.dataset.zone = zoneAttr ? `${zoneAttr}-black` : 'black';
     }
 
     return square;
@@ -94,10 +109,24 @@ export class BoardRenderer {
     pieceElement.dataset.file = file;
     pieceElement.dataset.player = piece.player;
     pieceElement.dataset.type = piece.type;
+    pieceElement.textContent = this.getPieceSymbol(piece.type);
     pieceElement.title = `${this.getPlayerName(piece.player)} ${this.getPieceName(piece.type)}`;
+    pieceElement.draggable = true;
 
     square.appendChild(pieceElement);
     this.pieces.set(`${rank},${file}`, pieceElement);
+  }
+
+  getPieceSymbol(type) {
+    const symbols = {
+      [PIECE_TYPES.PAWN]: '♟',
+      [PIECE_TYPES.KNIGHT]: '♞',
+      [PIECE_TYPES.BISHOP]: '♝',
+      [PIECE_TYPES.ROOK]: '♜',
+      [PIECE_TYPES.QUEEN]: '♛',
+      [PIECE_TYPES.KING]: '♚',
+    };
+    return symbols[type] || '?';
   }
 
   getPieceClass(piece) {
@@ -108,20 +137,20 @@ export class BoardRenderer {
 
   getPlayerInitial(player) {
     const initials = {
-      [PLAYERS.BLUE]: 'b',
-      [PLAYERS.YELLOW]: 'y',
+      [PLAYERS.WHITE]: 'w',
       [PLAYERS.RED]: 'r',
-      [PLAYERS.GREEN]: 'g',
+      [PLAYERS.BLACK]: 'b',
+      [PLAYERS.BLUE]: 'u',
     };
     return initials[player];
   }
 
   getPlayerName(player) {
     const names = {
-      [PLAYERS.BLUE]: 'Blue',
-      [PLAYERS.YELLOW]: 'Yellow',
+      [PLAYERS.WHITE]: 'White',
       [PLAYERS.RED]: 'Red',
-      [PLAYERS.GREEN]: 'Green',
+      [PLAYERS.BLACK]: 'Black',
+      [PLAYERS.BLUE]: 'Blue',
     };
     return names[player];
   }

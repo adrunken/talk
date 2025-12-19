@@ -31,13 +31,13 @@ export class GameController {
   setupUIElements() {
     // Find and store references to UI elements
     this.UIElements.statusDisplay = document.getElementById('chess-status');
-    
+
     // Player names and timers
     const playerConfigs = [
-      { color: 'blue', nameId: 'chess-blue-name', timerId: 'chess-blue-timer' },
-      { color: 'yellow', nameId: 'chess-yellow-name', timerId: 'chess-yellow-timer' },
+      { color: 'white', nameId: 'chess-white-name', timerId: 'chess-white-timer' },
       { color: 'red', nameId: 'chess-red-name', timerId: 'chess-red-timer' },
-      { color: 'green', nameId: 'chess-green-name', timerId: 'chess-green-timer' },
+      { color: 'black', nameId: 'chess-black-name', timerId: 'chess-black-timer' },
+      { color: 'blue', nameId: 'chess-blue-name', timerId: 'chess-blue-timer' },
     ];
 
     playerConfigs.forEach(config => {
@@ -48,10 +48,10 @@ export class GameController {
     // 4-player display elements
     this.UIElements.fourPlayerStatus = document.getElementById('chess-4player-players');
     this.UIElements.fourPlayerDisplays = {
-      blue: document.getElementById('chess-4p-blue'),
-      yellow: document.getElementById('chess-4p-yellow'),
+      white: document.getElementById('chess-4p-white'),
       red: document.getElementById('chess-4p-red'),
-      green: document.getElementById('chess-4p-green'),
+      black: document.getElementById('chess-4p-black'),
+      blue: document.getElementById('chess-4p-blue'),
     };
   }
 
@@ -231,16 +231,17 @@ export class GameController {
   }
 
   updatePlayerDisplay() {
-    const playerNames = [PLAYERS.BLUE, PLAYERS.YELLOW, PLAYERS.RED, PLAYERS.GREEN];
-    const colors = ['blue', 'yellow', 'red', 'green'];
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+    const colors = ['white', 'red', 'black', 'blue'];
 
-    playerNames.forEach((player, index) => {
+    playerOrder.forEach((player, index) => {
       const color = colors[index];
       const nameElement = this.UIElements.playerNames[color];
+      const playerName = PLAYER_NAMES[player];
       const status = this.game.eliminatedPlayers.has(player) ? ' (eliminated)' : '';
 
       if (nameElement) {
-        nameElement.textContent = `Player ${index + 1}${status}`;
+        nameElement.textContent = `${playerName}${status}`;
       }
     });
   }
@@ -250,12 +251,16 @@ export class GameController {
       this.UIElements.fourPlayerStatus.style.display = 'block';
     }
 
-    const colors = ['blue', 'yellow', 'red', 'green'];
-    colors.forEach((color, index) => {
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+    const colors = ['white', 'red', 'black', 'blue'];
+
+    playerOrder.forEach((player, index) => {
+      const color = colors[index];
       const display = this.UIElements.fourPlayerDisplays[color];
-      const score = this.game.scores[index];
+      const score = this.game.scores[player];
+      const playerName = PLAYER_NAMES[player];
       if (display) {
-        display.textContent = `Player ${index + 1} - Score: ${score}`;
+        display.textContent = `${playerName} - Score: ${score}`;
       }
     });
   }
@@ -273,13 +278,15 @@ export class GameController {
 
   getFinalScoreboard() {
     const scores = [];
-    for (let i = 0; i < 4; i++) {
+    const playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
+
+    playerOrder.forEach(player => {
       scores.push({
-        player: this.game.getPlayerName(i),
-        score: this.game.scores[i],
-        eliminated: this.game.eliminatedPlayers.has(i),
+        player: PLAYER_NAMES[player],
+        score: this.game.scores[player],
+        eliminated: this.game.eliminatedPlayers.has(player),
       });
-    }
+    });
     return scores.sort((a, b) => b.score - a.score);
   }
 

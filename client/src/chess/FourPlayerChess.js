@@ -1,16 +1,19 @@
 /**
  * 4-Player Chess Game Engine
  * Supports 4 independent players on a 14x14 board
- * 
+ *
  * Board Layout:
  * - Files: a-n (0-13)
  * - Ranks: 1-14 (0-13, where 0=rank1, 13=rank14)
- * 
- * Player Positions:
- * - Blue: ranks 0-1, files 0-13 (bottom)
- * - Yellow: files 0-1, ranks 0-13 (left)
- * - Red: ranks 12-13, files 0-13 (top)
- * - Green: files 12-13, ranks 0-13 (right)
+ *
+ * Player Positions (Free-For-All):
+ * - White: ranks 12-13, files 0-13 (bottom, moves UP/dy=-1)
+ * - Red: ranks 0-1, files 0-13 (top, moves DOWN/dy=+1)
+ * - Black: files 12-13, ranks 0-13 (right, moves LEFT/dx=-1)
+ * - Blue: files 0-1, ranks 0-13 (left, moves RIGHT/dx=+1)
+ *
+ * Turn order: White → Red → Black → Blue
+ * Invalid squares: corners (row<2 && col<2), (row<2 && col>11), (row>11 && col<2), (row>11 && col>11)
  */
 
 const PIECE_TYPES = {
@@ -23,44 +26,45 @@ const PIECE_TYPES = {
 };
 
 const PLAYERS = {
-  BLUE: 0,
-  YELLOW: 1,
-  RED: 2,
-  GREEN: 3,
+  WHITE: 0,
+  RED: 1,
+  BLACK: 2,
+  BLUE: 3,
 };
 
 const PLAYER_NAMES = {
-  [PLAYERS.BLUE]: 'blue',
-  [PLAYERS.YELLOW]: 'yellow',
+  [PLAYERS.WHITE]: 'white',
   [PLAYERS.RED]: 'red',
-  [PLAYERS.GREEN]: 'green',
+  [PLAYERS.BLACK]: 'black',
+  [PLAYERS.BLUE]: 'blue',
 };
 
 const PLAYER_COLORS = {
-  [PLAYERS.BLUE]: '#3498db',
-  [PLAYERS.YELLOW]: '#ffd700',
+  [PLAYERS.WHITE]: '#f5f5dc',
   [PLAYERS.RED]: '#e74c3c',
-  [PLAYERS.GREEN]: '#27ae60',
+  [PLAYERS.BLACK]: '#2c3e50',
+  [PLAYERS.BLUE]: '#3498db',
 };
 
 export class FourPlayerChess {
   constructor() {
     this.board = this.createEmptyBoard();
     this.turnIndex = 0;
-    this.playerOrder = [PLAYERS.BLUE, PLAYERS.YELLOW, PLAYERS.RED, PLAYERS.GREEN];
+    this.playerOrder = [PLAYERS.WHITE, PLAYERS.RED, PLAYERS.BLACK, PLAYERS.BLUE];
     this.eliminatedPlayers = new Set();
     this.moveHistory = [];
+    this.boardSnapshots = [];
     this.scores = {
-      [PLAYERS.BLUE]: 0,
-      [PLAYERS.YELLOW]: 0,
+      [PLAYERS.WHITE]: 0,
       [PLAYERS.RED]: 0,
-      [PLAYERS.GREEN]: 0,
+      [PLAYERS.BLACK]: 0,
+      [PLAYERS.BLUE]: 0,
     };
     this.kingPositions = {
-      [PLAYERS.BLUE]: null,
-      [PLAYERS.YELLOW]: null,
+      [PLAYERS.WHITE]: null,
       [PLAYERS.RED]: null,
-      [PLAYERS.GREEN]: null,
+      [PLAYERS.BLACK]: null,
+      [PLAYERS.BLUE]: null,
     };
     this.setupInitialPosition();
   }
@@ -69,90 +73,79 @@ export class FourPlayerChess {
     return Array(14).fill(null).map(() => Array(14).fill(null));
   }
 
+  isInvalidSquare(rank, file) {
+    if (rank < 2 && file < 2) return true;
+    if (rank < 2 && file > 11) return true;
+    if (rank > 11 && file < 2) return true;
+    if (rank > 11 && file > 11) return true;
+    return false;
+  }
+
   setupInitialPosition() {
-    // BLUE (bottom): ranks 0-1, files 0-13
-    // Rank 1: Blue's pawns
-    for (let f = 0; f < 14; f++) {
-      this.placePiece(1, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLUE });
-    }
-
-    // Rank 0: Blue's back row
-    const blueBack = [
+    // Standard back row pattern: R N B Q K B N R R N B R Q B (14 pieces, 1 king)
+    const standardBackRow = [
       PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
       PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK,
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP,
+      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.ROOK,
+      PIECE_TYPES.QUEEN, PIECE_TYPES.BISHOP,
     ];
+
+    // WHITE (bottom): rank 12=back, rank 11=pawns, moves UP (dy=-1)
     for (let f = 0; f < 14; f++) {
-      const piece = { type: blueBack[f], player: PLAYERS.BLUE };
-      this.placePiece(0, f, piece);
-      if (blueBack[f] === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.BLUE] = [0, f];
+      this.placePiece(11, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.WHITE, hasMoved: false });
+    }
+    for (let f = 0; f < 14; f++) {
+      const piece = { type: standardBackRow[f], player: PLAYERS.WHITE };
+      this.placePiece(12, f, piece);
+      if (standardBackRow[f] === PIECE_TYPES.KING) {
+        this.kingPositions[PLAYERS.WHITE] = [12, f];
       }
     }
 
-    // YELLOW (left): files 0-1, ranks 0-13
-    // File 0: Yellow's pawns (ranks 2-11)
-    for (let r = 2; r < 12; r++) {
-      this.placePiece(r, 0, { type: PIECE_TYPES.PAWN, player: PLAYERS.YELLOW });
+    // RED (top): rank 1=back, rank 2=pawns, moves DOWN (dy=+1)
+    // Place reversed to face opposite direction
+    for (let f = 0; f < 14; f++) {
+      this.placePiece(2, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.RED, hasMoved: false });
     }
-
-    // File 1: Yellow's back row
-    const yellowBack = [
-      [0, PIECE_TYPES.ROOK], [1, PIECE_TYPES.KNIGHT], [13, PIECE_TYPES.BISHOP],
-      [12, PIECE_TYPES.QUEEN], [11, PIECE_TYPES.KING], [10, PIECE_TYPES.BISHOP],
-      [9, PIECE_TYPES.KNIGHT], [8, PIECE_TYPES.ROOK], [7, PIECE_TYPES.ROOK],
-      [6, PIECE_TYPES.KNIGHT], [5, PIECE_TYPES.BISHOP], [4, PIECE_TYPES.QUEEN],
-      [3, PIECE_TYPES.KING], [2, PIECE_TYPES.BISHOP],
-    ];
-    for (const [r, type] of yellowBack) {
-      const piece = { type, player: PLAYERS.YELLOW };
-      this.placePiece(r, 1, piece);
-      if (type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.YELLOW] = [r, 1];
+    for (let f = 0; f < 14; f++) {
+      const piece = { type: standardBackRow[13 - f], player: PLAYERS.RED };
+      this.placePiece(1, f, piece);
+      if (standardBackRow[13 - f] === PIECE_TYPES.KING) {
+        this.kingPositions[PLAYERS.RED] = [1, f];
       }
     }
 
-    // RED (top): ranks 12-13, files 0-13
-    // Rank 12: Red's pawns (opposite of Blue)
-    for (let f = 0; f < 14; f++) {
-      this.placePiece(12, f, { type: PIECE_TYPES.PAWN, player: PLAYERS.RED });
+    // BLACK (right): file 12=back, file 11=pawns, moves LEFT (dx=-1)
+    // Place vertically from rank 0 to 13
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 11)) {
+        this.placePiece(r, 11, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLACK, hasMoved: false });
+      }
     }
-
-    // Rank 13: Red's back row (reversed, facing down)
-    const redBack = [
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK,
-      PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN,
-      PIECE_TYPES.KING, PIECE_TYPES.BISHOP,
-    ];
-    for (let f = 0; f < 14; f++) {
-      const piece = { type: redBack[13 - f], player: PLAYERS.RED };
-      this.placePiece(13, f, piece);
-      if (piece.type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.RED] = [13, f];
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 12)) {
+        const piece = { type: standardBackRow[13 - r], player: PLAYERS.BLACK };
+        this.placePiece(r, 12, piece);
+        if (standardBackRow[13 - r] === PIECE_TYPES.KING) {
+          this.kingPositions[PLAYERS.BLACK] = [r, 12];
+        }
       }
     }
 
-    // GREEN (right): files 12-13, ranks 0-13
-    // File 13: Green's pawns (ranks 2-11)
-    for (let r = 2; r < 12; r++) {
-      this.placePiece(r, 13, { type: PIECE_TYPES.PAWN, player: PLAYERS.GREEN });
+    // BLUE (left): file 1=back, file 2=pawns, moves RIGHT (dx=+1)
+    // Place vertically from rank 0 to 13
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 2)) {
+        this.placePiece(r, 2, { type: PIECE_TYPES.PAWN, player: PLAYERS.BLUE, hasMoved: false });
+      }
     }
-
-    // File 12: Green's back row (facing left)
-    const greenBack = [
-      [0, PIECE_TYPES.ROOK], [1, PIECE_TYPES.KNIGHT], [13, PIECE_TYPES.BISHOP],
-      [12, PIECE_TYPES.QUEEN], [11, PIECE_TYPES.KING], [10, PIECE_TYPES.BISHOP],
-      [9, PIECE_TYPES.KNIGHT], [8, PIECE_TYPES.ROOK], [7, PIECE_TYPES.ROOK],
-      [6, PIECE_TYPES.KNIGHT], [5, PIECE_TYPES.BISHOP], [4, PIECE_TYPES.QUEEN],
-      [3, PIECE_TYPES.KING], [2, PIECE_TYPES.BISHOP],
-    ];
-    for (const [r, type] of greenBack) {
-      const piece = { type, player: PLAYERS.GREEN };
-      this.placePiece(r, 12, piece);
-      if (type === PIECE_TYPES.KING) {
-        this.kingPositions[PLAYERS.GREEN] = [r, 12];
+    for (let r = 0; r < 14; r++) {
+      if (!this.isInvalidSquare(r, 1)) {
+        const piece = { type: standardBackRow[r], player: PLAYERS.BLUE };
+        this.placePiece(r, 1, piece);
+        if (standardBackRow[r] === PIECE_TYPES.KING) {
+          this.kingPositions[PLAYERS.BLUE] = [r, 1];
+        }
       }
     }
   }
@@ -171,7 +164,13 @@ export class FourPlayerChess {
   }
 
   isValidPosition(rank, file) {
-    return rank >= 0 && rank < 14 && file >= 0 && file < 14;
+    if (rank < 0 || rank >= 14 || file < 0 || file >= 14) {
+      return false;
+    }
+    if (this.isInvalidSquare(rank, file)) {
+      return false;
+    }
+    return true;
   }
 
   getCurrentPlayer() {
@@ -240,29 +239,51 @@ export class FourPlayerChess {
   canPawnMove(fromRank, fromFile, toRank, toFile, player) {
     const rankDiff = toRank - fromRank;
     const fileDiff = toFile - fromFile;
+    const rankAbs = Math.abs(rankDiff);
     const fileAbs = Math.abs(fileDiff);
     const target = this.getPiece(toRank, toFile);
+    const piece = this.getPiece(fromRank, fromFile);
 
-    if (player === PLAYERS.BLUE) {
-      // Blue moves up (rank increases)
-      if (fileAbs === 0 && rankDiff === 1 && !target) return true;
-      if (fileAbs === 1 && rankDiff === 1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.RED) {
-      // Red moves down (rank decreases)
+    if (player === PLAYERS.WHITE) {
+      // White moves UP: rank decreases (11 -> 10 -> ... -> 1)
+      // Single forward move
       if (fileAbs === 0 && rankDiff === -1 && !target) return true;
-      if (fileAbs === 1 && rankDiff === -1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.YELLOW) {
-      // Yellow moves right (file increases)
-      const fileDiffForward = toFile - fromFile;
-      const rankAbs = Math.abs(toRank - fromRank);
-      if (rankAbs === 0 && fileDiffForward === 1 && !target) return true;
-      if (rankAbs === 1 && fileDiffForward === 1 && target && target.player !== player) return true;
-    } else if (player === PLAYERS.GREEN) {
-      // Green moves left (file decreases)
-      const fileDiffForward = fromFile - toFile;
-      const rankAbs = Math.abs(toRank - fromRank);
-      if (rankAbs === 0 && fileDiffForward === 1 && !target) return true;
-      if (rankAbs === 1 && fileDiffForward === 1 && target && target.player !== player) return true;
+      // Double forward move from starting position
+      if (fileAbs === 0 && rankDiff === -2 && fromRank === 11 && !target && !this.getPiece(fromRank - 1, fromFile)) {
+        return true;
+      }
+      // Capture diagonals: (-1,-1), (+1,-1) in (file, rank) space
+      if (rankDiff === -1 && fileAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.RED) {
+      // Red moves DOWN: rank increases (2 -> 3 -> ... -> 13)
+      // Single forward move
+      if (fileAbs === 0 && rankDiff === 1 && !target) return true;
+      // Double forward move from starting position
+      if (fileAbs === 0 && rankDiff === 2 && fromRank === 2 && !target && !this.getPiece(fromRank + 1, fromFile)) {
+        return true;
+      }
+      // Capture diagonals: (-1,+1), (+1,+1) in (file, rank) space
+      if (rankDiff === 1 && fileAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.BLACK) {
+      // Black moves LEFT: file decreases (11 -> 10 -> ... -> 1)
+      // Single forward move
+      if (rankAbs === 0 && fileDiff === -1 && !target) return true;
+      // Double forward move from starting position
+      if (rankAbs === 0 && fileDiff === -2 && fromFile === 11 && !target && !this.getPiece(fromRank, fromFile - 1)) {
+        return true;
+      }
+      // Capture diagonals: (-1,-1), (-1,+1) in (file, rank) space
+      if (fileDiff === -1 && rankAbs === 1 && target && target.player !== player) return true;
+    } else if (player === PLAYERS.BLUE) {
+      // Blue moves RIGHT: file increases (2 -> 3 -> ... -> 13)
+      // Single forward move
+      if (rankAbs === 0 && fileDiff === 1 && !target) return true;
+      // Double forward move from starting position
+      if (rankAbs === 0 && fileDiff === 2 && fromFile === 2 && !target && !this.getPiece(fromRank, fromFile + 1)) {
+        return true;
+      }
+      // Capture diagonals: (+1,-1), (+1,+1) in (file, rank) space
+      if (fileDiff === 1 && rankAbs === 1 && target && target.player !== player) return true;
     }
 
     return false;
@@ -309,13 +330,27 @@ export class FourPlayerChess {
     return false;
   }
 
-  shouldPromotePawn(rank, player) {
-    // Check if pawn reached promotion rank for each player
-    if (player === PLAYERS.BLUE && rank === 13) return true;
-    if (player === PLAYERS.RED && rank === 0) return true;
-    if (player === PLAYERS.YELLOW && rank === 13) return true;
-    if (player === PLAYERS.GREEN && rank === 0) return true;
+  shouldPromotePawn(rank, file, player) {
+    // Check if pawn reached promotion rank/file for each player
+    // White: pawns move up, promotion at rank 1 (farthest from start)
+    if (player === PLAYERS.WHITE && rank === 1) return true;
+    // Red: pawns move down, promotion at rank 13 (farthest from start)
+    if (player === PLAYERS.RED && rank === 13) return true;
+    // Black: pawns move left, promotion at file 1 (farthest from start)
+    if (player === PLAYERS.BLACK && file === 1) return true;
+    // Blue: pawns move right, promotion at file 13 (farthest from start)
+    if (player === PLAYERS.BLUE && file === 13) return true;
     return false;
+  }
+
+  saveSnapshot() {
+    this.boardSnapshots.push({
+      board: this.board.map(row => [...row]),
+      turnIndex: this.turnIndex,
+      eliminatedPlayers: new Set(this.eliminatedPlayers),
+      kingPositions: { ...this.kingPositions },
+      scores: { ...this.scores },
+    });
   }
 
   makeMove(fromNotation, toNotation, promotionType = null) {
@@ -338,7 +373,7 @@ export class FourPlayerChess {
     const captured = this.getPiece(toRank, toFile);
 
     // Check if pawn promotion is needed
-    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromotePawn(toRank, player)) {
+    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromotePawn(toRank, toFile, player)) {
       if (!promotionType) {
         return {
           success: false,
@@ -350,6 +385,9 @@ export class FourPlayerChess {
       }
     }
 
+    // Save board state for undo
+    this.saveSnapshot();
+
     // Make the move
     this.board[toRank][toFile] = piece;
     this.board[fromRank][fromFile] = null;
@@ -357,6 +395,11 @@ export class FourPlayerChess {
     // Update king position
     if (piece.type === PIECE_TYPES.KING) {
       this.kingPositions[player] = [toRank, toFile];
+    }
+
+    // Mark pawn as moved
+    if (piece.type === PIECE_TYPES.PAWN) {
+      piece.hasMoved = true;
     }
 
     // Handle pawn promotion
@@ -449,10 +492,34 @@ export class FourPlayerChess {
         if (piece && piece.player === player) {
           for (let tr = 0; tr < 14; tr++) {
             for (let tf = 0; tf < 14; tf++) {
-              if (this.canMovePiece(r, f, tr, tf, player)) {
-                const fromNotation = this.coordsToNotation(r, f);
-                const toNotation = this.coordsToNotation(tr, tf);
-                moves.push({ from: fromNotation, to: toNotation, piece: piece.type });
+              if (this.isValidPosition(tr, tf) && this.canMovePiece(r, f, tr, tf, player)) {
+                // Simulate the move to check if it leaves king in check
+                const captured = this.getPiece(tr, tf);
+                const movedPiece = this.getPiece(r, f);
+
+                // Temporarily make the move
+                this.board[tr][tf] = movedPiece;
+                this.board[r][f] = null;
+                if (movedPiece.type === PIECE_TYPES.KING) {
+                  this.kingPositions[player] = [tr, tf];
+                }
+
+                // Check if player's king is in check after this move
+                const isInCheck = this.isKingInCheck(player);
+
+                // Undo the move
+                this.board[r][f] = movedPiece;
+                this.board[tr][tf] = captured;
+                if (movedPiece.type === PIECE_TYPES.KING) {
+                  this.kingPositions[player] = [r, f];
+                }
+
+                // Only add move if it doesn't leave king in check
+                if (!isInCheck) {
+                  const fromNotation = this.coordsToNotation(r, f);
+                  const toNotation = this.coordsToNotation(tr, tf);
+                  moves.push({ from: fromNotation, to: toNotation, piece: piece.type });
+                }
               }
             }
           }

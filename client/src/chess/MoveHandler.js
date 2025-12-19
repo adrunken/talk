@@ -3,7 +3,7 @@
  * Manages piece selection, move validation, and game flow
  */
 
-import { PIECE_TYPES, PLAYERS } from './FourPlayerChess';
+import { PIECE_TYPES, PLAYERS, PLAYER_NAMES } from './FourPlayerChess';
 
 export class MoveHandler {
   constructor(game, boardRenderer, onMoveCallback) {
@@ -91,14 +91,13 @@ export class MoveHandler {
 
     const piece = this.game.getPiece(fromRank, fromFile);
 
-    // Check for pawn promotion
-    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromote(toRank, piece.player)) {
-      this.handlePawnPromotion(fromNotation, toNotation);
+    // Execute the move - it will handle promotion detection
+    const result = this.game.makeMove(fromNotation, toNotation);
+
+    if (result.requiresPromotion) {
+      this.handlePawnPromotion(result.from, result.to);
       return;
     }
-
-    // Execute the move
-    const result = this.game.makeMove(fromNotation, toNotation);
 
     if (result.success) {
       this.boardRenderer.highlightLastMove(fromNotation, toNotation);
@@ -117,25 +116,16 @@ export class MoveHandler {
     }
   }
 
-  handlePawnPromotion(fromNotation, toNotation) {
-    // Emit event or callback to show promotion UI
+  handlePawnPromotion(from, to) {
+    // Emit event with correct callback format
     if (this.onMoveCallback) {
       this.onMoveCallback({
         success: false,
-        needsPromotion: true,
-        fromNotation,
-        toNotation,
+        requiresPromotion: true,
+        from,
+        to,
       });
     }
-  }
-
-  shouldPromote(toRank, player) {
-    // Check if pawn reached promotion rank
-    if (player === PLAYERS.BLUE && toRank === 13) return true;
-    if (player === PLAYERS.RED && toRank === 0) return true;
-    if (player === PLAYERS.YELLOW && toRank === 13) return true;
-    if (player === PLAYERS.GREEN && toRank === 0) return true;
-    return false;
   }
 
   completePawnPromotion(fromNotation, toNotation, promotionType) {
@@ -214,20 +204,21 @@ export class MoveHandler {
   }
 
   undo() {
-    if (this.game.moveHistory.length === 0) return false;
-
-    const lastMove = this.game.moveHistory.pop();
-
-    // Reconstruct board state - this is simplified
-    // In a real app, you'd maintain full board history
-    const newGame = new this.game.constructor();
-    for (const move of this.game.moveHistory) {
-      if (move.type !== 'resign') {
-        // Simple replay - doesn't handle all edge cases
-        // This is a placeholder implementation
-      }
+    if (this.game.moveHistory.length === 0 || this.game.boardSnapshots.length === 0) {
+      return false;
     }
 
+    const snapshot = this.game.boardSnapshots.pop();
+    this.game.moveHistory.pop();
+
+    // Restore board state
+    this.game.board = snapshot.board.map(row => [...row]);
+    this.game.turnIndex = snapshot.turnIndex;
+    this.game.eliminatedPlayers = new Set(snapshot.eliminatedPlayers);
+    this.game.kingPositions = { ...snapshot.kingPositions };
+    this.game.scores = { ...snapshot.scores };
+
+    this.deselectSquare();
     this.boardRenderer.update();
     return true;
   }

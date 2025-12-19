@@ -624,9 +624,25 @@ html {
 #rejoin-game:hover { background: var(--accent-secondary); color: var(--accent-primary); border-color: var(--accent-primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .link-sent { margin-left: 0.5rem; color: var(--text-secondary); font-size: 0.75rem; }
 
-#chess-modal { z-index: 1000; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 95vw; max-width: 720px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 1rem; }
-.chess-layout { display: grid; grid-template-columns: 1fr 240px; gap: 1rem; }
-.chess-board { width: 100%; aspect-ratio: 1 / 1; display: grid; grid-template-columns: repeat(8, 1fr); border: 1px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; background-size: cover; background-position: center; background-repeat: no-repeat; }
+#chess-modal { z-index: 1000; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 95vw; max-width: 900px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 1rem; max-height: 90vh; overflow-y: auto; }
+.chess-layout { display: grid; grid-template-columns: 1fr 240px; gap: 1rem; height: 100%; }
+.chess-board-wrapper { display: grid; grid-template-columns: 60px 1fr 60px; grid-template-rows: auto 1fr auto; gap: 0.5rem; width: 100%; }
+.chess-player-sidebar { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-tertiary); font-size: 0.75rem; color: var(--text-secondary); }
+.chess-player-yellow { grid-column: 1; grid-row: 2; border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+.chess-player-green { grid-column: 3; grid-row: 2; border-color: #27ae60; background: rgba(39, 174, 96, 0.1); }
+.chess-player-label { font-weight: 600; font-size: 0.875rem; }
+.chess-player-name { font-weight: 500; word-wrap: break-word; max-width: 50px; text-align: center; }
+.chess-player-timer { font-family: monospace; font-weight: 600; }
+.chess-board-container { grid-column: 2; grid-row: 1 / 4; display: flex; flex-direction: column; gap: 0.5rem; }
+.chess-player-header { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-tertiary); border-color: #3498db; background: rgba(52, 152, 219, 0.1); }
+.chess-player-blue { border-color: #3498db; background: rgba(52, 152, 219, 0.1); }
+.chess-player-red { border-color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+.chess-player-info { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; }
+.chess-player-header .chess-player-label, .chess-player-footer .chess-player-label { font-weight: 600; font-size: 0.875rem; }
+.chess-player-header .chess-player-name, .chess-player-footer .chess-player-name { font-weight: 500; }
+.chess-player-header .chess-player-timer, .chess-player-footer .chess-player-timer { font-family: monospace; font-weight: 600; }
+.chess-player-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-tertiary); }
+.chess-board { width: 100%; aspect-ratio: 1 / 1; display: grid; grid-template-columns: repeat(14, 1fr); grid-template-rows: repeat(14, 1fr); border: 2px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #8b7355; }
 .chess-square { display: flex; align-items: center; justify-content: center; user-select: none; cursor: pointer; position: relative; background-color: transparent !important; }
 :root { --chess-light: #eeeed2; --chess-dark: #769656; }
 .chess-square.light { background-color: transparent !important; }

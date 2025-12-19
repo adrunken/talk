@@ -188,7 +188,10 @@ def main():
                                 gid = next_game_id
                                 next_game_id += 1
                                 board = chess.Board()
-                                if random.random() < 0.5:
+                                # Deterministic color assignment based on alphabetical order
+                                inviter_target = inviter + target
+                                target_inviter = target + inviter
+                                if inviter_target < target_inviter:
                                     white, black = inviter, target
                                 else:
                                     white, black = target, inviter

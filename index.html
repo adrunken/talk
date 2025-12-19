@@ -3419,6 +3419,11 @@ function ready() {
         }
     });
 
+    $('#chess-close').on('click', function(){
+        stopChessTimer();
+        $('#chess-modal').addClass('hidden');
+    });
+
 
     $('#chess-board')
         .on('click', '.chess-square', onSquareClick)

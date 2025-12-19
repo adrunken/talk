@@ -2771,6 +2771,41 @@ function ready() {
         $(this).closest('.invite-item').remove();
     });
 
+    // 4-Player Chess handlers
+    var chess4PlayerSelectedUsers = [];
+
+    $('#right').on('click', '.chess-4player-user-btn', function() {
+        chess4PlayerSelectedUsers = [];
+        var me = $('#username').text().trim();
+        var userListHtml = users.filter(function(u) { return u !== me; }).map(function(u) {
+            return '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:0.5rem;border-radius:var(--radius-md);background:var(--bg-tertiary);">' +
+                   '<input type="checkbox" class="chess-4player-checkbox" value="' + u + '" />' +
+                   '<span>' + u + '</span></label>';
+        }).join('');
+        $('#chess-4player-userlist').html(userListHtml || '<div style="color:var(--text-secondary);">No other players available</div>');
+        $('#chess-4player-modal').removeClass('hidden');
+    });
+
+    $('#chess-4player-modal').on('change', '.chess-4player-checkbox', function() {
+        chess4PlayerSelectedUsers = [];
+        $('#chess-4player-modal').find('.chess-4player-checkbox:checked').each(function() {
+            chess4PlayerSelectedUsers.push($(this).val());
+        });
+        $('#chess-4player-invite').prop('disabled', chess4PlayerSelectedUsers.length !== 3);
+    });
+
+    $('#chess-4player-cancel').on('click', function() {
+        $('#chess-4player-modal').addClass('hidden');
+        chess4PlayerSelectedUsers = [];
+    });
+
+    $('#chess-4player-invite').on('click', function() {
+        if (chess4PlayerSelectedUsers.length !== 3 || !ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: chess4PlayerSelectedUsers }));
+        flashStatus('4-Player game invites sent');
+        $('#chess-4player-modal').addClass('hidden');
+    });
+
     // Sidebar toggle (mobile)
     $('#sidebar-toggle').on('click', function(){ $('#right').toggleClass('open'); });
 

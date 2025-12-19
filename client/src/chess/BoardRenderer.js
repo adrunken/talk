@@ -21,12 +21,26 @@ export class BoardRenderer {
     this.pieces.clear();
     this.squares.clear();
 
-    // Create 14x14 grid
+    // Set up CSS Grid for cross-shaped board
+    this.boardElement.style.display = 'grid';
+    this.boardElement.style.gridTemplateColumns = 'repeat(14, 1fr)';
+    this.boardElement.style.gridTemplateRows = 'repeat(14, 1fr)';
+    this.boardElement.style.width = '560px';
+    this.boardElement.style.height = '560px';
+
+    // Create 14x14 grid with valid squares only visible
     for (let rank = 13; rank >= 0; rank--) {
       for (let file = 0; file < 14; file++) {
         const squareElement = this.createSquare(rank, file);
-        this.boardElement.appendChild(squareElement);
-        this.squares.set(`${rank},${file}`, squareElement);
+
+        if (!this.game.isInvalidSquare(rank, file)) {
+          this.boardElement.appendChild(squareElement);
+          this.squares.set(`${rank},${file}`, squareElement);
+        } else {
+          // Still create invalid squares but hide them
+          squareElement.style.display = 'none';
+          this.boardElement.appendChild(squareElement);
+        }
       }
     }
 

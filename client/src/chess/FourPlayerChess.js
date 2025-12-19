@@ -164,7 +164,13 @@ export class FourPlayerChess {
   }
 
   isValidPosition(rank, file) {
-    return rank >= 0 && rank < 14 && file >= 0 && file < 14;
+    if (rank < 0 || rank >= 14 || file < 0 || file >= 14) {
+      return false;
+    }
+    if (this.isInvalidSquare(rank, file)) {
+      return false;
+    }
+    return true;
   }
 
   getCurrentPlayer() {

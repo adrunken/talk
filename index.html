@@ -2955,10 +2955,8 @@ function ready() {
             ws.send(JSON.stringify({ type: 'chess_invite', to: chessGameSelectedPlayers[0] }));
             flashStatus('Game invite sent to ' + chessGameSelectedPlayers[0]);
         } else {
-            // Send individual invites for 4-player mode
-            chessGameSelectedPlayers.forEach(function(player) {
-                ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: [player] }));
-            });
+            // Send 4-player invite with all 3 selected players
+            ws.send(JSON.stringify({ type: 'chess_4player_invite', targets: chessGameSelectedPlayers }));
             flashStatus('4-Player game invites sent');
         }
 

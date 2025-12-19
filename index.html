@@ -2392,11 +2392,11 @@ function updateChessStatus() {
 
     var turnName;
     if (chessGame.is4Player) {
-        // In 4-player, turn is a color name (white, red, black, green)
+        // In 4-player on 14x14, turn is a color name (blue, yellow, red, green)
         var colorMap = {
-            'white': '⚪ White',
+            'blue': '🔵 Blue',
+            'yellow': '🟡 Yellow',
             'red': '🔴 Red',
-            'black': '⬛ Black',
             'green': '🟢 Green'
         };
         turnName = colorMap[chessGame.turn] || chessGame.turn;

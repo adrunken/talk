@@ -109,10 +109,24 @@ export class BoardRenderer {
     pieceElement.dataset.file = file;
     pieceElement.dataset.player = piece.player;
     pieceElement.dataset.type = piece.type;
+    pieceElement.textContent = this.getPieceSymbol(piece.type);
     pieceElement.title = `${this.getPlayerName(piece.player)} ${this.getPieceName(piece.type)}`;
+    pieceElement.draggable = true;
 
     square.appendChild(pieceElement);
     this.pieces.set(`${rank},${file}`, pieceElement);
+  }
+
+  getPieceSymbol(type) {
+    const symbols = {
+      [PIECE_TYPES.PAWN]: '♟',
+      [PIECE_TYPES.KNIGHT]: '♞',
+      [PIECE_TYPES.BISHOP]: '♝',
+      [PIECE_TYPES.ROOK]: '♜',
+      [PIECE_TYPES.QUEEN]: '♛',
+      [PIECE_TYPES.KING]: '♚',
+    };
+    return symbols[type] || '?';
   }
 
   getPieceClass(piece) {

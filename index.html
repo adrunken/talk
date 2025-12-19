@@ -1766,7 +1766,13 @@ function renderBoard() {
     var board = $('#chess-board');
     board.empty();
 
-    // Apply board background with fallback size
+    // For 4-player chess, use a special layout
+    if (chessGame.is4Player) {
+        render4PlayerBoard();
+        return;
+    }
+
+    // Apply board background with fallback size for 2-player
     if (boardPiecesSettings.boardsData && boardPiecesSettings.selectedBoard) {
         var boardData = boardPiecesSettings.boardsData[boardPiecesSettings.selectedBoard];
         if (boardData) {
@@ -1867,6 +1873,96 @@ function renderBoard() {
         var last = premoveQueue[premoveQueue.length - 1];
         currentTentative = { from: last.from, to: last.to, isPremove: true };
         showTentativeMove(last.from, last.to, true);
+    }
+}
+
+function render4PlayerBoard() {
+    var board = $('#chess-board');
+
+    // Parse FEN
+    var parts = chessGame.fen.split(' ');
+    var ranksFEN = parts[0].split('/');
+    var files = ['a','b','c','d','e','f','g','h'];
+
+    // Map piece FEN to color/type
+    // In 4-player: white/green use 'w' pieces, red/black use 'b' pieces
+    var mapPiece = { 'P':'p','N':'n','B':'b','R':'r','Q':'q','K':'k','p':'p','n':'n','b':'b','r':'r','q':'q','k':'k' };
+    chessGame.squareMap = {};
+
+    for (var r = 0; r < 8; r++) {
+        var row = ranksFEN[r];
+        var fileIndex = 0;
+        for (var i = 0; i < row.length; i++) {
+            var ch = row[i];
+            if (/[1-8]/.test(ch)) {
+                fileIndex += parseInt(ch, 10);
+            } else {
+                var file = files[fileIndex];
+                var rank = 8 - r;
+                var sq = file + String(rank);
+                chessGame.squareMap[sq] = ch; // Store raw FEN piece
+                fileIndex++;
+            }
+        }
+    }
+
+    // Build 4-player board grid - render all squares with pieces
+    board.css('display', 'grid');
+    board.css('gridTemplateColumns', 'repeat(8, 1fr)');
+    board.css('gridTemplateRows', 'repeat(8, 1fr)');
+    board.css('width', '100%');
+    board.css('aspectRatio', '1');
+    board.css('backgroundColor', '#e8d4b8');
+
+    for (var r = 0; r < 8; r++) {
+        for (var f = 0; f < 8; f++) {
+            var file = files[f];
+            var rank = 8 - r;
+            var sq = file + String(rank);
+
+            var light = ((f + rank) % 2) === 0;
+            var squareEl = $('<div class="chess-square" />').css({
+                backgroundColor: light ? '#f0d9b5' : '#b58863',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative'
+            }).attr('data-square', sq);
+
+            var piece = chessGame.squareMap[sq];
+            if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {
+                var pieceEl = $('<div/>').css({
+                    width: '80%',
+                    height: '80%',
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center'
+                }).addClass('chess-piece').attr('data-square', sq).attr('data-piece', piece);
+
+                // Determine piece color based on owner
+                var isWhitePiece = /[A-Z]/.test(piece);
+                var pieceType = piece.toLowerCase();
+                var pieceColor = isWhitePiece ? 'w' : 'b';
+                pieceEl.addClass('piece-' + pieceColor + pieceType);
+
+                // Apply custom piece image if available
+                if (boardPiecesSettings.piecesData && boardPiecesSettings.selectedPieces) {
+                    var pieceData = boardPiecesSettings.piecesData[boardPiecesSettings.selectedPieces];
+                    if (pieceData) {
+                        var pieceUrlTemplate = typeof pieceData === 'object' ? pieceData.url : pieceData;
+                        var pieceUrl = pieceUrlTemplate
+                            .replace(/{color}/g, pieceColor)
+                            .replace(/{piece}/g, pieceType);
+                        pieceEl.css('backgroundImage', 'url(' + pieceUrl + ')');
+                    }
+                }
+
+                squareEl.append(pieceEl);
+            }
+
+            board.append(squareEl);
+        }
     }
 }
 

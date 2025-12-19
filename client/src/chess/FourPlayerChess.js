@@ -343,6 +343,16 @@ export class FourPlayerChess {
     return false;
   }
 
+  saveSnapshot() {
+    this.boardSnapshots.push({
+      board: this.board.map(row => [...row]),
+      turnIndex: this.turnIndex,
+      eliminatedPlayers: new Set(this.eliminatedPlayers),
+      kingPositions: { ...this.kingPositions },
+      scores: { ...this.scores },
+    });
+  }
+
   makeMove(fromNotation, toNotation, promotionType = null) {
     const fromCoords = this.notationToCoords(fromNotation);
     const toCoords = this.notationToCoords(toNotation);
@@ -363,7 +373,7 @@ export class FourPlayerChess {
     const captured = this.getPiece(toRank, toFile);
 
     // Check if pawn promotion is needed
-    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromotePawn(toRank, player)) {
+    if (piece.type === PIECE_TYPES.PAWN && this.shouldPromotePawn(toRank, toFile, player)) {
       if (!promotionType) {
         return {
           success: false,
@@ -375,6 +385,9 @@ export class FourPlayerChess {
       }
     }
 
+    // Save board state for undo
+    this.saveSnapshot();
+
     // Make the move
     this.board[toRank][toFile] = piece;
     this.board[fromRank][fromFile] = null;
@@ -382,6 +395,11 @@ export class FourPlayerChess {
     // Update king position
     if (piece.type === PIECE_TYPES.KING) {
       this.kingPositions[player] = [toRank, toFile];
+    }
+
+    // Mark pawn as moved
+    if (piece.type === PIECE_TYPES.PAWN) {
+      piece.hasMoved = true;
     }
 
     // Handle pawn promotion

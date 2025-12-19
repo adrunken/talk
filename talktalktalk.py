@@ -350,10 +350,8 @@ def main():
                                         ws.send(json.dumps({'type': 'chess_error', 'message': 'Not your turn'}))
                                     else:
                                         try:
-                                            from_square = chess.parse_square(src)
-                                            to_square = chess.parse_square(dst)
-
-                                            result = board_4p.make_move(from_square, to_square, promo if promo in ['q','r','b','n'] else None)
+                                            # For 4-player 14x14 chess, use notation strings directly (e.g., 'a1', 'n14')
+                                            result = board_4p.make_move(src, dst, promo if promo in ['q','r','b','n'] else None)
 
                                             if not result['success']:
                                                 ws.send(json.dumps({'type': 'chess_illegal', 'reason': 'illegal', 'message': result['message']}))

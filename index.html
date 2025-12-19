@@ -2062,6 +2062,26 @@ function clearSelection() {
 
 function requiresPromotion(pieceCode, targetSquare) {
     if (!pieceCode || pieceCode.charAt(1) !== 'p') return false;
+
+    if (chessGame && chessGame.is4Player) {
+        // In 4-player chess on 14x14:
+        // Blue (w pieces): promote on rank 14
+        // Red (b pieces): promote on rank 1
+        // Yellow (b pieces): promote on file a (file 0 = charCode 97)
+        // Green (w pieces): promote on file n (file 13 = charCode 110)
+
+        var file = targetSquare.charCodeAt(0); // a=97, n=110
+        var rank = parseInt(targetSquare.charAt(1), 10);
+
+        if (pieceCode.charAt(0) === 'w') {
+            // Blue or Green
+            return rank === 14 || file === 110; // rank 14 for Blue, file n for Green
+        } else {
+            // Yellow or Red
+            return rank === 1 || file === 97; // rank 1 for Red, file a for Yellow
+        }
+    }
+
     var rank = parseInt(String(targetSquare).charAt(1), 10);
     if (isNaN(rank)) return false;
     if (pieceCode.charAt(0) === 'w') return rank === 8;

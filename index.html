@@ -1924,6 +1924,7 @@ function render4PlayerBoard() {
     board.css('width', '100%');
     board.css('aspectRatio', '1');
     board.css('backgroundColor', '#8b7355');
+    board.css('backgroundImage', 'none');
 
     for (var r = 0; r < 8; r++) {
         for (var f = 0; f < 8; f++) {
@@ -1932,15 +1933,11 @@ function render4PlayerBoard() {
             var sq = file + String(rank);
 
             var light = ((f + rank) % 2) === 0;
-            var squareEl = $('<div class="chess-square" />').css({
-                backgroundColor: light ? '#f0d9b5' : '#b58863',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative',
-                boxSizing: 'border-box'
-            }).attr('data-square', sq);
+            var bgColor = light ? '#f0d9b5' : '#b58863';
+            var squareEl = $('<div class="chess-square" />').attr('data-square', sq);
+
+            // Override the transparent background with !important
+            squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box;');
 
             var piece = chessGame.squareMap[sq];
             if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {

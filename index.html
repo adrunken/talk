@@ -2834,6 +2834,16 @@ function ready() {
     });
 
     // Chess modal controls
+    $('#nav-chess').on('click', function(){
+        if (chessGame) {
+            $('#chess-modal').removeClass('hidden');
+            __chessUnread = 0; __updateTitleBadge();
+        } else if (stockfishGame) {
+            $('#chess-modal').removeClass('hidden');
+            __chessUnread = 0; __updateTitleBadge();
+        }
+    });
+
     $('#chess-close').on('click', function(){
         $('#chess-modal').addClass('hidden');
         $('#chess-settings-dropdown').addClass('hidden');

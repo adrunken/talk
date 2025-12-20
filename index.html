@@ -2201,6 +2201,139 @@ function ready() {
         }, 5000);
     }
 
+    function showChessSetupModal(allUsersForSetup) {
+        chessSetupState.mode = null;
+        chessSetupState.timeControl = null;
+        chessSetupState.selectedUsers = [];
+        chessSetupState.allUsers = allUsersForSetup || [];
+
+        var $overlay = $('#chess-setup-overlay');
+        $overlay.addClass('show');
+
+        // Reset all options
+        $('.setup-option-btn').removeClass('selected');
+        $('#setup-create-btn').prop('disabled', true);
+        $('#setup-validation-msg').removeClass('show').text('');
+
+        // Populate users list
+        updateChessSetupUsersList();
+    }
+
+    function hideChessSetupModal() {
+        $('#chess-setup-overlay').removeClass('show');
+        chessSetupState.mode = null;
+        chessSetupState.timeControl = null;
+        chessSetupState.selectedUsers = [];
+    }
+
+    function updateChessSetupUsersList() {
+        var $list = $('#setup-users-list');
+        $list.empty();
+
+        chessSetupState.allUsers.forEach(function(user) {
+            var isOnline = users && users.includes(user);
+            var dotClass = isOnline ? 'status-dot online' : 'status-dot offline';
+
+            var $item = $('<div class="user-checkbox-item" />');
+            var $checkbox = $('<input type="checkbox" />').attr('data-user', user);
+            var $label = $('<label class="user-checkbox-label" />');
+            $label.html('<span>' + user + '</span><div class="' + dotClass + '"></div>');
+
+            $item.append($checkbox);
+            $item.append($label);
+
+            $item.on('click', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    $checkbox.prop('checked', !$checkbox.prop('checked'));
+                }
+                updateChessSetupSelection();
+            });
+
+            $checkbox.on('change', function() {
+                updateChessSetupSelection();
+            });
+
+            $list.append($item);
+        });
+    }
+
+    function updateChessSetupSelection() {
+        var $checkboxes = $('#setup-users-list input[type="checkbox"]:checked');
+        chessSetupState.selectedUsers = [];
+        $checkboxes.each(function() {
+            chessSetupState.selectedUsers.push($(this).attr('data-user'));
+        });
+
+        validateChessSetupSelection();
+        updateChessSetupUI();
+    }
+
+    function validateChessSetupSelection() {
+        var $msg = $('#setup-validation-msg');
+        var $createBtn = $('#setup-create-btn');
+
+        $msg.removeClass('show').text('');
+
+        if (!chessSetupState.mode || !chessSetupState.timeControl) {
+            $createBtn.prop('disabled', true);
+            return;
+        }
+
+        var maxPlayers = chessSetupState.mode === '2player' ? 1 : 3;
+        var selectedCount = chessSetupState.selectedUsers.length;
+
+        if (selectedCount > maxPlayers) {
+            $msg.addClass('show').text('You can invite up to ' + maxPlayers + ' player' + (maxPlayers > 1 ? 's' : '') + ' for ' + chessSetupState.mode + ' mode.');
+            $createBtn.prop('disabled', true);
+            return;
+        }
+
+        $createBtn.prop('disabled', false);
+    }
+
+    function updateChessSetupUI() {
+        var maxPlayers = chessSetupState.mode === '2player' ? 1 : 3;
+        $('#setup-player-count').text('(select up to ' + maxPlayers + ')');
+
+        var $checkboxes = $('#setup-users-list input[type="checkbox"]');
+        if (chessSetupState.selectedUsers.length >= maxPlayers) {
+            $checkboxes.not(':checked').prop('disabled', true);
+        } else {
+            $checkboxes.prop('disabled', false);
+        }
+    }
+
+    function createChessGame() {
+        if (!chessSetupState.mode || !chessSetupState.timeControl) {
+            flashStatus('Please select game mode and time control');
+            return;
+        }
+
+        if (!ws || ws.readyState !== 1) {
+            flashStatus('Not connected to server');
+            return;
+        }
+
+        // Send invites to selected users
+        chessSetupState.selectedUsers.forEach(function(toUser) {
+            ws.send(JSON.stringify({ type: 'chess_invite', to: toUser }));
+        });
+
+        flashStatus('Game created! Invites sent to ' + chessSetupState.selectedUsers.length + ' player' + (chessSetupState.selectedUsers.length !== 1 ? 's' : ''));
+
+        // Close the modal
+        hideChessSetupModal();
+
+        // Open the appropriate chess modal
+        if (chessSetupState.mode === '2player') {
+            // For 2-player, open the regular chess modal
+            $('#nav-chess').click(); // This should trigger the chess game
+        } else if (chessSetupState.mode === '4player') {
+            // For 4-player, open the 4-player chess overlay
+            $('#four-player-chess-overlay').removeClass('hidden');
+        }
+    }
+
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
         var $input = $('#first-username-input');

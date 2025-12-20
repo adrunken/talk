@@ -7,7 +7,7 @@ const WebSocket = require('ws');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
-const { createHumanChessAI } = require('./human-like-chess-ai');
+// AI opponents removed - 2-player chess is now player-vs-player only
 const { queryOllama } = require('./server/ollama');
 const { commitFileToGitHub, createPullRequest } = require('./server/github');
 const { validateHTMLOutput } = require('./server/validation');
@@ -18,46 +18,7 @@ const PORT = process.env.PORT || 12000;
 const ADMINNAME = 'admin';
 const ADMINHIDDENNAME = 'adminxyz';
 
-// Human-like AI bot cache (game_id -> bot instance)
-const aiBotsCache = new Map();
-
-// Create a human-like AI bot for a game
-async function createAIBotForGame(board, aiElo) {
-  try {
-    const bot = await createHumanChessAI({
-      mode: 'api',
-      apiUrl: 'https://chess-api.com/v1',
-      elo: aiElo,
-      contempt: 10,
-      multipv: 3,
-      book: null, // we use our own opening book via the existing system
-      maxBookPlies: 0
-    });
-
-    // Create game adapter that wraps the Chess board
-    const gameAdapter = {
-      fen: () => board.fen(),
-      move: (move) => {
-        if (typeof move === 'string') {
-          return board.move(move);
-        } else if (move && typeof move === 'object') {
-          return board.move({ from: move.from, to: move.to, promotion: move.promotion });
-        }
-        return null;
-      },
-      moves: (options) => board.moves(options),
-      turn: () => board.turn(),
-      in_check: () => board.in_check(),
-      history: () => board.history()
-    };
-
-    bot.bindGame(gameAdapter);
-    return bot;
-  } catch (err) {
-    console.error('[ai] Failed to create human-like bot:', err.message);
-    return null;
-  }
-}
+// AI bot cache removed - AI opponents no longer supported
 
 // Opening book
 let openingsBook = { openings: [] };
@@ -1684,7 +1645,7 @@ wss.on('connection', (ws, req) => {
         const board = new ChessCtor();
         let white, black;
         if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false });
+        games.set(gid, { board, white, black, over: false });
         const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
         sendToUsername(white, payload); sendToUsername(black, payload);
         invites.delete(key);
@@ -1717,8 +1678,8 @@ wss.on('connection', (ws, req) => {
           const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
           const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
 
-          // Update Elo for player-vs-player games
-          if (!g.isAiGame && g.white && g.black) {
+          // Update Elo for all 2-player games (always player-vs-player now)
+          if (g.white && g.black) {
             let whiteResult, blackResult;
             if (result === '1-0') {
               whiteResult = 1; // white wins
@@ -1764,8 +1725,8 @@ wss.on('connection', (ws, req) => {
             fen: g.board.fen()
           };
 
-          // Update Elo for player-vs-player games
-          if (!g.isAiGame && g.white && g.black) {
+          // Update Elo for all 2-player games (always player-vs-player now)
+          if (g.white && g.black) {
             const whiteResult = winner === g.white ? 1 : 0;
             const blackResult = winner === g.black ? 1 : 0;
 
@@ -1778,249 +1739,81 @@ wss.on('connection', (ws, req) => {
             console.log('[chess] Player-vs-player game resigned:', g.white, 'vs', g.black, 'winner:', winner);
           }
 
-          // Send to both players if it's a regular game
-          if (!g.isAiGame) {
-            sendToUsername(g.white, over);
-            sendToUsername(g.black, over);
-          } else {
-            // For AI games, just send to the player
-            send(ws, over);
-          }
+          // Send to both players
+          sendToUsername(g.white, over);
+          sendToUsername(g.black, over);
 
           console.log('[chess] Player resigned -', username, 'vs', g.white === username ? g.black : g.white);
         }
       }
     }
-    else if (msg.type === 'chess_ai_start') {
-      const username = users.get(ws);
-      const playerElo = Number(msg.playerElo || 0);
-      const aiElo = Number(msg.aiElo || 1600);
 
-      if (!username) {
-        send(ws, { type: 'chess_error', message: 'Username required' });
+    // ============= 4-PLAYER CHESS HANDLERS =============
+    // Separate system for 4-player chess (player index 0-3)
+
+    else if (msg.type === 'chess_4p_invite') {
+      const inviter = users.get(ws);
+      const targets = Array.isArray(msg.players) ? msg.players : [msg.players];
+
+      if (!inviter || targets.length < 3 || targets.some(t => !t || t === inviter)) {
+        send(ws, { type: 'chess_error', message: 'Invalid 4-player invite (need 3 other players)' });
+        return;
+      }
+
+      const key = 'chess_4p_' + [inviter, ...targets].sort().join('\u0000');
+      const ok = targets.every(target =>
+        sendToUsername(target, { type: 'chess_4p_invite', from: inviter, players: [inviter, ...targets] })
+      );
+
+      if (ok) {
+        console.log('[chess_4p] Invite sent from', inviter, 'to', targets.join(', '));
+      }
+    }
+
+    else if (msg.type === 'chess_4p_start') {
+      const players = msg.players;
+      if (!Array.isArray(players) || players.length !== 4 || players.some(p => !p)) {
+        send(ws, { type: 'chess_error', message: 'Invalid 4-player game (need exactly 4 players)' });
         return;
       }
 
       const gid = nextGameId++;
-      const board = new ChessCtor();
-      const playerColor = Math.random() < 0.5 ? 'w' : 'b';
-      const white = playerColor === 'w' ? username : 'zyberAI';
-      const black = playerColor === 'b' ? username : 'zyberAI';
-
-      // Try to create human-like AI bot, fall back to opening book if it fails
-      let aiBot = null;
-      try {
-        aiBot = await createAIBotForGame(board, aiElo);
-        if (aiBot) {
-          aiBotsCache.set(gid, aiBot);
-          console.log('[ai] Created human-like bot for game', gid, 'ELO', aiElo);
-        }
-      } catch (err) {
-        console.warn('[ai] Failed to create human-like bot:', err.message);
-      }
-
-      games.set(gid, {
-        board,
-        white,
-        black,
+      const gameData = {
+        type: '4player',
+        players,
+        playerIndices: {}, // username -> player index (0-3)
+        board: null, // FourPlayerChess instance will be created on client
+        moves: [],
         over: false,
-        isAiGame: true,
-        playerUsername: username,
-        playerColor,
-        playerElo,
-        aiElo,
-        aiBot
+        winner: null
+      };
+
+      // Map each player to their index
+      players.forEach((username, idx) => {
+        gameData.playerIndices[username] = idx;
       });
 
+      games.set(gid, gameData);
+
       const payload = {
-        type: 'chess_start',
+        type: 'chess_4p_start',
         game_id: gid,
-        white,
-        black,
-        fen: board.fen(),
-        turn: 'white',
-        isAiGame: true,
-        playerColor,
-        aiElo
+        players,
+        playerIndices: gameData.playerIndices
       };
-      send(ws, payload);
+
+      // Notify all 4 players
+      players.forEach(username => {
+        sendToUsername(username, payload);
+      });
+
+      console.log('[chess_4p] Game started:', gid, 'Players:', players.join(', '));
     }
-    else if (msg.type === 'chess_ai_move') {
+
+    else if (msg.type === 'chess_4p_move') {
       const gid = msg.game_id;
-      const src = String(msg.from || '');
-      const dst = String(msg.to || '');
-      const promo = (msg.promotion || '').toLowerCase();
-      const username = users.get(ws);
-
-      console.log('[ai] chess_ai_move received: game_id=', gid, 'from=', src, 'to=', dst, 'username=', username);
-
-      if (!games.has(gid)) {
-        console.error('[ai] chess_ai_move: Game not found:', gid);
-        send(ws, { type: 'chess_error', message: 'Game not found' });
-        return;
-      }
-
-      const g = games.get(gid);
-      const board = g.board;
-
-      if (!g.isAiGame) {
-        console.error('[ai] chess_ai_move: Not an AI game');
-        send(ws, { type: 'chess_error', message: 'Not an AI game' });
-        return;
-      }
-
-      if (g.over) {
-        console.error('[ai] chess_ai_move: Game is over');
-        send(ws, { type: 'chess_error', message: 'Game over' });
-        return;
-      }
-
-      if (username !== g.playerUsername) {
-        console.error('[ai] chess_ai_move: Not your game - username=', username, 'playerUsername=', g.playerUsername);
-        send(ws, { type: 'chess_error', message: 'Not your game' });
-        return;
-      }
-
-      const moveSpec = { from: src, to: dst };
-      if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
-      const playerMove = board.move(moveSpec);
-
-      if (!playerMove) {
-        console.error('[ai] chess_ai_move: Illegal move:', src, 'to', dst);
-        send(ws, { type: 'chess_illegal', reason: 'illegal' });
-        return;
-      }
-
-      console.log('[ai] chess_ai_move: Player move accepted:', playerMove.san, 'new turn:', board.turn());
-
-      const playerMovePayload = {
-        type: 'chess_move',
-        game_id: gid,
-        from: src,
-        to: dst,
-        promotion: playerMove.promotion || null,
-        san: playerMove.san,
-        fen: board.fen(),
-        turn: board.turn() === 'w' ? 'white' : 'black',
-        check: board.in_check()
-      };
-      send(ws, playerMovePayload);
-
-      if (board.game_over()) {
-        g.over = true;
-        let result, reason;
-        if (board.in_checkmate()) {
-          result = board.turn() === 'w' ? '0-1' : '1-0';
-          reason = 'checkmate';
-        } else if (board.in_stalemate() || board.in_draw()) {
-          result = '1/2-1/2';
-          reason = 'stalemate';
-        } else {
-          result = '1/2-1/2';
-          reason = 'draw';
-        }
-
-        const gameOverPayload = {
-          type: 'chess_over',
-          game_id: gid,
-          result,
-          reason,
-          fen: board.fen()
-        };
-        send(ws, gameOverPayload);
-        return;
-      }
-
-      const delayBeforeAiMove = randomDelay();
-      console.log('[ai] Waiting', delayBeforeAiMove.toFixed(0), 'ms before AI response');
-
-      setTimeout(async () => {
-        try {
-          let aiMoveResult = null;
-
-          if (g.aiBot) {
-            try {
-              console.log('[ai] Using human-like chess AI bot for ELO', g.aiElo);
-              aiMoveResult = await g.aiBot.pickMove();
-              console.log('[ai] Human-like bot move:', aiMoveResult.san || aiMoveResult);
-            } catch (botErr) {
-              console.warn('[ai] Human-like bot failed:', botErr.message, '- falling back to opening book');
-              g.aiBot = null;
-            }
-          }
-
-          if (!aiMoveResult) {
-            console.log('[ai] Using opening book + fallback algorithm');
-            let bestMove = getOpeningMove(board.fen(), g.aiElo);
-            if (!bestMove) {
-              bestMove = bestMoveFallback(board.fen(), eloToDepth(g.aiElo), g.aiElo);
-            }
-
-            if (!bestMove || bestMove.length < 4) {
-              console.error('[ai] Failed to get fallback move');
-              send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-              return;
-            }
-
-            const from = bestMove.substring(0, 2).toLowerCase();
-            const to = bestMove.substring(2, 4).toLowerCase();
-            const promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
-
-            aiMoveResult = board.move({ from, to, promotion });
-          }
-
-          if (!aiMoveResult) {
-            console.error('[ai] Failed to apply AI move');
-            send(ws, { type: 'chess_error', message: 'AI move is invalid' });
-            return;
-          }
-
-          console.log('[ai] AI move applied:', aiMoveResult.san);
-
-          const aiMovePayload = {
-            type: 'chess_move',
-            game_id: gid,
-            from: aiMoveResult.from,
-            to: aiMoveResult.to,
-            promotion: aiMoveResult.promotion || null,
-            san: aiMoveResult.san,
-            fen: board.fen(),
-            turn: board.turn() === 'w' ? 'white' : 'black',
-            check: board.in_check(),
-            isAiMove: true
-          };
-          send(ws, aiMovePayload);
-
-          if (board.game_over()) {
-            g.over = true;
-            let result, reason;
-            if (board.in_checkmate()) {
-              result = board.turn() === 'w' ? '0-1' : '1-0';
-              reason = 'checkmate';
-            } else if (board.in_stalemate() || board.in_draw()) {
-              result = '1/2-1/2';
-              reason = 'stalemate';
-            } else {
-              result = '1/2-1/2';
-              reason = 'draw';
-            }
-
-            send(ws, {
-              type: 'chess_over',
-              game_id: gid,
-              result,
-              reason,
-              fen: board.fen()
-            });
-          }
-        } catch (err) {
-          console.error('[ai] AI move error:', err.message);
-          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-        }
-      }, delayBeforeAiMove)
-    }
-    else if (msg.type === 'chess_request_ai_move') {
-      const gid = msg.game_id;
+      const from = String(msg.from || '');
+      const to = String(msg.to || '');
       const username = users.get(ws);
 
       if (!games.has(gid)) {
@@ -2029,10 +1822,8 @@ wss.on('connection', (ws, req) => {
       }
 
       const g = games.get(gid);
-      const board = g.board;
-
-      if (!g.isAiGame) {
-        send(ws, { type: 'chess_error', message: 'Not an AI game' });
+      if (g.type !== '4player') {
+        send(ws, { type: 'chess_error', message: 'Not a 4-player game' });
         return;
       }
 
@@ -2041,124 +1832,68 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      if (username !== g.playerUsername) {
-        send(ws, { type: 'chess_error', message: 'Not your game' });
+      const playerIdx = g.playerIndices[username];
+      if (playerIdx === undefined) {
+        send(ws, { type: 'chess_error', message: 'Not in this game' });
         return;
       }
 
-      if (board.game_over()) {
-        g.over = true;
-        let result, reason;
-        if (board.in_checkmate()) {
-          result = board.turn() === 'w' ? '0-1' : '1-0';
-          reason = 'checkmate';
-        } else if (board.in_stalemate() || board.in_draw()) {
-          result = '1/2-1/2';
-          reason = 'stalemate';
-        } else {
-          result = '1/2-1/2';
-          reason = 'draw';
-        }
+      // Record move (client validates game logic)
+      g.moves.push({
+        player: playerIdx,
+        from,
+        to,
+        timestamp: Date.now()
+      });
 
-        const gameOverPayload = {
-          type: 'chess_over',
-          game_id: gid,
-          result,
-          reason,
-          fen: board.fen()
-        };
-        send(ws, gameOverPayload);
-        return;
-      }
+      const movePayload = {
+        type: 'chess_4p_move',
+        game_id: gid,
+        player: playerIdx,
+        from,
+        to
+      };
 
-      const delayBeforeAiMove = randomDelay();
-      console.log('[ai] Waiting', delayBeforeAiMove.toFixed(0), 'ms before processing request');
+      // Broadcast move to all players
+      g.players.forEach(p => {
+        sendToUsername(p, movePayload);
+      });
 
-      setTimeout(async () => {
-        try {
-          let aiMoveResult = null;
-
-          if (g.aiBot) {
-            try {
-              console.log('[ai] Using human-like chess AI bot for opening move ELO', g.aiElo);
-              aiMoveResult = await g.aiBot.pickMove();
-              console.log('[ai] Human-like bot opening move:', aiMoveResult.san || aiMoveResult);
-            } catch (botErr) {
-              console.warn('[ai] Human-like bot failed:', botErr.message, '- falling back to opening book');
-              g.aiBot = null;
-            }
-          }
-
-          if (!aiMoveResult) {
-            console.log('[ai] Using opening book + fallback algorithm for first move');
-            let bestMove = getOpeningMove(board.fen(), g.aiElo);
-            if (!bestMove) {
-              bestMove = bestMoveFallback(board.fen(), eloToDepth(g.aiElo), g.aiElo);
-            }
-
-            if (!bestMove || bestMove.length < 4) {
-              console.error('[ai] Failed to get fallback move');
-              send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-              return;
-            }
-
-            const from = bestMove.substring(0, 2).toLowerCase();
-            const to = bestMove.substring(2, 4).toLowerCase();
-            const promotion = bestMove.length > 4 ? bestMove[4].toLowerCase() : null;
-
-            aiMoveResult = board.move({ from, to, promotion });
-          }
-
-          if (!aiMoveResult) {
-            console.error('[ai] Failed to apply AI opening move');
-            send(ws, { type: 'chess_error', message: 'AI move is invalid' });
-            return;
-          }
-
-          console.log('[ai] AI opening move applied:', aiMoveResult.san);
-
-          const aiMovePayload = {
-            type: 'chess_move',
-            game_id: gid,
-            from: aiMoveResult.from,
-            to: aiMoveResult.to,
-            promotion: aiMoveResult.promotion || null,
-            san: aiMoveResult.san,
-            fen: board.fen(),
-            turn: board.turn() === 'w' ? 'white' : 'black',
-            check: board.in_check(),
-            isAiMove: true
-          };
-          send(ws, aiMovePayload);
-
-          if (board.game_over()) {
-            g.over = true;
-            let result, reason;
-            if (board.in_checkmate()) {
-              result = board.turn() === 'w' ? '0-1' : '1-0';
-              reason = 'checkmate';
-            } else if (board.in_stalemate() || board.in_draw()) {
-              result = '1/2-1/2';
-              reason = 'stalemate';
-            } else {
-              result = '1/2-1/2';
-              reason = 'draw';
-            }
-
-            send(ws, {
-              type: 'chess_over',
-              game_id: gid,
-              result,
-              reason,
-              fen: board.fen()
-            });
-          }
-        } catch (err) {
-          console.error('[ai] Opening move error:', err.message);
-          send(ws, { type: 'chess_error', message: 'AI move generation failed' });
-        }
-      }, delayBeforeAiMove);
+      console.log('[chess_4p] Move in game', gid, '- Player', playerIdx, from, 'to', to);
     }
+
+    else if (msg.type === 'chess_4p_resign') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (games.has(gid)) {
+        const g = games.get(gid);
+        if (g.type === '4player' && !g.over) {
+          const playerIdx = g.playerIndices[username];
+          if (playerIdx !== undefined) {
+            g.over = true;
+            const winner = g.players.filter((_, idx) => idx !== playerIdx && g.players[idx])[0];
+
+            const over = {
+              type: 'chess_4p_over',
+              game_id: gid,
+              reason: 'resign',
+              resignedPlayer: playerIdx,
+              winner
+            };
+
+            g.players.forEach(p => {
+              sendToUsername(p, over);
+            });
+
+            console.log('[chess_4p] Player resigned:', username, 'from game', gid);
+          }
+        }
+      }
+    }
+
+    // ============= END 4-PLAYER CHESS HANDLERS =============
+
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

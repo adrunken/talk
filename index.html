@@ -1964,28 +1964,11 @@ function render4PlayerBoard() {
     var board = $('#chess-board');
     board.empty();
 
-    // Parse FEN (14x14 board representation)
-    var parts = chessGame.fen.split(' ');
-    var ranksFEN = parts[0].split('/');
     var files = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n'];
 
-    chessGame.squareMap = {};
-
-    for (var r = 0; r < 14; r++) {
-        var row = ranksFEN[r];
-        var fileIndex = 0;
-        for (var i = 0; i < row.length; i++) {
-            var ch = row[i];
-            if (/[1-9]/.test(ch)) {
-                fileIndex += parseInt(ch, 10);
-            } else {
-                var file = files[fileIndex];
-                var rank = 14 - r;
-                var sq = file + String(rank);
-                chessGame.squareMap[sq] = ch;
-                fileIndex++;
-            }
-        }
+    // squareMap should already be populated
+    if (!chessGame.squareMap) {
+        chessGame.squareMap = {};
     }
 
     // Map position to player color based on piece placement in 4-player 14x14 setup
@@ -2013,9 +1996,24 @@ function render4PlayerBoard() {
     board.css('backgroundColor', '#8b7355');
     board.css('backgroundImage', 'none');
 
-    // Render all 14x14 squares
+    // Helper function to check if a square is in an invalid corner region (cross shape)
+    function isInvalidSquare(rank, file) {
+        // rank and file are 0-indexed (0-13)
+        if (rank < 2 && file < 2) return true;    // Top-left corner
+        if (rank < 2 && file > 11) return true;   // Top-right corner
+        if (rank > 11 && file < 2) return true;   // Bottom-left corner
+        if (rank > 11 && file > 11) return true;  // Bottom-right corner
+        return false;
+    }
+
+    // Render cross-shaped 14x14 board (skip invalid corners)
     for (var r = 13; r >= 0; r--) {
         for (var f = 0; f < 14; f++) {
+            // Skip invalid corner squares to create cross shape
+            if (isInvalidSquare(r, f)) {
+                continue;
+            }
+
             var file = files[f];
             var rank = 14 - r;
             var sq = file + String(rank);
@@ -3845,83 +3843,125 @@ function ready() {
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
         }
-        else if (data['type'] === 'chess_4player_invite') {
+        else if (data['type'] === 'chess_4p_invite') {
             addInvite(data['from'], '4player');
             if (document.hidden) { __chessUnread += 1; __updateTitleBadge(); }
         }
-        else if (data['type'] === 'chess_4player_start') {
+        else if (data['type'] === 'chess_4p_start') {
             var me = $('#username').text();
+
+            // Initialize 4-player chess board
+            var files = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n'];
+            var squareMap = {};
+
+            // 4-player chess standard starting position
+            // Player 0 (Red): Ranks 1-2, WHITE pieces (R N B Q K B N R R N B R Q B + pawns)
+            // Player 1 (Blue): Files a-b, WHITE pieces
+            // Player 2 (Yellow): Ranks 13-14, BLACK pieces
+            // Player 3 (Green): Files m-n, BLACK pieces
+
+            var standardBackRow = ['R','N','B','Q','K','B','N','R','R','N','B','R','Q','B'];
+            var standardPawnRow = Array(14).fill('P');
+            var blackBackRow = ['r','n','b','q','k','b','n','r','r','n','b','r','q','b'];
+            var blackPawnRow = Array(14).fill('p');
+
+            // Red (Player 0): Ranks 1-2 (top)
+            standardBackRow.forEach(function(piece, f) {
+                squareMap[files[f] + '1'] = piece;
+            });
+            standardPawnRow.forEach(function(piece, f) {
+                squareMap[files[f] + '2'] = piece;
+            });
+
+            // Blue (Player 1): Files a-b (left side)
+            standardBackRow.forEach(function(piece, r) {
+                if (r < 14 && !squareMap['a' + (r+1)]) {
+                    squareMap['a' + (r+1)] = piece;
+                }
+            });
+            standardPawnRow.forEach(function(piece, r) {
+                if (r < 14 && !squareMap['b' + (r+1)]) {
+                    squareMap['b' + (r+1)] = piece;
+                }
+            });
+
+            // Yellow (Player 2): Ranks 13-14 (bottom)
+            blackBackRow.forEach(function(piece, f) {
+                squareMap[files[f] + '14'] = piece;
+            });
+            blackPawnRow.forEach(function(piece, f) {
+                squareMap[files[f] + '13'] = piece;
+            });
+
+            // Green (Player 3): Files m-n (right side)
+            blackBackRow.forEach(function(piece, r) {
+                if (r < 14 && !squareMap['n' + (r+1)]) {
+                    squareMap['n' + (r+1)] = piece;
+                }
+            });
+            blackPawnRow.forEach(function(piece, r) {
+                if (r < 14 && !squareMap['m' + (r+1)]) {
+                    squareMap['m' + (r+1)] = piece;
+                }
+            });
+
+            // Set up game object for 4-player
             chessGame = {
                 id: data['game_id'],
                 players: data['players'],
-                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false,
                 is4Player: true,
-                moveHistory: []
+                moveHistory: [],
+                squareMap: squareMap,
+                color: 'white'
             };
-            try { localStorage.setItem('active_game_4p', JSON.stringify({ id: chessGame.id, players: chessGame.players })); } catch(e){}
-            $('#chess-4player-players').removeClass('hidden').css('display', '');
-            $('#chess-4p-white').text(data['players'].white || '—');
-            $('#chess-4p-red').text(data['players'].red || '—');
-            $('#chess-4p-black').text(data['players'].black || '—');
-            $('#chess-4p-blue').text(data['players'].blue || '—');
+
+            try { localStorage.setItem('active_game_4p', JSON.stringify({ id: data['game_id'], players: data['players'] })); } catch(e){}
+
+            // Update player displays
+            var colors = ['white', 'red', 'black', 'blue'];
+            var playerNames = data['players'];
+            if (Array.isArray(playerNames)) {
+                playerNames.forEach(function(username, idx) {
+                    $('#chess-4p-' + colors[idx]).text(username || '—');
+                });
+            } else {
+                $('#chess-4p-white').text(playerNames.white || '—');
+                $('#chess-4p-red').text(playerNames.red || '—');
+                $('#chess-4p-black').text(playerNames.black || '—');
+                $('#chess-4p-blue').text(playerNames.blue || '—');
+            }
+
+            // Show 4-player display and hide 2-player display
+            $('#chess-4player-players').removeClass('hidden').css('display', 'block');
             $('#chess-white').text('');
             $('#chess-black').text('');
-            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
-            renderBoard();
+
+            // Render the 14x14 cross-shaped board directly
+            render4PlayerBoard();
             updateChessStatus();
-            resetChessTimers(60);
-            startChessTimer();
             $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
         }
-        else if (data['type'] === 'chess_4player_move') {
-            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
-                chessGame.fen = data['fen'];
-                chessGame.turn = data['turn'];
-                chessGame.lastMove = { from: data['from'], to: data['to'] };
-                chessGame.moveHistory = chessGame.moveHistory || [];
-                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
-                renderBoard();
-                updateChessStatus();
-                clearPendingMove();
-                if (document.hidden && chessGame.turn === chessGame.color) { __chessUnread += 1; __updateTitleBadge(); }
+        else if (data['type'] === 'chess_4p_move') {
+            try {
+                if (typeof window.handleChess4pMove === 'function') {
+                    window.handleChess4pMove({
+                        game_id: data['game_id'],
+                        from: data['from'],
+                        to: data['to'],
+                        player: data['player']
+                    });
+                }
+            } catch(e) {
+                console.error('[4P Chess] Error handling move:', e);
             }
         }
-        else if (data['type'] === 'chess_4player_over') {
+        else if (data['type'] === 'chess_4p_resign' || data['type'] === 'chess_4p_over') {
             try { localStorage.removeItem('active_game_4p'); } catch(e){}
-            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
-                chessGame.over = true;
-                stopChessTimer();
-                $('#chess-status').text('Game over - Winner: ' + data['winner'] + ' (' + data['reason'] + ')');
-                hideRejoinPrompt();
-            }
-        }
-        else if (data['type'] === 'chess_4player_resume') {
-            var me = $('#username').text();
-            chessGame = {
-                id: data['game_id'],
-                players: data['players'],
-                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false,
-                is4Player: true,
-                moveHistory: []
-            };
-            $('#chess-4player-players').removeClass('hidden').css('display', '');
-            $('#chess-4p-white').text(data['players'].white || '—');
-            $('#chess-4p-red').text(data['players'].red || '—');
-            $('#chess-4p-black').text(data['players'].black || '—');
-            $('#chess-4p-blue').text(data['players'].blue || '—');
-            $('#chess-white').text('');
-            $('#chess-black').text('');
-            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
-            showRejoinPrompt();
+            var statusMsg = data['type'] === 'chess_4p_resign'
+                ? 'Player resigned'
+                : ('Game over - Winner: ' + (data['winner'] || 'Unknown'));
+            $('#chess-status').text(statusMsg);
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
@@ -3996,6 +4036,73 @@ if (document.readyState === 'loading') {
 } else {
     initializeRouting();
 }
+
+// Initialize 4-player chess GameController
+(function() {
+  function initChess4pFunctions() {
+    if (typeof window.GameController !== 'undefined') {
+      return; // Already initialized
+    }
+
+    // Simple wrapper to initialize chess game
+    window.initializeChessGame = function(gameData) {
+      try {
+        if (typeof window.GameController === 'undefined') {
+          console.error('[4P Chess] GameController class not available');
+          return null;
+        }
+
+        const boardElement = document.getElementById('chess-board');
+        if (!boardElement) {
+          console.error('[4P Chess] Board element not found');
+          return null;
+        }
+
+        const controller = new window.GameController('chess-board', gameData);
+        controller.gameId = gameData.game_id;
+        controller.playerMap = gameData.players;
+        controller.currentPlayer = gameData.currentPlayer;
+        controller.isLocalGame = false;
+
+        window.current4pGameController = controller;
+        return controller;
+      } catch(e) {
+        console.error('[4P Chess] Error initializing game:', e);
+        return null;
+      }
+    };
+
+    window.handleChess4pMove = function(moveData) {
+      try {
+        if (window.current4pGameController) {
+          window.current4pGameController.updateFromMove(moveData);
+        }
+      } catch(e) {
+        console.error('[4P Chess] Error handling move:', e);
+      }
+    };
+
+    window.getGameController = function() {
+      return window.current4pGameController;
+    };
+
+    window.cleanupChessGame = function() {
+      if (window.current4pGameController) {
+        window.current4pGameController.saveGame();
+        window.current4pGameController = null;
+      }
+    };
+
+    console.log('[4P Chess] Functions initialized');
+  }
+
+  // Try to initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initChess4pFunctions);
+  } else {
+    initChess4pFunctions();
+  }
+})();
 
 </script>
 <script>

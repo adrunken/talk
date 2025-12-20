@@ -401,31 +401,35 @@
             };
 
             if (orient === 'vertical') {
-                for (let c = 2; c < 12; c++) {
+                // Vertical players: white (bottom) and black (top)
+                // 8 pawns and 8 back rank pieces (columns 3-10)
+                for (let c = 3; c < 11; c++) {
                     piece('pawn', pawnRow, c);
                 }
                 const backRow = color === 'white' ? 13 : 0;
-                piece('rook', backRow, 2);
-                piece('knight', backRow, 3);
-                piece('bishop', backRow, 4);
-                piece('queen', backRow, 5);
-                piece('king', backRow, 6);
-                piece('bishop', backRow, 7);
-                piece('knight', backRow, 8);
-                piece('rook', backRow, 9);
+                piece('rook', backRow, 3);
+                piece('knight', backRow, 4);
+                piece('bishop', backRow, 5);
+                piece('queen', backRow, 6);
+                piece('king', backRow, 7);
+                piece('bishop', backRow, 8);
+                piece('knight', backRow, 9);
+                piece('rook', backRow, 10);
             } else {
-                for (let r = 2; r < 12; r++) {
+                // Horizontal players: red (right) and blue (left)
+                // 8 pawns and 8 back rank pieces (rows 3-10)
+                for (let r = 3; r < 11; r++) {
                     piece('pawn', r, pawnRow);
                 }
                 const backCol = color === 'red' ? 13 : 0;
-                piece('rook', 2, backCol);
-                piece('knight', 3, backCol);
-                piece('bishop', 4, backCol);
-                piece('queen', 5, backCol);
-                piece('king', 6, backCol);
-                piece('bishop', 7, backCol);
-                piece('knight', 8, backCol);
-                piece('rook', 9, backCol);
+                piece('rook', 3, backCol);
+                piece('knight', 4, backCol);
+                piece('bishop', 5, backCol);
+                piece('queen', 6, backCol);
+                piece('king', 7, backCol);
+                piece('bishop', 8, backCol);
+                piece('knight', 9, backCol);
+                piece('rook', 10, backCol);
             }
         }
 

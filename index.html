@@ -2970,17 +2970,13 @@ function ready() {
         var $inviteItem = $(this).closest('.invite-item');
         var fromUser = $inviteItem.data('from');
         var gameMode = $inviteItem.data('mode') || '4player';
+        var sessionId = $inviteItem.data('session-id');
 
-        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'chess_invite_accept', from: fromUser }));
-
-        // Open the appropriate chess modal based on game mode
-        setTimeout(function() {
-            if (gameMode === '2player') {
-                $('#chess-modal').removeClass('hidden');
-            } else if (gameMode === '4player') {
-                $('#four-player-chess-overlay').removeClass('hidden');
-            }
-        }, 100);
+        if (ws && ws.readyState === 1) {
+            var payload = { type: 'chess_invite_accept', from: fromUser };
+            if (sessionId) payload.sessionId = sessionId;
+            ws.send(JSON.stringify(payload));
+        }
 
         $inviteItem.remove();
     });

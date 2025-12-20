@@ -1964,28 +1964,11 @@ function render4PlayerBoard() {
     var board = $('#chess-board');
     board.empty();
 
-    // Parse FEN (14x14 board representation)
-    var parts = chessGame.fen.split(' ');
-    var ranksFEN = parts[0].split('/');
     var files = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n'];
 
-    chessGame.squareMap = {};
-
-    for (var r = 0; r < 14; r++) {
-        var row = ranksFEN[r];
-        var fileIndex = 0;
-        for (var i = 0; i < row.length; i++) {
-            var ch = row[i];
-            if (/[1-9]/.test(ch)) {
-                fileIndex += parseInt(ch, 10);
-            } else {
-                var file = files[fileIndex];
-                var rank = 14 - r;
-                var sq = file + String(rank);
-                chessGame.squareMap[sq] = ch;
-                fileIndex++;
-            }
-        }
+    // squareMap should already be populated
+    if (!chessGame.squareMap) {
+        chessGame.squareMap = {};
     }
 
     // Map position to player color based on piece placement in 4-player 14x14 setup

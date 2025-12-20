@@ -2033,39 +2033,35 @@ function render4PlayerBoard() {
                 squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box; width: 40px; height: 40px;');
 
                 var piece = chessGame.squareMap[sq];
-                if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {
-                    var pieceType = piece.toLowerCase();
+            if (piece && piece !== '' && piece.length >= 2) {
+                var pieceColor = piece.charAt(0); // 'w' or 'b'
+                var pieceType = piece.charAt(1);  // 'p', 'n', 'b', 'r', 'q', 'k'
 
-                    // Determine the color code for piece image
-                    // Blue and Green use white pieces ('w'), Yellow and Red use black pieces ('b')
-                    var playerCol = getPlayerColor(sq);
-                    var pieceColor = (playerCol === 'blue' || playerCol === 'green') ? 'w' : 'b';
+                var pieceEl = $('<div/>').css({
+                    width: '85%',
+                    height: '85%',
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center',
+                    pointerEvents: 'none'
+                }).addClass('chess-piece').attr('data-square', sq).attr('data-piece', pieceColor + pieceType);
 
-                    var pieceEl = $('<div/>').css({
-                        width: '85%',
-                        height: '85%',
-                        backgroundSize: 'contain',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                        pointerEvents: 'none'
-                    }).addClass('chess-piece').attr('data-square', sq).attr('data-piece', pieceColor + pieceType);
+                pieceEl.addClass('piece-' + pieceColor + pieceType);
 
-                    pieceEl.addClass('piece-' + pieceColor + pieceType);
-
-                    // Apply custom piece image if available
-                    if (boardPiecesSettings.piecesData && boardPiecesSettings.selectedPieces) {
-                        var pieceData = boardPiecesSettings.piecesData[boardPiecesSettings.selectedPieces];
-                        if (pieceData) {
-                            var pieceUrlTemplate = typeof pieceData === 'object' ? pieceData.url : pieceData;
-                            var pieceUrl = pieceUrlTemplate
-                                .replace(/{color}/g, pieceColor)
-                                .replace(/{piece}/g, pieceType);
-                            pieceEl.css('backgroundImage', 'url(' + pieceUrl + ')');
-                        }
+                // Apply custom piece image if available
+                if (boardPiecesSettings.piecesData && boardPiecesSettings.selectedPieces) {
+                    var pieceData = boardPiecesSettings.piecesData[boardPiecesSettings.selectedPieces];
+                    if (pieceData) {
+                        var pieceUrlTemplate = typeof pieceData === 'object' ? pieceData.url : pieceData;
+                        var pieceUrl = pieceUrlTemplate
+                            .replace(/{color}/g, pieceColor)
+                            .replace(/{piece}/g, pieceType);
+                        pieceEl.css('backgroundImage', 'url(' + pieceUrl + ')');
                     }
-
-                    squareEl.append(pieceEl);
                 }
+
+                squareEl.append(pieceEl);
+            }
 
                 board.append(squareEl);
             }

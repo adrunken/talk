@@ -2237,7 +2237,6 @@ wss.on('connection', (ws, req) => {
       game.currentTurn = nextTurn;
 
       // Broadcast move to all players in the game
-      const COLORS = ['blue', 'yellow', 'green', 'red'];
       const moveUpdate = {
         type: '4playerMoveUpdate',
         from,
@@ -2250,8 +2249,9 @@ wss.on('connection', (ws, req) => {
       };
 
       for (const player of game.players) {
-        if (game.playerWs.has(player)) {
-          send(game.playerWs.get(player), moveUpdate);
+        const playerWs = getWsByUsername(player);
+        if (playerWs) {
+          send(playerWs, moveUpdate);
         }
       }
 

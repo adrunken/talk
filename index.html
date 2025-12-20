@@ -2768,9 +2768,22 @@ function ready() {
         setTimeout(function(){ msg.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     });
     $('#invites').on('click', '.invite-accept', function() {
-        var fromUser = $(this).closest('.invite-item').data('from');
+        var $inviteItem = $(this).closest('.invite-item');
+        var fromUser = $inviteItem.data('from');
+        var gameMode = $inviteItem.data('mode') || '4player';
+
         if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'chess_invite_accept', from: fromUser }));
-        $(this).closest('.invite-item').remove();
+
+        // Open the appropriate chess modal based on game mode
+        setTimeout(function() {
+            if (gameMode === '2player') {
+                $('#chess-modal').removeClass('hidden');
+            } else if (gameMode === '4player') {
+                $('#four-player-chess-overlay').removeClass('hidden');
+            }
+        }, 100);
+
+        $inviteItem.remove();
     });
     $('#invites').on('click', '.invite-decline', function() {
         $(this).closest('.invite-item').remove();

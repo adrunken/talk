@@ -2727,7 +2727,7 @@ function ready() {
             if (user.name === me) {
                 return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
             }
-            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
+            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
         }).join('');
         $('#connected').html(html);
     }

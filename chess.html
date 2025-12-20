@@ -415,8 +415,40 @@
         window.addEventListener('message', function(event) {
             if (event.data.type === 'requestGameState') {
                 sendGameStateToParent();
+            } else if (event.data.type === '4playerMoveUpdate') {
+                applyRemoteMove(event.data);
+            } else if (event.data.type === '4playerMoveRejected') {
+                console.log('Move rejected:', event.data.reason);
             }
         });
+
+        function applyRemoteMove(data) {
+            const { from, to, piece, eliminatedColor } = data;
+
+            gameState.board[to.row][to.col] = piece;
+            gameState.board[from.row][from.col] = null;
+
+            const capturedPiece = gameState.board[to.row][to.col];
+            if (capturedPiece && capturedPiece.type === 'king') {
+                eliminatePlayer(COLORS.indexOf(capturedPiece.color));
+            }
+
+            if (piece.type === 'pawn' && isPromotionRank(to.row, to.col, piece.color)) {
+                piece.type = 'queen';
+            }
+
+            if (eliminatedColor !== undefined && eliminatedColor !== null) {
+                eliminatePlayer(eliminatedColor);
+            }
+
+            gameState.moveCount++;
+            gameState.currentTurn = data.nextTurn;
+            gameState.activePlayers = data.activePlayers;
+
+            renderBoard();
+            updateUI();
+            sendGameStateToParent();
+        }
 
         function isInactive(x, y) {
             return (

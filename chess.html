@@ -354,14 +354,41 @@
 
     <script>
         const BOARD_SIZE = 14;
-        const COLORS = ['white', 'red', 'black', 'blue'];
-        const PIECE_UNICODE = {
-            pawn: '♟',
-            rook: '♜',
-            knight: '♞',
-            bishop: '♝',
-            queen: '♛',
-            king: '♚'
+        const COLORS = ['blue', 'yellow', 'green', 'red'];
+
+        const PIECE_IMAGES = {
+            blue: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F9054d3e68a0d44f6aa5779ad27c15d8a?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fb13db36d7eb544e98a5d7aab2edaccfb?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F9bbc311bfa5445b9a8f2c4220d6a72b8?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F823e488e4ac5428f9a284d690873287b?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F6142be03f89a4b2292ef01a2fd96d359?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fcaaa6ab817624a0c958269516b53c0b2?format=webp&width=800'
+            },
+            green: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F137b396961674c1597c9e910a6fb17f8?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F13776e5e0ec14d7dbc20bd195092dddd?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fefdaed5b6d574def99a2d478ec46cc63?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fcaf8f3bca51e4cf2bc9bdff7a809591e?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F590af1dbba22429094dbe4e65c55b977?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F933d2ce4dbc54694bc5bafbe32c71207?format=webp&width=800'
+            },
+            red: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F75d125a2152943fcb78cb06411ececf7?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fde123f76f71a41698adeaf0a3f83af6e?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F160925441fd94af2a0dce145966225a4?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F42e5c01cfd3e4da486c0cd8fed1ea7d7?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fd1084f6d2dc94436b2d05a44c1f1ef54?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Ffed2672f588145918b131f6279672c33?format=webp&width=800'
+            },
+            yellow: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F763163fd81c449e0b8d6371c8f688dfc?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F4c2b49ed40af4d7da856cd8cb68c9bed?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F8ba0092e757c475a812ff0c470f0425e?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fbfda1d86ba904fb3bca5ba7e885a4944?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F211438b1dca94f54a03beb5e8829d99f?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F164ca3e23c674237964c454f24cee710?format=webp&width=800'
+            }
         };
 
         let gameState = {

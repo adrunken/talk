@@ -3852,12 +3852,23 @@ function ready() {
         else if (data['type'] === 'chess_4p_start') {
             var me = $('#username').text();
 
+            // Generate initial 4-player chess FEN
+            // 14x14 board with cross-shaped layout
+            // Ranks 1-2: Blue pieces (white)
+            // Ranks 13-14: Red pieces (black)
+            // Files a-b: Yellow pieces (black)
+            // Files m-n: Green pieces (white)
+            var initialFen = 'rnbqkbnrrnbqkb/pppppppppppppp/8/8/8/8/8/8/8/8/8/8/PPPPPPPPPPPPPP/RNBQKBNRRNBQKB';
+
             // Set up game object for 4-player
             chessGame = {
                 id: data['game_id'],
                 players: data['players'],
                 is4Player: true,
-                moveHistory: []
+                moveHistory: [],
+                fen: initialFen,
+                squareMap: {},
+                color: 'white' // Default color, will be set by server
             };
 
             try { localStorage.setItem('active_game_4p', JSON.stringify({ id: data['game_id'], players: data['players'] })); } catch(e){}

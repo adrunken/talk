@@ -1696,14 +1696,18 @@ wss.on('connection', (ws, req) => {
 
         if (acceptedArray.length === playersArray.length && playersArray.length === 4) {
           const gid = nextGameId++;
+          const board4p = initialize4PlayerBoard();
+
           games.set(gid, {
-            board: null,
+            board4p: board4p,
             players: playersArray,
             over: false,
             isAiGame: false,
             is4player: true,
             mode: session.mode,
-            timeControl: session.timeControl
+            timeControl: session.timeControl,
+            currentPlayerIndex: 0,
+            moveCount: 0
           });
 
           const payload = {
@@ -1711,10 +1715,11 @@ wss.on('connection', (ws, req) => {
             game_id: gid,
             players: playersArray,
             mode: session.mode,
-            timeControl: session.timeControl
+            timeControl: session.timeControl,
+            board: board4p
           };
 
-          console.log('[4p-chess] Game started:', {gid, players: playersArray});
+          console.log('[4p-chess] Game started:', {gid, players: playersArray, boardInitialized: true});
 
           for (const player of playersArray) {
             sendToUsername(player, payload);

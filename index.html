@@ -2961,9 +2961,12 @@ function ready() {
         var gameMode = $inviteItem.data('mode') || '4player';
         var sessionId = $inviteItem.data('session-id');
 
+        console.log('[4p-chess-client] Accept clicked:', {from: fromUser, mode: gameMode, sessionId: sessionId});
+
         if (ws && ws.readyState === 1) {
             var payload = { type: 'chess_invite_accept', from: fromUser };
             if (sessionId) payload.sessionId = sessionId;
+            console.log('[4p-chess-client] Sending payload:', payload);
             ws.send(JSON.stringify(payload));
         }
 

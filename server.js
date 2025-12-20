@@ -1532,6 +1532,42 @@ wss.on('connection', (ws, req) => {
         sendUserList();
       }
     }
+    else if (msg.type === 'chess_session_create') {
+      const initiator = users.get(ws);
+      const invitees = Array.isArray(msg.invitees) ? msg.invitees : [];
+      const gameMode = String(msg.mode || '2player');
+      const timeControl = String(msg.timeControl || '');
+
+      if (!initiator || invitees.length === 0) {
+        send(ws, { type: 'chess_error', message: 'Invalid session creation' });
+      } else {
+        const sessionId = nextSessionId++;
+        const session = {
+          sessionId,
+          initiator,
+          invitees,
+          accepted: [],
+          gameMode,
+          timeControl,
+          createdAt: Date.now()
+        };
+        gameSessions.set(sessionId, session);
+
+        // Send invites to all invitees
+        invitees.forEach(function(invitee) {
+          const invitePayload = {
+            type: 'chess_invite',
+            from: initiator,
+            sessionId: sessionId,
+            mode: gameMode,
+            timeControl: timeControl
+          };
+          sendToUsername(invitee, invitePayload);
+        });
+
+        console.log(`[chess] Session ${sessionId} created: ${initiator} inviting ${invitees.length} players for ${gameMode}`);
+      }
+    }
     else if (msg.type === 'chess_invite') {
       const inviter = users.get(ws);
       const target = String(msg.to || '');

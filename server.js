@@ -1605,18 +1605,21 @@ wss.on('connection', (ws, req) => {
       const inviter = String(msg.from || '');
       const sessionId = msg.sessionId;
 
+      console.log('[4p-chess] Accept received:', {acceptor, inviter, sessionId, hasSession: fourPlayerSessions.has(sessionId)});
+
       if (!inviter || !acceptor) {
         send(ws, { type: 'chess_error', message: 'Invalid invite' });
-      } else if (typeof sessionId !== 'undefined' && sessionId !== null && fourPlayerSessions.has(sessionId)) {
+      } else if (fourPlayerSessions.has(sessionId)) {
         const session = fourPlayerSessions.get(sessionId);
 
         if (!session.acceptedPlayers.has(acceptor)) {
           session.acceptedPlayers.add(acceptor);
-          console.log('[chess] Player accepted session', sessionId, ':', acceptor, '- accepted:', Array.from(session.acceptedPlayers).length, 'of', session.players.size);
         }
 
         const playersArray = Array.from(session.players);
         const acceptedArray = Array.from(session.acceptedPlayers);
+
+        console.log('[4p-chess] Status:', {sessionId, accepted: acceptedArray.length, total: playersArray.length, acceptedPlayers: acceptedArray, allPlayers: playersArray});
 
         if (acceptedArray.length === playersArray.length && playersArray.length === 4) {
           const gid = nextGameId++;
@@ -1638,12 +1641,13 @@ wss.on('connection', (ws, req) => {
             timeControl: session.timeControl
           };
 
+          console.log('[4p-chess] Game started:', {gid, players: playersArray});
+
           for (const player of playersArray) {
             sendToUsername(player, payload);
           }
 
           fourPlayerSessions.delete(sessionId);
-          console.log('[chess] 4-player game started:', gid, 'players:', playersArray.join(', '));
         } else {
           send(ws, {
             type: 'chess_info',
@@ -1651,6 +1655,7 @@ wss.on('connection', (ws, req) => {
           });
         }
       } else {
+        console.log('[4p-chess] Session not found, treating as 2-player invite');
         const key = inviter + '\u0000' + acceptor;
         if (!invites.has(key)) {
           send(ws, { type: 'chess_error', message: 'Invite not found' });

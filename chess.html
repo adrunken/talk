@@ -553,27 +553,18 @@
             }
 
             const piece = gameState.board[fromRow][fromCol];
-            const captured = gameState.board[toRow][toCol];
 
-            gameState.board[toRow][toCol] = piece;
-            gameState.board[fromRow][fromCol] = null;
-            piece.hasMoved = true;
-
-            if (captured && captured.type === 'king') {
-                eliminatePlayer(COLORS.indexOf(captured.color));
-            }
-
-            if (piece.type === 'pawn' && isPromotionRank(toRow, toCol, piece.color)) {
-                piece.type = 'queen';
-            }
-
-            gameState.moveCount++;
             gameState.selectedSquare = null;
             gameState.validMoves = [];
-            advanceTurn();
-            renderBoard();
-            updateUI();
-            sendGameStateToParent();
+
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: '4playerMove',
+                    from: { row: fromRow, col: fromCol },
+                    to: { row: toRow, col: toCol },
+                    piece: piece
+                }, '*');
+            }
         }
 
         function calculateValidMoves(row, col) {

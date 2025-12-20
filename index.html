@@ -2558,12 +2558,19 @@ function ready() {
 
     // Chess button - open 4-player chess modal
     $('#nav-chess').on('click', function(){
-        $('#four-player-chess-modal').removeClass('hidden');
+        $('#four-player-chess-overlay').removeClass('hidden');
     });
 
     // Close 4-player chess modal
     $('#four-player-close').on('click', function(){
-        $('#four-player-chess-modal').addClass('hidden');
+        $('#four-player-chess-overlay').addClass('hidden');
+    });
+
+    // Close 4-player chess modal when clicking overlay background
+    $('#four-player-chess-overlay').on('click', function(e){
+        if (e.target === this) {
+            $(this).addClass('hidden');
+        }
     });
 
     $('#chess-close').on('click', function(){

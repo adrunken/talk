@@ -2326,11 +2326,17 @@ function ready() {
 
         // Open the appropriate chess modal
         if (chessSetupState.mode === '2player') {
-            // For 2-player, open the regular chess modal
-            $('#nav-chess').click(); // This should trigger the chess game
+            // For 2-player, open the regular chess modal by clicking the nav button
+            setTimeout(function() {
+                $('#nav-chess').click();
+            }, 100);
         } else if (chessSetupState.mode === '4player') {
             // For 4-player, open the 4-player chess overlay
-            $('#four-player-chess-overlay').removeClass('hidden');
+            setTimeout(function() {
+                var overlay = $('#four-player-chess-overlay');
+                overlay.removeClass('hidden');
+                overlay.css('display', 'flex');
+            }, 100);
         }
     }
 

@@ -1611,15 +1611,19 @@ wss.on('connection', (ws, req) => {
       } else if (sessionId && fourPlayerSessions.has(sessionId)) {
         const session = fourPlayerSessions.get(sessionId);
 
-        if (!session.acceptedPlayers.includes(acceptor)) {
-          session.acceptedPlayers.push(acceptor);
+        if (!session.acceptedPlayers.has(acceptor)) {
+          session.acceptedPlayers.add(acceptor);
+          console.log('[chess] Player accepted session', sessionId, ':', acceptor, '- accepted:', Array.from(session.acceptedPlayers).length, 'of', session.players.size);
         }
 
-        if (session.acceptedPlayers.length === 4) {
+        const playersArray = Array.from(session.players);
+        const acceptedArray = Array.from(session.acceptedPlayers);
+
+        if (acceptedArray.length === playersArray.length && playersArray.length === 4) {
           const gid = nextGameId++;
           games.set(gid, {
             board: null,
-            players: session.players,
+            players: playersArray,
             over: false,
             isAiGame: false,
             is4player: true,
@@ -1630,21 +1634,21 @@ wss.on('connection', (ws, req) => {
           const payload = {
             type: '4player_game_start',
             game_id: gid,
-            players: session.players,
+            players: playersArray,
             mode: session.mode,
             timeControl: session.timeControl
           };
 
-          for (const player of session.players) {
+          for (const player of playersArray) {
             sendToUsername(player, payload);
           }
 
           fourPlayerSessions.delete(sessionId);
-          console.log('[chess] 4-player game created:', gid, 'players:', session.players.join(', '));
+          console.log('[chess] 4-player game started:', gid, 'players:', playersArray.join(', '));
         } else {
           send(ws, {
             type: 'chess_info',
-            message: 'Waiting for ' + (4 - session.acceptedPlayers.length) + ' more player(s) to accept...'
+            message: 'Waiting for ' + (playersArray.length - acceptedArray.length) + ' more player(s) to accept...'
           });
         }
       } else {

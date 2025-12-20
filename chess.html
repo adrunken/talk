@@ -589,14 +589,37 @@
             gameState.selectedSquare = null;
             gameState.validMoves = [];
 
-            if (window.parent !== window) {
+            // For multiplayer games via server, send move to parent
+            if (window.parent !== window && typeof window.parent.postMessage === 'function') {
                 window.parent.postMessage({
                     type: '4playerMove',
                     from: { row: fromRow, col: fromCol },
                     to: { row: toRow, col: toCol },
                     piece: piece
                 }, '*');
+                return;
             }
+
+            // For local/standalone play, apply move immediately
+            const captured = gameState.board[toRow][toCol];
+
+            gameState.board[toRow][toCol] = piece;
+            gameState.board[fromRow][fromCol] = null;
+            piece.hasMoved = true;
+
+            if (captured && captured.type === 'king') {
+                eliminatePlayer(COLORS.indexOf(captured.color));
+            }
+
+            if (piece.type === 'pawn' && isPromotionRank(toRow, toCol, piece.color)) {
+                piece.type = 'queen';
+            }
+
+            gameState.moveCount++;
+            advanceTurn();
+            renderBoard();
+            updateUI();
+            sendGameStateToParent();
         }
 
         function calculateValidMoves(row, col) {

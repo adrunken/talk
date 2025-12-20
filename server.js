@@ -1176,11 +1176,84 @@ const users = new Map(); // ws -> username
 const pings = new Map(); // ws -> timestamp
 const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
-const games = new Map(); // gid -> {board: Chess, white, black, over}
+const games = new Map(); // gid -> {board: Chess, white, black, over} or {board4p: 14x14 array, players, over, is4player}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
+
+// Initialize a 4-player chess board with standard piece placement
+function initialize4PlayerBoard() {
+  const BOARD_SIZE = 14;
+  const board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+
+  // Helper to place a piece
+  const placePiece = (row, col, type, color) => {
+    board[row][col] = { type, color };
+  };
+
+  // Blue player (top) - vertical orientation
+  // Pawns
+  for (let c = 3; c < 11; c++) {
+    placePiece(12, c, 'pawn', 'blue');
+  }
+  // Back row
+  placePiece(13, 3, 'rook', 'blue');
+  placePiece(13, 4, 'knight', 'blue');
+  placePiece(13, 5, 'bishop', 'blue');
+  placePiece(13, 6, 'queen', 'blue');
+  placePiece(13, 7, 'king', 'blue');
+  placePiece(13, 8, 'bishop', 'blue');
+  placePiece(13, 9, 'knight', 'blue');
+  placePiece(13, 10, 'rook', 'blue');
+
+  // Yellow player (right) - horizontal orientation
+  // Pawns
+  for (let r = 3; r < 11; r++) {
+    placePiece(r, 12, 'pawn', 'yellow');
+  }
+  // Back row
+  placePiece(3, 13, 'rook', 'yellow');
+  placePiece(4, 13, 'knight', 'yellow');
+  placePiece(5, 13, 'bishop', 'yellow');
+  placePiece(6, 13, 'queen', 'yellow');
+  placePiece(7, 13, 'king', 'yellow');
+  placePiece(8, 13, 'bishop', 'yellow');
+  placePiece(9, 13, 'knight', 'yellow');
+  placePiece(10, 13, 'rook', 'yellow');
+
+  // Green player (bottom) - vertical orientation
+  // Pawns
+  for (let c = 3; c < 11; c++) {
+    placePiece(1, c, 'pawn', 'green');
+  }
+  // Back row
+  placePiece(0, 3, 'rook', 'green');
+  placePiece(0, 4, 'knight', 'green');
+  placePiece(0, 5, 'bishop', 'green');
+  placePiece(0, 6, 'queen', 'green');
+  placePiece(0, 7, 'king', 'green');
+  placePiece(0, 8, 'bishop', 'green');
+  placePiece(0, 9, 'knight', 'green');
+  placePiece(0, 10, 'rook', 'green');
+
+  // Red player (left) - horizontal orientation
+  // Pawns
+  for (let r = 3; r < 11; r++) {
+    placePiece(r, 1, 'pawn', 'red');
+  }
+  // Back row
+  placePiece(3, 0, 'rook', 'red');
+  placePiece(4, 0, 'knight', 'red');
+  placePiece(5, 0, 'bishop', 'red');
+  placePiece(6, 0, 'queen', 'red');
+  placePiece(7, 0, 'king', 'red');
+  placePiece(8, 0, 'bishop', 'red');
+  placePiece(9, 0, 'knight', 'red');
+  placePiece(10, 0, 'rook', 'red');
+
+  return board;
+}
 
 function now() { return Date.now() / 1000; }
 

@@ -4076,9 +4076,16 @@ function ready() {
                 if (data['board']) {
                     gameState4P.board = data['board'];
                     gameState4P.moveCount = data['moveCount'] || 0;
+                    // Sync turn index with server - this is authoritative
+                    if (typeof data['currentPlayerIndex'] === 'number') {
+                        gameState4P.currentTurn = gameState4P.activePlayers.indexOf(data['currentPlayerIndex']);
+                        if (gameState4P.currentTurn === -1) {
+                            gameState4P.currentTurn = 0;
+                        }
+                    }
                     renderBoard4P();
                     updateUI4P();
-                    console.log('[4p-chess] Move received:', {from: `${data.fromRow},${data.fromCol}`, to: `${data.toRow},${data.toCol}`});
+                    console.log('[4p-chess] Move received:', {from: `${data.fromRow},${data.fromCol}`, to: `${data.toRow},${data.toCol}`, currentPlayerIdx: data['currentPlayerIndex']});
                 }
             }
             // Handle 2-player chess moves

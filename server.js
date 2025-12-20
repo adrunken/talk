@@ -8,9 +8,6 @@ const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
 const { createHumanChessAI } = require('./human-like-chess-ai');
-const { queryOllama } = require('./server/ollama');
-const { commitFileToGitHub, createPullRequest } = require('./server/github');
-const { validateHTMLOutput } = require('./server/validation');
 
 // Config (mirrors config.py defaults)
 const HOST = '0.0.0.0';

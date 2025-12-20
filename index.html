@@ -3476,8 +3476,16 @@ function ready() {
         gameState4P.board[to.row][to.col] = piece;
         gameState4P.board[from.row][from.col] = null;
 
+        // If a player was eliminated, clear their pieces from the board
         if (eliminatedColor !== undefined && eliminatedColor !== null) {
-            eliminatePlayer4P(eliminatedColor);
+            const eliminatedColor_str = COLORS_4PLAYER[eliminatedColor];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (gameState4P.board[r][c] && gameState4P.board[r][c].color === eliminatedColor_str) {
+                        gameState4P.board[r][c] = null;
+                    }
+                }
+            }
         }
 
         gameState4P.moveCount = moveCount;

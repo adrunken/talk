@@ -674,10 +674,10 @@
         }
 
         function isPromotionRank(row, col, color) {
-            if (color === 'white') return row === 0;
-            if (color === 'black') return row === 13;
-            if (color === 'red') return col === 0;
-            if (color === 'blue') return col === 13;
+            if (color === 'blue') return row === 0;
+            if (color === 'yellow') return col === 0;
+            if (color === 'green') return row === 13;
+            if (color === 'red') return col === 13;
             return false;
         }
 

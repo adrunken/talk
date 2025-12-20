@@ -3899,8 +3899,18 @@ function ready() {
             renderUserLists();
         }
         else if (data['type'] === 'chess_invite') {
-            addInvite(data['from'], data['mode'], data['timeControl']);
+            addInvite(data['from'], data['mode'], data['timeControl'], data['sessionId']);
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
+        }
+        else if (data['type'] === 'chess_invite_waiting') {
+            var sessionId = data['sessionId'];
+            var $inviteItem = $('#invites .invite-item[data-session-id="' + sessionId + '"]');
+            if ($inviteItem.length) {
+                var stillWaiting = data['stillWaiting'] || 1;
+                var msg = stillWaiting === 1 ? 'Waiting for 1 more player...' : 'Waiting for ' + stillWaiting + ' players...';
+                var $actions = $inviteItem.find('.invite-actions');
+                $actions.html('<span style="color: var(--text-muted); font-size: 0.85rem;">' + msg + '</span>');
+            }
         }
         else if (data['type'] === 'admin_delete_users_modal') {
             showAdminDeleteUsersModal(data['users'] || []);

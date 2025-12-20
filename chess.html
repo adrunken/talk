@@ -769,6 +769,7 @@
             advanceTurn();
             renderBoard();
             updateUI();
+            sendGameStateToParent();
         });
 
         document.getElementById('undo-btn').addEventListener('click', () => {

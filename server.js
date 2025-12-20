@@ -1608,7 +1608,7 @@ wss.on('connection', (ws, req) => {
 
       if (!inviter || !acceptor) {
         send(ws, { type: 'chess_error', message: 'Invalid invite' });
-      } else if (sessionId && fourPlayerSessions.has(sessionId)) {
+      } else if (typeof sessionId !== 'undefined' && sessionId !== null && fourPlayerSessions.has(sessionId)) {
         const session = fourPlayerSessions.get(sessionId);
 
         if (!session.acceptedPlayers.has(acceptor)) {

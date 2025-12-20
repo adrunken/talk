@@ -1591,22 +1591,91 @@ wss.on('connection', (ws, req) => {
       }
     }
     else if (msg.type === 'chess_invite_accept') {
-      const target = users.get(ws); // acceptor
+      const acceptor = users.get(ws);
       const inviter = String(msg.from || '');
+      const sessionId = msg.sessionId ? Number(msg.sessionId) : null;
       const gameMode = String(msg.mode || '2player');
       const timeControl = String(msg.timeControl || '');
-      const key = inviter + '\u0000' + target;
-      if (!inviter || !target || !invites.has(key)) {
-        send(ws, { type: 'chess_error', message: 'Invite not found' });
+
+      if (!inviter || !acceptor) {
+        send(ws, { type: 'chess_error', message: 'Invalid acceptance' });
+        return;
+      }
+
+      // Handle 4-player session acceptance
+      if (sessionId && gameSessions.has(sessionId)) {
+        const session = gameSessions.get(sessionId);
+        if (!session.invitees.includes(acceptor)) {
+          send(ws, { type: 'chess_error', message: 'Not invited to this session' });
+          return;
+        }
+
+        // Mark this player as accepted
+        if (!session.accepted.includes(acceptor)) {
+          session.accepted.push(acceptor);
+        }
+
+        // Check if all players have accepted
+        if (session.accepted.length === session.invitees.length) {
+          // All players accepted - create the 4-player game
+          const gid = nextGameId++;
+          const board = new ChessCtor();
+          const allPlayers = [session.initiator, ...session.invitees];
+
+          games.set(gid, {
+            board,
+            players: allPlayers,
+            playerColors: { [allPlayers[0]]: 'blue', [allPlayers[1]]: 'yellow', [allPlayers[2]]: 'green', [allPlayers[3]]: 'red' },
+            over: false,
+            isAiGame: false,
+            is4Player: true,
+            gameMode: session.gameMode,
+            timeControl: session.timeControl,
+            currentPlayerIndex: 0
+          });
+
+          // Send game start to all players
+          const payload = {
+            type: 'chess_start',
+            game_id: gid,
+            players: allPlayers,
+            colors: games.get(gid).playerColors,
+            fen: board.fen(),
+            turn: 'blue',
+            is4Player: true,
+            gameMode: session.gameMode,
+            timeControl: session.timeControl
+          };
+
+          allPlayers.forEach(player => sendToUsername(player, payload));
+          gameSessions.delete(sessionId);
+          console.log(`[chess] 4-player game ${gid} started with players: ${allPlayers.join(', ')}`);
+        } else {
+          // Still waiting for other players
+          const stillWaiting = session.invitees.length - session.accepted.length;
+          send(ws, {
+            type: 'chess_invite_waiting',
+            sessionId: sessionId,
+            acceptedCount: session.accepted.length,
+            totalCount: session.invitees.length,
+            stillWaiting: stillWaiting
+          });
+        }
       } else {
-        const gid = nextGameId++;
-        const board = new ChessCtor();
-        let white, black;
-        if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false, gameMode, timeControl });
-        const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', gameMode, timeControl };
-        sendToUsername(white, payload); sendToUsername(black, payload);
-        invites.delete(key);
+        // Handle regular 2-player invite acceptance
+        const key = inviter + '\u0000' + acceptor;
+        if (!invites.has(key)) {
+          send(ws, { type: 'chess_error', message: 'Invite not found' });
+        } else {
+          const gid = nextGameId++;
+          const board = new ChessCtor();
+          let white, black;
+          if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
+          games.set(gid, { board, white, black, over: false, isAiGame: false, gameMode, timeControl });
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', gameMode, timeControl };
+          sendToUsername(white, payload); sendToUsername(black, payload);
+          invites.delete(key);
+        }
       }
     }
     else if (msg.type === 'chess_move') {

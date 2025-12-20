@@ -2205,11 +2205,7 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      // Apply move on server
-      game.board[toRow][toCol] = piece;
-      game.board[fromRow][fromCol] = null;
-      game.moveCount++;
-
+      // Check for captured piece before applying move
       let eliminatedColor = null;
       const capturedPiece = game.board[toRow][toCol];
       if (capturedPiece && capturedPiece.type === 'king') {
@@ -2219,6 +2215,11 @@ wss.on('connection', (ws, req) => {
           game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
         }
       }
+
+      // Apply move on server
+      game.board[toRow][toCol] = piece;
+      game.board[fromRow][fromCol] = null;
+      game.moveCount++;
 
       // Advance turn
       let nextTurn = (game.currentTurn + 1) % 4;

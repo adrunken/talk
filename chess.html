@@ -398,8 +398,32 @@
             moveCount: 0,
             gameStartTime: Date.now(),
             selectedSquare: null,
-            validMoves: []
+            validMoves: [],
+            players: {}
         };
+
+        // Send game state to parent window (for modal display)
+        function sendGameStateToParent() {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'fourPlayerGameUpdate',
+                    gameState: {
+                        currentTurn: gameState.currentTurn,
+                        activePlayers: gameState.activePlayers,
+                        moveCount: gameState.moveCount,
+                        gameStartTime: gameState.gameStartTime,
+                        players: gameState.players
+                    }
+                }, '*');
+            }
+        }
+
+        // Listen for requests from parent window
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'requestGameState') {
+                sendGameStateToParent();
+            }
+        });
 
         function isInactive(x, y) {
             return (

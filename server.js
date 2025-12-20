@@ -2213,12 +2213,10 @@ wss.on('connection', (ws, req) => {
       let eliminatedColor = null;
       const capturedPiece = game.board[toRow][toCol];
       if (capturedPiece && capturedPiece.type === 'king') {
-        eliminatedColor = game.players.indexOf(capturedPiece.color);
-        if (eliminatedColor !== -1) {
-          const colorIndex = game.players.indexOf(capturedPiece.color);
-          if (colorIndex !== -1) {
-            game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
-          }
+        const colorIndex = game.players.indexOf(capturedPiece.color);
+        if (colorIndex !== -1) {
+          eliminatedColor = colorIndex;
+          game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
         }
       }
 

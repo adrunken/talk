@@ -3041,8 +3041,8 @@ function ready() {
         $('#connected').html(html);
     }
 
-    function addInvite(fromUser) {
-        var item = $('<div class="invite-item" />').attr('data-from', fromUser).text('Invite from ' + fromUser);
+    function addInvite(fromUser, mode, timeControl) {
+        var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-mode', mode || '').attr('data-time-control', timeControl || '').text('Invite from ' + fromUser);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');
         actions.append('<button class="invite-btn invite-decline">Decline</button>');

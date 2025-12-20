@@ -3852,13 +3852,48 @@ function ready() {
         else if (data['type'] === 'chess_4p_start') {
             var me = $('#username').text();
 
-            // Generate initial 4-player chess FEN
-            // 14x14 board with cross-shaped layout
-            // Ranks 1-2: Blue pieces (white)
-            // Ranks 13-14: Red pieces (black)
-            // Files a-b: Yellow pieces (black)
-            // Files m-n: Green pieces (white)
-            var initialFen = 'rnbqkbnrrnbqkb/pppppppppppppp/8/8/8/8/8/8/8/8/8/8/PPPPPPPPPPPPPP/RNBQKBNRRNBQKB';
+            // Initialize 4-player chess board
+            var files = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n'];
+            var squareMap = {};
+
+            // Initialize 4-player chess pieces in their starting positions
+            // Red (ranks 13-14, black pieces)
+            var redBackRow = ['r','n','b','q','k','b','n','r','r','n','b','r','q','b'];
+            var redPawnRow = Array(14).fill('p');
+            redBackRow.forEach(function(piece, f) {
+                squareMap[files[f] + '14'] = piece;
+            });
+            redPawnRow.forEach(function(piece, f) {
+                squareMap[files[f] + '13'] = piece;
+            });
+
+            // Yellow (files a-b, black pieces on left)
+            var yellowBackRow = ['r','n','b','q','k','b','n','r','r','n','b','r','q','b'];
+            yellowBackRow.forEach(function(piece, r) {
+                if (r < 14) squareMap['a' + (r+1)] = piece;
+            });
+            for (var i = 0; i < 14; i++) {
+                if (!squareMap['b' + (i+1)]) squareMap['b' + (i+1)] = 'p';
+            }
+
+            // Blue (ranks 1-2, white pieces at bottom)
+            var blueBackRow = ['R','N','B','Q','K','B','N','R','R','N','B','R','Q','B'];
+            var bluePawnRow = Array(14).fill('P');
+            blueBackRow.forEach(function(piece, f) {
+                squareMap[files[f] + '1'] = piece;
+            });
+            bluePawnRow.forEach(function(piece, f) {
+                squareMap[files[f] + '2'] = piece;
+            });
+
+            // Green (files m-n, white pieces on right)
+            var greenBackRow = ['R','N','B','Q','K','B','N','R','R','N','B','R','Q','B'];
+            greenBackRow.forEach(function(piece, r) {
+                if (r < 14) squareMap['n' + (r+1)] = piece;
+            });
+            for (var i = 0; i < 14; i++) {
+                if (!squareMap['m' + (i+1)]) squareMap['m' + (i+1)] = 'P';
+            }
 
             // Set up game object for 4-player
             chessGame = {
@@ -3866,9 +3901,8 @@ function ready() {
                 players: data['players'],
                 is4Player: true,
                 moveHistory: [],
-                fen: initialFen,
-                squareMap: {},
-                color: 'white' // Default color, will be set by server
+                squareMap: squareMap,
+                color: 'white'
             };
 
             try { localStorage.setItem('active_game_4p', JSON.stringify({ id: data['game_id'], players: data['players'] })); } catch(e){}
@@ -3892,7 +3926,7 @@ function ready() {
             $('#chess-white').text('');
             $('#chess-black').text('');
 
-            // Render the 14x14 cross-shaped board
+            // Render the 14x14 cross-shaped board directly
             render4PlayerBoard();
             updateChessStatus();
             $('#chess-modal').removeClass('hidden');

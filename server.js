@@ -1751,58 +1751,149 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'chess_move') {
       const gid = msg.game_id;
-      const src = String(msg.from || '');
-      const dst = String(msg.to || '');
-      const promo = (msg.promotion || '').toLowerCase();
       const player = users.get(ws);
-      if (!games.has(gid)) { send(ws, { type: 'chess_error', message: 'Game not found' }); return; }
-      const g = games.get(gid);
-      const board = g.board;
-      if (g.over) { send(ws, { type: 'chess_error', message: 'Game over' }); return; }
-      const expected = board.turn() === 'w' ? g.white : g.black;
-      if (player !== expected) { send(ws, { type: 'chess_error', message: 'Not your turn' }); return; }
-      const moveSpec = { from: src, to: dst };
-      if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
-      const move = board.move(moveSpec);
-      if (move) {
-        const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check() };
-        sendToUsername(g.white, payload); sendToUsername(g.black, payload);
-        if (board.game_over()) {
-          g.over = true;
-          let result;
-          if (board.in_checkmate()) result = board.turn() === 'w' ? '0-1' : '1-0';
-          else if (board.in_stalemate() || board.in_draw()) result = '1/2-1/2';
-          else result = '1/2-1/2';
-          const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
-          const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
 
-          // Update Elo for player-vs-player games
-          if (!g.isAiGame && g.white && g.black) {
-            let whiteResult, blackResult;
-            if (result === '1-0') {
-              whiteResult = 1; // white wins
-              blackResult = 0; // black loses
-            } else if (result === '0-1') {
-              whiteResult = 0; // white loses
-              blackResult = 1; // black wins
-            } else {
-              whiteResult = 0.5; // draw
-              blackResult = 0.5; // draw
+      if (!games.has(gid)) {
+        send(ws, { type: 'chess_error', message: 'Game not found' });
+        return;
+      }
+
+      const g = games.get(gid);
+
+      if (g.over) {
+        send(ws, { type: 'chess_error', message: 'Game over' });
+        return;
+      }
+
+      // Handle 4-player chess
+      if (g.is4player) {
+        const fromRow = Number(msg.fromRow);
+        const fromCol = Number(msg.fromCol);
+        const toRow = Number(msg.toRow);
+        const toCol = Number(msg.toCol);
+
+        if (!Number.isInteger(fromRow) || !Number.isInteger(fromCol) ||
+            !Number.isInteger(toRow) || !Number.isInteger(toCol)) {
+          send(ws, { type: 'chess_error', message: 'Invalid move coordinates' });
+          return;
+        }
+
+        const board = g.board4p;
+        const currentPlayerIdx = g.currentPlayerIndex;
+        const colorMap = ['blue', 'yellow', 'green', 'red'];
+        const expectedColor = colorMap[currentPlayerIdx];
+        const currentPlayer = g.players[currentPlayerIdx];
+
+        if (player !== currentPlayer) {
+          send(ws, { type: 'chess_error', message: 'Not your turn' });
+          return;
+        }
+
+        const fromPiece = board[fromRow] && board[fromRow][fromCol];
+        if (!fromPiece) {
+          send(ws, { type: 'chess_error', message: 'No piece at source position' });
+          return;
+        }
+
+        if (fromPiece.color !== expectedColor) {
+          send(ws, { type: 'chess_error', message: 'Not your piece' });
+          return;
+        }
+
+        // Move validation and execution
+        const toPiece = board[toRow] && board[toRow][toCol];
+        if (toPiece && toPiece.color === expectedColor) {
+          send(ws, { type: 'chess_error', message: 'Cannot capture own piece' });
+          return;
+        }
+
+        // Execute the move
+        board[toRow][toCol] = fromPiece;
+        board[fromRow][fromCol] = null;
+        g.moveCount++;
+
+        // Broadcast move to all players
+        const movePayload = {
+          type: 'chess_move',
+          game_id: gid,
+          fromRow: fromRow,
+          fromCol: fromCol,
+          toRow: toRow,
+          toCol: toCol,
+          board: board,
+          currentPlayer: g.players[(currentPlayerIdx + 1) % 4],
+          moveCount: g.moveCount
+        };
+
+        for (const p of g.players) {
+          sendToUsername(p, movePayload);
+        }
+
+        // Advance to next player
+        g.currentPlayerIndex = (currentPlayerIdx + 1) % 4;
+
+        console.log('[4p-chess] Move:', {gid, from: `${fromRow},${fromCol}`, to: `${toRow},${toCol}`, nextPlayer: g.players[g.currentPlayerIndex]});
+      }
+      // Handle 2-player chess
+      else {
+        const src = String(msg.from || '');
+        const dst = String(msg.to || '');
+        const promo = (msg.promotion || '').toLowerCase();
+        const board = g.board;
+
+        const expected = board.turn() === 'w' ? g.white : g.black;
+        if (player !== expected) {
+          send(ws, { type: 'chess_error', message: 'Not your turn' });
+          return;
+        }
+
+        const moveSpec = { from: src, to: dst };
+        if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
+        const move = board.move(moveSpec);
+
+        if (move) {
+          const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check() };
+          sendToUsername(g.white, payload);
+          sendToUsername(g.black, payload);
+
+          if (board.game_over()) {
+            g.over = true;
+            let result;
+            if (board.in_checkmate()) result = board.turn() === 'w' ? '0-1' : '1-0';
+            else if (board.in_stalemate() || board.in_draw()) result = '1/2-1/2';
+            else result = '1/2-1/2';
+            const reason = board.in_checkmate() ? 'checkmate' : (board.in_stalemate() ? 'stalemate' : 'draw');
+            const over = { type: 'chess_over', game_id: gid, result, reason, fen: board.fen() };
+
+            // Update Elo for player-vs-player games
+            if (!g.isAiGame && g.white && g.black) {
+              let whiteResult, blackResult;
+              if (result === '1-0') {
+                whiteResult = 1; // white wins
+                blackResult = 0; // black loses
+              } else if (result === '0-1') {
+                whiteResult = 0; // white loses
+                blackResult = 1; // black wins
+              } else {
+                whiteResult = 0.5; // draw
+                blackResult = 0.5; // draw
+              }
+
+              const whiteElo = getUserElo(g.white).elo;
+              const blackElo = getUserElo(g.black).elo;
+
+              updatePlayerElo(g.white, blackElo, whiteResult);
+              updatePlayerElo(g.black, whiteElo, blackResult);
+
+              console.log('[chess] Player-vs-player game ended:', g.white, 'vs', g.black, 'result:', result);
             }
 
-            const whiteElo = getUserElo(g.white).elo;
-            const blackElo = getUserElo(g.black).elo;
-
-            updatePlayerElo(g.white, blackElo, whiteResult);
-            updatePlayerElo(g.black, whiteElo, blackResult);
-
-            console.log('[chess] Player-vs-player game ended:', g.white, 'vs', g.black, 'result:', result);
+            sendToUsername(g.white, over);
+            sendToUsername(g.black, over);
           }
-
-          sendToUsername(g.white, over); sendToUsername(g.black, over);
+        } else {
+          send(ws, { type: 'chess_illegal', reason: 'illegal' });
         }
-      } else {
-        send(ws, { type: 'chess_illegal', reason: 'illegal' });
       }
     }
     else if (msg.type === 'chess_resign') {

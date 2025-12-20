@@ -2030,8 +2030,8 @@ function render4PlayerBoard() {
                 var bgColor = light ? '#f0d9b5' : '#b58863';
                 var squareEl = $('<div class="chess-square" />').attr('data-square', sq);
 
-                // Override the transparent background with !important
-                squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box; width: 40px; height: 40px;');
+                // Override the transparent background with !important - let grid determine size
+                squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box;');
 
                 var piece = chessGame.squareMap[sq];
             if (piece && piece !== '' && piece.length >= 2) {

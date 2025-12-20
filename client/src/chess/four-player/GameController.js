@@ -353,7 +353,7 @@ export class GameController {
       game_id: this.gameId,
       from: move.from,
       to: move.to,
-      player_index: this.game.turnIndex,
+      player: move.player,
     };
 
     window.ws.send(JSON.stringify(msg));

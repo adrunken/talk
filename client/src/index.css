@@ -16,12 +16,19 @@ code {
 }
 
 /* Chess Board Styling */
-#chess-board {
-  display: inline-grid;
-  grid-gap: 0;
+#chess-board,
+.chess-board-14x14 {
+  display: grid;
+  gap: 0;
   background-color: #555;
   padding: 0;
   border-radius: 4px;
+}
+
+.chess-square-invalid {
+  width: 40px;
+  height: 40px;
+  display: none;
 }
 
 .chess-square {
@@ -77,6 +84,7 @@ code {
   font-weight: bold;
   cursor: grab;
   user-select: none;
+  font-family: serif;
 }
 
 .chess-piece:active {
@@ -84,42 +92,71 @@ code {
 }
 
 /* Piece styling by color and type */
-.chess-piece.piece-wp,
-.chess-piece.piece-wn,
-.chess-piece.piece-wb,
-.chess-piece.piece-wr,
-.chess-piece.piece-wq,
-.chess-piece.piece-wk {
+.chess-piece.piece-wp::before,
+.chess-piece.piece-wn::before,
+.chess-piece.piece-wb::before,
+.chess-piece.piece-wr::before,
+.chess-piece.piece-wq::before,
+.chess-piece.piece-wk::before {
   color: #f0f0f0;
   text-shadow: 1px 1px 2px #333;
 }
 
-.chess-piece.piece-rp,
-.chess-piece.piece-rn,
-.chess-piece.piece-rb,
-.chess-piece.piece-rr,
-.chess-piece.piece-rq,
-.chess-piece.piece-rk {
+.chess-piece.piece-rp::before,
+.chess-piece.piece-rn::before,
+.chess-piece.piece-rb::before,
+.chess-piece.piece-rr::before,
+.chess-piece.piece-rq::before,
+.chess-piece.piece-rk::before {
   color: #e74c3c;
   text-shadow: 1px 1px 2px #333;
 }
 
-.chess-piece.piece-bp,
-.chess-piece.piece-bn,
-.chess-piece.piece-bb,
-.chess-piece.piece-br,
-.chess-piece.piece-bq,
-.chess-piece.piece-bk {
+.chess-piece.piece-bp::before,
+.chess-piece.piece-bn::before,
+.chess-piece.piece-bb::before,
+.chess-piece.piece-br::before,
+.chess-piece.piece-bq::before,
+.chess-piece.piece-bk::before {
   color: #2c3e50;
   text-shadow: 1px 1px 1px #bbb;
 }
 
-.chess-piece.piece-up,
-.chess-piece.piece-un,
-.chess-piece.piece-ub,
-.chess-piece.piece-ur,
-.chess-piece.piece-uq,
-.chess-piece.piece-uk {
-  color: #3498db;
+.chess-piece.piece-gp::before,
+.chess-piece.piece-gn::before,
+.chess-piece.piece-gb::before,
+.chess-piece.piece-gr::before,
+.chess-piece.piece-gq::before,
+.chess-piece.piece-gk::before {
+  color: #2ecc71;
   text-shadow: 1px 1px 2px #333;
 }
+
+/* Unicode chess symbols */
+.chess-piece.piece-wp::before { content: '♙'; }
+.chess-piece.piece-wn::before { content: '♘'; }
+.chess-piece.piece-wb::before { content: '♗'; }
+.chess-piece.piece-wr::before { content: '♖'; }
+.chess-piece.piece-wq::before { content: '♕'; }
+.chess-piece.piece-wk::before { content: '♔'; }
+
+.chess-piece.piece-rp::before { content: '♟'; }
+.chess-piece.piece-rn::before { content: '♞'; }
+.chess-piece.piece-rb::before { content: '♝'; }
+.chess-piece.piece-rr::before { content: '♜'; }
+.chess-piece.piece-rq::before { content: '♛'; }
+.chess-piece.piece-rk::before { content: '♚'; }
+
+.chess-piece.piece-bp::before { content: '♟'; }
+.chess-piece.piece-bn::before { content: '♞'; }
+.chess-piece.piece-bb::before { content: '♝'; }
+.chess-piece.piece-br::before { content: '♜'; }
+.chess-piece.piece-bq::before { content: '♛'; }
+.chess-piece.piece-bk::before { content: '♚'; }
+
+.chess-piece.piece-gp::before { content: '♟'; }
+.chess-piece.piece-gn::before { content: '♞'; }
+.chess-piece.piece-gb::before { content: '♝'; }
+.chess-piece.piece-gr::before { content: '♜'; }
+.chess-piece.piece-gq::before { content: '♛'; }
+.chess-piece.piece-gk::before { content: '♚'; }

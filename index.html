@@ -3904,6 +3904,7 @@ function ready() {
             renderUserLists();
         }
         else if (data['type'] === 'chess_invite') {
+            console.log('[4p-chess-client] Received chess_invite:', data);
             addInvite(data['from'], data['mode'], data['timeControl'], data['sessionId']);
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
         }

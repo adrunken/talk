@@ -3236,7 +3236,7 @@ function ready() {
             renderUserLists();
         }
         else if (data['type'] === 'chess_invite') {
-            addInvite(data['from']);
+            addInvite(data['from'], data['mode'], data['timeControl']);
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
         }
         else if (data['type'] === 'admin_delete_users_modal') {

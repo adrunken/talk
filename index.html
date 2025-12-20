@@ -2660,6 +2660,55 @@ function ready() {
         showFirstLoginModal();
     });
 
+    // Chess setup modal handlers
+    $('#chess-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        // Get all users except current user
+        var me = $('#username').text().trim();
+        var allUsersForSetup = [];
+        $('#connected .user-info .user-name span').each(function() {
+            var userName = $(this).text().trim();
+            if (userName && userName !== me) {
+                allUsersForSetup.push(userName);
+            }
+        });
+        showChessSetupModal(allUsersForSetup);
+    });
+
+    $('#setup-cancel-btn').on('click', function(e) {
+        e.preventDefault();
+        hideChessSetupModal();
+    });
+
+    $(document).on('click', '.setup-option-btn', function(e) {
+        e.preventDefault();
+        var $this = $(this);
+        var mode = $this.data('mode');
+        var time = $this.data('time');
+
+        if (mode) {
+            // Mode button clicked
+            $('[data-mode]').removeClass('selected');
+            $this.addClass('selected');
+            chessSetupState.mode = mode;
+        } else if (time) {
+            // Time button clicked
+            $('[data-time]').removeClass('selected');
+            $this.addClass('selected');
+            chessSetupState.timeControl = time;
+        }
+
+        validateChessSetupSelection();
+        updateChessSetupUI();
+    });
+
+    $('#setup-create-btn').on('click', function(e) {
+        e.preventDefault();
+        if (!$(this).prop('disabled')) {
+            createChessGame();
+        }
+    });
+
     // Admin delete users modal handlers
     $('#admin-delete-users-close').on('click', function() {
         hideAdminDeleteUsersModal();

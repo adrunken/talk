@@ -867,6 +867,15 @@ html {
     background: rgba(34, 197, 94, 0.5);
 }
 
+.square.selected {
+    box-shadow: inset 0 0 0 3px rgba(59, 130, 246, 0.8);
+    background: rgba(59, 130, 246, 0.2) !important;
+}
+
+.square.hover-valid {
+    box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.8);
+}
+
 .piece {
     width: 44px;
     height: 44px;
@@ -3108,7 +3117,7 @@ function ready() {
         gameState4P = {
             board: Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null)),
             currentTurn: 0,
-            activePlayers: [0, 1, 2, 3],
+            activePlayers: [0, 3, 2, 1],
             moveCount: 0,
             gameStartTime: Date.now(),
             selectedSquare: null,

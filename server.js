@@ -1177,7 +1177,9 @@ const pings = new Map(); // ws -> timestamp
 const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
+const gameSessions = new Map(); // sessionId -> {initiator, invitees, accepted, gameMode, timeControl, createdAt}
 let nextGameId = 1;
+let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }

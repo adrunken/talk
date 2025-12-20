@@ -2993,12 +2993,17 @@ function ready() {
         // Update move count
         $('#four-player-move-count').text(fourPlayerGameState.moveCount);
 
-        // Update game time
+        // Setup/update game time ticker
         if (fourPlayerGameState.gameStartTime) {
-            var elapsed = Math.floor((Date.now() - fourPlayerGameState.gameStartTime) / 1000);
-            var mins = Math.floor(elapsed / 60);
-            var secs = elapsed % 60;
-            $('#four-player-game-time').text(mins + ':' + secs.toString().padStart(2, '0'));
+            if (fourPlayerGameTimer) {
+                clearInterval(fourPlayerGameTimer);
+            }
+            fourPlayerGameTimer = setInterval(function() {
+                var elapsed = Math.floor((Date.now() - fourPlayerGameState.gameStartTime) / 1000);
+                var mins = Math.floor(elapsed / 60);
+                var secs = elapsed % 60;
+                $('#four-player-game-time').text(mins + ':' + secs.toString().padStart(2, '0'));
+            }, 1000);
         }
     }
 

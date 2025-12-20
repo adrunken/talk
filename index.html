@@ -3250,11 +3250,6 @@ function ready() {
 
         const selectedSq = document.querySelector('[data-x="' + col + '"][data-y="' + row + '"]');
         if (selectedSq) selectedSq.classList.add('selected');
-
-        gameState4P.validMoves.forEach(function(m) {
-            const sq = document.querySelector('[data-x="' + m.col + '"][data-y="' + m.row + '"]');
-            if (sq) sq.classList.add('valid-move');
-        });
     }
 
     function onSquareClick4P(toRow, toCol) {

@@ -770,6 +770,61 @@ html {
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
 
+/* Chess Game Setup Modal */
+.chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
+.chess-setup-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+.chess-setup-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.35); z-index: 1001; }
+.chess-setup-overlay.show { display: flex; }
+
+.chess-setup-modal { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 1.5rem; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+
+.chess-setup-title { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; }
+
+.setup-section { margin-bottom: 1.5rem; }
+
+.setup-section-label { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+
+.setup-options { display: grid; gap: 0.5rem; }
+
+.setup-option-btn { padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; text-align: left; transition: all 0.2s ease; display: flex; align-items: center; gap: 0.5rem; }
+
+.setup-option-btn:hover { border-color: var(--accent-primary); background: var(--accent-secondary); }
+
+.setup-option-btn.selected { border-color: var(--accent-primary); background: var(--accent-secondary); color: var(--accent-primary); font-weight: 600; }
+
+.setup-option-btn i { font-size: 1rem; min-width: 1.25rem; text-align: center; }
+
+.users-list { border: 1px solid var(--border-light); border-radius: var(--radius-md); max-height: 200px; overflow-y: auto; background: var(--bg-tertiary); }
+
+.user-checkbox-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s ease; }
+
+.user-checkbox-item:last-child { border-bottom: none; }
+
+.user-checkbox-item:hover { background: var(--bg-secondary); }
+
+.user-checkbox-item input[type="checkbox"] { cursor: pointer; width: 1rem; height: 1rem; }
+
+.user-checkbox-label { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-primary); }
+
+.user-checkbox-item .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.setup-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+.setup-action-btn { flex: 1; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease; }
+
+.setup-action-btn:hover:not(:disabled) { background: var(--accent-secondary); color: var(--accent-primary); }
+
+.setup-action-btn.primary { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+
+.setup-action-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.setup-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.setup-validation-msg { font-size: 0.8rem; color: #dc2626; margin-top: 0.5rem; display: none; }
+
+.setup-validation-msg.show { display: block; }
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
@@ -822,6 +877,9 @@ html {
     </div>
 
     <div>
+        <button id="chess-setup-btn" class="chess-setup-button" title="Create a new chess game">
+            <i class="fas fa-chess-king"></i> Chess
+        </button>
         <h3>Users</h3>
         <div id="connected"></div>
     </div>
@@ -977,6 +1035,60 @@ html {
   </div>
 </div>
 
+<!-- Chess Game Setup Modal -->
+<div id="chess-setup-overlay" class="chess-setup-overlay">
+  <div class="chess-setup-modal">
+    <h2 class="chess-setup-title">Create Chess Game</h2>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Game Mode</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-mode="2player" title="2-player chess">
+          <i class="fas fa-users"></i> 2-Player Chess
+        </button>
+        <button class="setup-option-btn" data-mode="4player" title="4-player chess">
+          <i class="fas fa-users"></i> 4-Player Chess
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Time Control</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-time="1m" title="1 minute per player">
+          <i class="fas fa-hourglass-start"></i> 1 minute
+        </button>
+        <button class="setup-option-btn" data-time="3m" title="3 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 3 minutes
+        </button>
+        <button class="setup-option-btn" data-time="5m" title="5 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 5 minutes
+        </button>
+        <button class="setup-option-btn" data-time="10m" title="10 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 10 minutes
+        </button>
+        <button class="setup-option-btn" data-time="30m" title="30 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 30 minutes
+        </button>
+        <button class="setup-option-btn" data-time="unlimited" title="No time limit">
+          <i class="fas fa-infinity"></i> No limit
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Invite Players <span id="setup-player-count" style="color: var(--text-secondary); font-weight: 400; font-size: 0.8rem;">(select up to 1)</span></div>
+      <div class="users-list" id="setup-users-list"></div>
+      <div class="setup-validation-msg" id="setup-validation-msg"></div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="setup-action-btn" id="setup-cancel-btn">Cancel</button>
+      <button class="setup-action-btn primary" id="setup-create-btn" disabled>Create Game</button>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies
@@ -1045,6 +1157,14 @@ var boardPiecesSettings = {
     selectedPieces: 'classic',
     boardsData: null,
     piecesData: null
+};
+
+// Chess game setup state
+var chessSetupState = {
+    mode: null, // '2player' or '4player'
+    timeControl: null, // '1m', '3m', '5m', '10m', '30m', 'unlimited'
+    selectedUsers: [], // Array of usernames to invite
+    allUsers: [] // List of all available users (excluding current user)
 };
 
 // Load boards and pieces data from local file
@@ -2081,6 +2201,146 @@ function ready() {
         }, 5000);
     }
 
+    function showChessSetupModal(allUsersForSetup) {
+        chessSetupState.mode = null;
+        chessSetupState.timeControl = null;
+        chessSetupState.selectedUsers = [];
+        chessSetupState.allUsers = allUsersForSetup || [];
+
+        var $overlay = $('#chess-setup-overlay');
+        $overlay.addClass('show');
+
+        // Reset all options
+        $('.setup-option-btn').removeClass('selected');
+        $('#setup-create-btn').prop('disabled', true);
+        $('#setup-validation-msg').removeClass('show').text('');
+
+        // Populate users list
+        updateChessSetupUsersList();
+    }
+
+    function hideChessSetupModal() {
+        $('#chess-setup-overlay').removeClass('show');
+        chessSetupState.mode = null;
+        chessSetupState.timeControl = null;
+        chessSetupState.selectedUsers = [];
+    }
+
+    function updateChessSetupUsersList() {
+        var $list = $('#setup-users-list');
+        $list.empty();
+
+        chessSetupState.allUsers.forEach(function(user) {
+            var isOnline = users && users.includes(user);
+            var dotClass = isOnline ? 'status-dot online' : 'status-dot offline';
+
+            var $item = $('<div class="user-checkbox-item" />');
+            var $checkbox = $('<input type="checkbox" />').attr('data-user', user);
+            var $label = $('<label class="user-checkbox-label" />');
+            $label.html('<span>' + user + '</span><div class="' + dotClass + '"></div>');
+
+            $item.append($checkbox);
+            $item.append($label);
+
+            $item.on('click', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    $checkbox.prop('checked', !$checkbox.prop('checked'));
+                }
+                updateChessSetupSelection();
+            });
+
+            $checkbox.on('change', function() {
+                updateChessSetupSelection();
+            });
+
+            $list.append($item);
+        });
+    }
+
+    function updateChessSetupSelection() {
+        var $checkboxes = $('#setup-users-list input[type="checkbox"]:checked');
+        chessSetupState.selectedUsers = [];
+        $checkboxes.each(function() {
+            chessSetupState.selectedUsers.push($(this).attr('data-user'));
+        });
+
+        validateChessSetupSelection();
+        updateChessSetupUI();
+    }
+
+    function validateChessSetupSelection() {
+        var $msg = $('#setup-validation-msg');
+        var $createBtn = $('#setup-create-btn');
+
+        $msg.removeClass('show').text('');
+
+        if (!chessSetupState.mode || !chessSetupState.timeControl) {
+            $createBtn.prop('disabled', true);
+            return;
+        }
+
+        var maxPlayers = chessSetupState.mode === '2player' ? 1 : 3;
+        var selectedCount = chessSetupState.selectedUsers.length;
+
+        if (selectedCount > maxPlayers) {
+            $msg.addClass('show').text('You can invite up to ' + maxPlayers + ' player' + (maxPlayers > 1 ? 's' : '') + ' for ' + chessSetupState.mode + ' mode.');
+            $createBtn.prop('disabled', true);
+            return;
+        }
+
+        $createBtn.prop('disabled', false);
+    }
+
+    function updateChessSetupUI() {
+        var maxPlayers = chessSetupState.mode === '2player' ? 1 : 3;
+        $('#setup-player-count').text('(select up to ' + maxPlayers + ')');
+
+        var $checkboxes = $('#setup-users-list input[type="checkbox"]');
+        if (chessSetupState.selectedUsers.length >= maxPlayers) {
+            $checkboxes.not(':checked').prop('disabled', true);
+        } else {
+            $checkboxes.prop('disabled', false);
+        }
+    }
+
+    function createChessGame() {
+        if (!chessSetupState.mode || !chessSetupState.timeControl) {
+            flashStatus('Please select game mode and time control');
+            return;
+        }
+
+        if (!ws || ws.readyState !== 1) {
+            flashStatus('Not connected to server');
+            return;
+        }
+
+        // Send invites to selected users
+        chessSetupState.selectedUsers.forEach(function(toUser) {
+            ws.send(JSON.stringify({
+                type: 'chess_invite',
+                to: toUser,
+                mode: chessSetupState.mode,
+                timeControl: chessSetupState.timeControl
+            }));
+        });
+
+        flashStatus('Game created! Invites sent to ' + chessSetupState.selectedUsers.length + ' player' + (chessSetupState.selectedUsers.length !== 1 ? 's' : ''));
+
+        // Close the modal
+        hideChessSetupModal();
+
+        // Open the appropriate chess modal
+        setTimeout(function() {
+            if (chessSetupState.mode === '2player') {
+                // For 2-player, open the regular chess modal
+                $('#chess-modal').removeClass('hidden');
+            } else if (chessSetupState.mode === '4player') {
+                // For 4-player, open the 4-player chess overlay
+                $('#four-player-chess-overlay').removeClass('hidden');
+            }
+        }, 100);
+    }
+
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
         var $input = $('#first-username-input');
@@ -2407,6 +2667,55 @@ function ready() {
         showFirstLoginModal();
     });
 
+    // Chess setup modal handlers
+    $('#chess-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        // Get all users except current user
+        var me = $('#username').text().trim();
+        var allUsersForSetup = [];
+        $('#connected .user-info .user-name span').each(function() {
+            var userName = $(this).text().trim();
+            if (userName && userName !== me) {
+                allUsersForSetup.push(userName);
+            }
+        });
+        showChessSetupModal(allUsersForSetup);
+    });
+
+    $('#setup-cancel-btn').on('click', function(e) {
+        e.preventDefault();
+        hideChessSetupModal();
+    });
+
+    $(document).on('click', '.setup-option-btn', function(e) {
+        e.preventDefault();
+        var $this = $(this);
+        var mode = $this.data('mode');
+        var time = $this.data('time');
+
+        if (mode) {
+            // Mode button clicked
+            $('[data-mode]').removeClass('selected');
+            $this.addClass('selected');
+            chessSetupState.mode = mode;
+        } else if (time) {
+            // Time button clicked
+            $('[data-time]').removeClass('selected');
+            $this.addClass('selected');
+            chessSetupState.timeControl = time;
+        }
+
+        validateChessSetupSelection();
+        updateChessSetupUI();
+    });
+
+    $('#setup-create-btn').on('click', function(e) {
+        e.preventDefault();
+        if (!$(this).prop('disabled')) {
+            createChessGame();
+        }
+    });
+
     // Admin delete users modal handlers
     $('#admin-delete-users-close').on('click', function() {
         hideAdminDeleteUsersModal();
@@ -2459,9 +2768,22 @@ function ready() {
         setTimeout(function(){ msg.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     });
     $('#invites').on('click', '.invite-accept', function() {
-        var fromUser = $(this).closest('.invite-item').data('from');
+        var $inviteItem = $(this).closest('.invite-item');
+        var fromUser = $inviteItem.data('from');
+        var gameMode = $inviteItem.data('mode') || '4player';
+
         if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'chess_invite_accept', from: fromUser }));
-        $(this).closest('.invite-item').remove();
+
+        // Open the appropriate chess modal based on game mode
+        setTimeout(function() {
+            if (gameMode === '2player') {
+                $('#chess-modal').removeClass('hidden');
+            } else if (gameMode === '4player') {
+                $('#four-player-chess-overlay').removeClass('hidden');
+            }
+        }, 100);
+
+        $inviteItem.remove();
     });
     $('#invites').on('click', '.invite-decline', function() {
         $(this).closest('.invite-item').remove();
@@ -2727,13 +3049,13 @@ function ready() {
             if (user.name === me) {
                 return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
             }
-            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div><button class="invite-user-btn" data-user="' + user.name + '">Invite</button></div>';
+            return '<div class="user-row"><div class="user-info"' + lastSeenAttr + '><div class="user-name"><span>' + user.name + '</span><div class="' + dotClass + '"></div></div></div></div>';
         }).join('');
         $('#connected').html(html);
     }
 
-    function addInvite(fromUser) {
-        var item = $('<div class="invite-item" />').attr('data-from', fromUser).text('Invite from ' + fromUser);
+    function addInvite(fromUser, mode, timeControl) {
+        var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-mode', mode || '').attr('data-time-control', timeControl || '').text('Invite from ' + fromUser);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');
         actions.append('<button class="invite-btn invite-decline">Decline</button>');
@@ -2927,7 +3249,7 @@ function ready() {
             renderUserLists();
         }
         else if (data['type'] === 'chess_invite') {
-            addInvite(data['from']);
+            addInvite(data['from'], data['mode'], data['timeControl']);
             if (document.hidden || data['offline']) { __chessUnread += 1; __updateTitleBadge(); }
         }
         else if (data['type'] === 'admin_delete_users_modal') {

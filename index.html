@@ -4065,7 +4065,18 @@ function ready() {
             startChessGame(data);
         }
         else if (data['type'] === 'chess_move') {
-            if (chessGame && chessGame.id === data['game_id']) {
+            // Handle 4-player chess moves
+            if (gameState4P && gameState4P.gameId === data['game_id']) {
+                if (data['board']) {
+                    gameState4P.board = data['board'];
+                    gameState4P.moveCount = data['moveCount'] || 0;
+                    renderBoard4P();
+                    updateUI4P();
+                    console.log('[4p-chess] Move received:', {from: `${data.fromRow},${data.fromCol}`, to: `${data.toRow},${data.toCol}`});
+                }
+            }
+            // Handle 2-player chess moves
+            else if (chessGame && chessGame.id === data['game_id']) {
                 chessGame.fen = data['fen'];
                 chessGame.turn = data['turn'];
                 chessGame.inCheck = !!data['check'];

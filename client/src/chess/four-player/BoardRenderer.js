@@ -5,8 +5,8 @@
 
 export class BoardRenderer {
   constructor(boardElementId, game) {
-    this.boardElement = typeof boardElementId === 'string' 
-      ? document.getElementById(boardElementId) 
+    this.boardElement = typeof boardElementId === 'string'
+      ? document.getElementById(boardElementId)
       : boardElementId;
     this.game = game;
     this.selectedSquare = null;
@@ -23,14 +23,22 @@ export class BoardRenderer {
 
   render() {
     if (!this.boardElement) return;
-    
+
     this.boardElement.innerHTML = '';
     this.boardElement.className = 'chess-board-14x14';
+    this.boardElement.style.gridTemplateColumns = 'repeat(14, 1fr)';
 
     for (let rank = 0; rank < 14; rank++) {
       for (let file = 0; file < 14; file++) {
+        if (this.game.isInvalidSquare(rank, file)) {
+          const spacer = document.createElement('div');
+          spacer.className = 'chess-square-invalid';
+          this.boardElement.appendChild(spacer);
+          continue;
+        }
+
         const square = document.createElement('div');
-        square.className = 'chess-square';
+        square.className = `chess-square ${(rank + file) % 2 === 0 ? 'light' : 'dark'}`;
         square.dataset.rank = rank;
         square.dataset.file = file;
         square.id = `square-${rank}-${file}`;
@@ -38,9 +46,10 @@ export class BoardRenderer {
         const piece = this.game.getPiece(rank, file);
         if (piece) {
           const pieceEl = document.createElement('div');
-          pieceEl.className = `piece piece-${this.getPlayerInitial(piece.player)}${piece.type}`;
+          pieceEl.className = `chess-piece piece-${this.getPlayerInitial(piece.player)}${piece.type}`;
           pieceEl.dataset.piece = piece.type;
           pieceEl.dataset.player = piece.player;
+          pieceEl.textContent = this.getPieceSymbol(piece.type, piece.player);
           square.appendChild(pieceEl);
         }
 
@@ -50,8 +59,21 @@ export class BoardRenderer {
   }
 
   getPlayerInitial(playerIndex) {
-    const initials = { 0: 'r', 1: 'b', 2: 'y', 3: 'g' };
+    const initials = { 0: 'w', 1: 'r', 2: 'b', 3: 'g' };
     return initials[playerIndex] || '';
+  }
+
+  getPieceSymbol(pieceType, playerIndex) {
+    const isLight = playerIndex === 0;
+    const symbols = {
+      p: isLight ? '♙' : '♟',
+      n: isLight ? '♘' : '♞',
+      b: isLight ? '♗' : '♝',
+      r: isLight ? '♖' : '♜',
+      q: isLight ? '♕' : '♛',
+      k: isLight ? '♔' : '♚'
+    };
+    return symbols[pieceType] || '';
   }
 
   getSquareAtEvent(event) {

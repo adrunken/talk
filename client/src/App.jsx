@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
 import ErrorDialog from './components/ErrorDialog';
 import PreviewModal from './components/PreviewModal';
+import Chess from './components/Chess';
 
 export default function App() {
   const [prompt, setPrompt] = useState('');
@@ -131,6 +132,11 @@ export default function App() {
               publishing={publishing}
               previewExists={!!preview}
             />
+          </div>
+
+          {/* Chess Game Panel */}
+          <div className="flex-1 overflow-y-auto">
+            <Chess />
           </div>
         </div>
       </div>

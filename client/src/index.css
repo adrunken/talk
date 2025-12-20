@@ -16,12 +16,19 @@ code {
 }
 
 /* Chess Board Styling */
-#chess-board {
-  display: inline-grid;
-  grid-gap: 0;
+#chess-board,
+.chess-board-14x14 {
+  display: grid;
+  gap: 0;
   background-color: #555;
   padding: 0;
   border-radius: 4px;
+}
+
+.chess-square-invalid {
+  width: 40px;
+  height: 40px;
+  display: none;
 }
 
 .chess-square {
@@ -77,13 +84,14 @@ code {
   font-weight: bold;
   cursor: grab;
   user-select: none;
+  font-family: serif;
 }
 
 .chess-piece:active {
   cursor: grabbing;
 }
 
-/* Piece styling by color and type */
+/* Piece styling by color */
 .chess-piece.piece-wp,
 .chess-piece.piece-wn,
 .chess-piece.piece-wb,
@@ -114,12 +122,12 @@ code {
   text-shadow: 1px 1px 1px #bbb;
 }
 
-.chess-piece.piece-up,
-.chess-piece.piece-un,
-.chess-piece.piece-ub,
-.chess-piece.piece-ur,
-.chess-piece.piece-uq,
-.chess-piece.piece-uk {
-  color: #3498db;
+.chess-piece.piece-gp,
+.chess-piece.piece-gn,
+.chess-piece.piece-gb,
+.chess-piece.piece-gr,
+.chess-piece.piece-gq,
+.chess-piece.piece-gk {
+  color: #2ecc71;
   text-shadow: 1px 1px 2px #333;
 }

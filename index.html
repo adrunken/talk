@@ -2006,33 +2006,35 @@ function render4PlayerBoard() {
         return false;
     }
 
-    // Render cross-shaped 14x14 board (skip invalid corners)
+    // Render cross-shaped 14x14 board (all squares, invalid ones hidden)
     for (var r = 13; r >= 0; r--) {
         for (var f = 0; f < 14; f++) {
-            // Skip invalid corner squares to create cross shape
-            if (isInvalidSquare(r, f)) {
-                continue;
-            }
-
             var file = files[f];
             var rank = 14 - r;
             var sq = file + String(rank);
 
-            var light = ((f + rank) % 2) === 0;
-            var bgColor = light ? '#f0d9b5' : '#b58863';
-            var squareEl = $('<div class="chess-square" />').attr('data-square', sq);
+            // Check if this is an invalid corner square
+            var invalid = isInvalidSquare(r, f);
 
-            // Override the transparent background with !important
-            squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box;');
+            if (invalid) {
+                // Create a hidden spacer for invalid squares (keep in grid flow)
+                var spacerEl = $('<div/>').css({
+                    visibility: 'hidden',
+                    backgroundColor: 'transparent'
+                });
+                board.append(spacerEl);
+            } else {
+                var light = ((f + rank) % 2) === 0;
+                var bgColor = light ? '#f0d9b5' : '#b58863';
+                var squareEl = $('<div class="chess-square" />').attr('data-square', sq);
 
-            var piece = chessGame.squareMap[sq];
-            if (piece && piece !== '' && /[pnbrqk]/i.test(piece)) {
-                var pieceType = piece.toLowerCase();
+                // Override the transparent background with !important - let grid determine size
+                squareEl.attr('style', 'background-color: ' + bgColor + ' !important; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-sizing: border-box;');
 
-                // Determine the color code for piece image
-                // Blue and Green use white pieces ('w'), Yellow and Red use black pieces ('b')
-                var playerCol = getPlayerColor(sq);
-                var pieceColor = (playerCol === 'blue' || playerCol === 'green') ? 'w' : 'b';
+                var piece = chessGame.squareMap[sq];
+            if (piece && piece !== '' && piece.length >= 2) {
+                var pieceColor = piece.charAt(0); // 'w' or 'b'
+                var pieceType = piece.charAt(1);  // 'p', 'n', 'b', 'r', 'q', 'k'
 
                 var pieceEl = $('<div/>').css({
                     width: '85%',
@@ -2060,7 +2062,8 @@ function render4PlayerBoard() {
                 squareEl.append(pieceEl);
             }
 
-            board.append(squareEl);
+                board.append(squareEl);
+            }
         }
     }
 }
@@ -3855,17 +3858,17 @@ function ready() {
             var squareMap = {};
 
             // 4-player chess standard starting position
-            // Player 0 (Red): Ranks 1-2, WHITE pieces (R N B Q K B N R R N B R Q B + pawns)
-            // Player 1 (Blue): Files a-b, WHITE pieces
-            // Player 2 (Yellow): Ranks 13-14, BLACK pieces
-            // Player 3 (Green): Files m-n, BLACK pieces
+            // Player 0 (Red): Ranks 1-2, WHITE pieces (w = white)
+            // Player 1 (Blue): Files a-b, WHITE pieces (w = white)
+            // Player 2 (Yellow): Ranks 13-14, BLACK pieces (b = black)
+            // Player 3 (Green): Files m-n, BLACK pieces (b = black)
 
-            var standardBackRow = ['R','N','B','Q','K','B','N','R','R','N','B','R','Q','B'];
-            var standardPawnRow = Array(14).fill('P');
-            var blackBackRow = ['r','n','b','q','k','b','n','r','r','n','b','r','q','b'];
-            var blackPawnRow = Array(14).fill('p');
+            var standardBackRow = ['wr','wn','wb','wq','wk','wb','wn','wr','wr','wn','wb','wr','wq','wb'];
+            var standardPawnRow = Array(14).fill('wp');
+            var blackBackRow = ['br','bn','bb','bq','bk','bb','bn','br','br','bn','bb','br','bq','bb'];
+            var blackPawnRow = Array(14).fill('bp');
 
-            // Red (Player 0): Ranks 1-2 (top)
+            // Red (Player 0): Ranks 1-2 (top) - uses white pieces
             standardBackRow.forEach(function(piece, f) {
                 squareMap[files[f] + '1'] = piece;
             });
@@ -3873,7 +3876,7 @@ function ready() {
                 squareMap[files[f] + '2'] = piece;
             });
 
-            // Blue (Player 1): Files a-b (left side)
+            // Blue (Player 1): Files a-b (left side) - uses white pieces
             standardBackRow.forEach(function(piece, r) {
                 if (r < 14 && !squareMap['a' + (r+1)]) {
                     squareMap['a' + (r+1)] = piece;
@@ -3885,7 +3888,7 @@ function ready() {
                 }
             });
 
-            // Yellow (Player 2): Ranks 13-14 (bottom)
+            // Yellow (Player 2): Ranks 13-14 (bottom) - uses black pieces
             blackBackRow.forEach(function(piece, f) {
                 squareMap[files[f] + '14'] = piece;
             });
@@ -3893,7 +3896,7 @@ function ready() {
                 squareMap[files[f] + '13'] = piece;
             });
 
-            // Green (Player 3): Files m-n (right side)
+            // Green (Player 3): Files m-n (right side) - uses black pieces
             blackBackRow.forEach(function(piece, r) {
                 if (r < 14 && !squareMap['n' + (r+1)]) {
                     squareMap['n' + (r+1)] = piece;

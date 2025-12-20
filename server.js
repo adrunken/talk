@@ -1538,19 +1538,45 @@ wss.on('connection', (ws, req) => {
       if (!inviter || !target || inviter === target) {
         send(ws, { type: 'chess_error', message: 'Invalid invite' });
       } else {
-        const key = inviter + '\u0000' + target;
-        // Store invite with mode and timeControl for queued delivery
-        const inviteData = { timestamp: Date.now() };
-        if (msg.mode) inviteData.mode = msg.mode;
-        if (msg.timeControl) inviteData.timeControl = msg.timeControl;
-        invites.set(key, inviteData);
-        const invitePayload = { type: 'chess_invite', from: inviter };
-        if (msg.mode) invitePayload.mode = msg.mode;
-        if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
-        const ok = sendToUsername(target, invitePayload);
-        if (!ok) {
-          // queued for offline delivery; optional ack
-          // send(ws, { type: 'chess_info', message: 'Invite queued for delivery when user is online' });
+        const mode = msg.mode || '2player';
+        const timeControl = msg.timeControl || '5m';
+
+        if (mode === '4player') {
+          const key = inviter + '\u0000' + target;
+          const sessionId = nextSessionId++;
+          fourPlayerSessions.set(sessionId, {
+            initiator: inviter,
+            players: [inviter, target],
+            acceptedPlayers: [inviter],
+            mode: mode,
+            timeControl: timeControl,
+            createdAt: Date.now(),
+            sessionId: sessionId
+          });
+          const invitePayload = {
+            type: 'chess_invite',
+            from: inviter,
+            mode: mode,
+            timeControl: timeControl,
+            sessionId: sessionId
+          };
+          sendToUsername(target, invitePayload);
+          send(ws, {
+            type: 'chess_info',
+            message: 'Waiting for ' + target + ' to accept...'
+          });
+        } else {
+          const key = inviter + '\u0000' + target;
+          const inviteData = { timestamp: Date.now() };
+          if (msg.mode) inviteData.mode = msg.mode;
+          if (msg.timeControl) inviteData.timeControl = msg.timeControl;
+          invites.set(key, inviteData);
+          const invitePayload = { type: 'chess_invite', from: inviter };
+          if (msg.mode) invitePayload.mode = msg.mode;
+          if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
+          const ok = sendToUsername(target, invitePayload);
+          if (!ok) {
+          }
         }
       }
     }

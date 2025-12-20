@@ -2206,11 +2206,13 @@ wss.on('connection', (ws, req) => {
       }
 
       // Check for captured piece before applying move
+      // Note: colors are 'blue', 'yellow', 'green', 'red' and map to indices 0, 1, 2, 3
+      const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
       let eliminatedColor = null;
       const capturedPiece = game.board[toRow][toCol];
       if (capturedPiece && capturedPiece.type === 'king') {
-        const colorIndex = game.players.indexOf(capturedPiece.color);
-        if (colorIndex !== -1) {
+        const colorIndex = COLORS_4PLAYER.indexOf(capturedPiece.color);
+        if (colorIndex !== -1 && game.activePlayers.includes(colorIndex)) {
           eliminatedColor = colorIndex;
           game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
         }

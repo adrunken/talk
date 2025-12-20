@@ -3187,6 +3187,7 @@ function ready() {
                         const pieceEl = document.createElement('div');
                         pieceEl.className = 'piece';
                         pieceEl.style.transform = 'rotate(' + (-(gameState4P.initialRotation || 0)) + 'deg)';
+                        pieceEl.style.cursor = isCurrentPlayerPiece4P(piece) ? 'grab' : 'not-allowed';
 
                         const img = document.createElement('img');
                         img.src = PIECE_IMAGES_4PLAYER[piece.color][piece.type];
@@ -3204,11 +3205,29 @@ function ready() {
                         }
 
                         pieceEl.addEventListener('dragstart', function(e) { onPieceDragStart4P(e, y, x); });
+                        pieceEl.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            if (isCurrentPlayerPiece4P(piece)) {
+                                onPieceClick4P(y, x);
+                            }
+                        });
                         sq.appendChild(pieceEl);
                     }
 
                     sq.addEventListener('dragover', function(e) { e.preventDefault(); });
                     sq.addEventListener('drop', function(e) { onSquareDrop4P(e, y, x); });
+                    sq.addEventListener('click', function(e) { onSquareClick4P(y, x); });
+                    sq.addEventListener('mouseenter', function(e) {
+                        if (gameState4P.validMoves.length > 0) {
+                            const isValid = gameState4P.validMoves.some(function(m) { return m.row === y && m.col === x; });
+                            if (isValid) {
+                                sq.classList.add('hover-valid');
+                            }
+                        }
+                    });
+                    sq.addEventListener('mouseleave', function(e) {
+                        sq.classList.remove('hover-valid');
+                    });
                 }
 
                 board.appendChild(sq);

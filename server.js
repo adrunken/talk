@@ -1178,6 +1178,7 @@ const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
+const fourPlayerGames = new Map(); // game_id -> {players: [p0, p1, p2, p3], board: [...], currentTurn: 0, activePlayers: [0,1,2,3], moveCount: 0, playerWs: Map<playerName -> ws>}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps

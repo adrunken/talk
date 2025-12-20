@@ -728,6 +728,7 @@
                 nextTurn = (nextTurn + 1) % 4;
             }
             gameState.currentTurn = nextTurn;
+            sendGameStateToParent();
         }
 
         function updateUI() {

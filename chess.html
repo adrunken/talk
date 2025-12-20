@@ -380,10 +380,10 @@
         };
 
         function isInvalidSquare(row, col) {
-            return (row < 2 && col < 2) ||
-                   (row < 2 && col > 11) ||
-                   (row > 11 && col < 2) ||
-                   (row > 11 && col > 11);
+            return (row < 3 && col < 3) ||
+                   (row < 3 && col > 10) ||
+                   (row > 10 && col < 3) ||
+                   (row > 10 && col > 10);
         }
 
         function initializeBoard() {

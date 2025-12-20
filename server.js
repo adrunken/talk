@@ -1531,7 +1531,10 @@ wss.on('connection', (ws, req) => {
       } else {
         const key = inviter + '\u0000' + target;
         invites.set(key, Date.now());
-        const ok = sendToUsername(target, { type: 'chess_invite', from: inviter });
+        const invitePayload = { type: 'chess_invite', from: inviter };
+        if (msg.mode) invitePayload.mode = msg.mode;
+        if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
+        const ok = sendToUsername(target, invitePayload);
         if (!ok) {
           // queued for offline delivery; optional ack
           // send(ws, { type: 'chess_info', message: 'Invite queued for delivery when user is online' });

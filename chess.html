@@ -346,6 +346,50 @@
     </div>
 
     <script>
+        // CDN URLs for chess pieces
+        const pieceCDNUrls = {
+            red: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fd2493f9a02f04e3ab4ed7c5f34cf1eb6?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F47b7214a08b34e4dbcf5b06521259302?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F0799e6c5fd7847998dd502670cb2cd6c?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F5a52b380683b4476a88bf5a704add9ac?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F2e1da9b1df7e467aa66e4d30aae0979e?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Ff6d3029118724028bb8f81953fec4d7b?format=webp&width=800',
+                promoqueen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Ff6d3029118724028bb8f81953fec4d7b?format=webp&width=800'
+            },
+            blue: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fbac20f31ddc44f628d14b1c65646c5ff?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F97fb389354e64a5796be314c075a7327?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Ff077e578bc2845b6af8d713bc8a716c7?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F8bcfba2094e54a7581f7704f77abffa1?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F8b93f788ce294c508a03e6c94a9f447e?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F6a3a991ed63f4143b5a400372ce366d6?format=webp&width=800',
+                promoqueen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F6a3a991ed63f4143b5a400372ce366d6?format=webp&width=800'
+            },
+            yellow: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F1c5cecd086904031977b8fb11706bead?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F2ae2c408091a455abd457f74c59427bc?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F10983c80b7c14893a192c796d0dd74f9?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Ff14db0a5dca748d9867f57dc023002f1?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fafe97457cc234107a60271ae71a79f15?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fab1738bec28b43c781eabe0d10ce566d?format=webp&width=800',
+                promoqueen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fab1738bec28b43c781eabe0d10ce566d?format=webp&width=800'
+            },
+            green: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F10a6a9ebe316470599ee36810bd72c8b?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F4ccff758ad1e434589b377aa4b454e80?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F9241989b718c4023a62f18dc3fb27093?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F865844df853b4afca701da1697051254?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2Fe7288975e7ad4e26adeb15e03779332d?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F635e84a7ad7d4219adec527428112d65?format=webp&width=800',
+                promoqueen: 'https://cdn.builder.io/api/v1/image/assets%2Faf9d10a8823c41388ca7ea4ccc8e0f4a%2F635e84a7ad7d4219adec527428112d65?format=webp&width=800'
+            }
+        };
+
+        function getPieceUrl(color, piece) {
+            return pieceCDNUrls[color] && pieceCDNUrls[color][piece] ? pieceCDNUrls[color][piece] : '';
+        }
+
         // Board state and move tracking
         let validMoves = [];
         const boardSize = { width: 14, height: 14 };
@@ -386,7 +430,7 @@
             const indicator = document.getElementById('tip');
             const turnText = document.getElementById('turn-text');
             const color = currentTurn.charAt(0).toUpperCase() + currentTurn.slice(1);
-            indicator.src = `img/${currentTurn}/pawn.svg`;
+            indicator.src = getPieceUrl(currentTurn, 'pawn');
             turnText.textContent = `${color}'s Turn`;
         }
 
@@ -762,7 +806,7 @@
                                 const color = turnOrder.find(c => pieceElement.classList.contains(c));
                                 const queen = document.createElement('img');
                                 queen.className = `piece ${color} queen`;
-                                queen.src = `img/${color}/promoqueen.svg`;
+                                queen.src = getPieceUrl(color, 'promoqueen');
                                 queen.setAttribute('draggable', color === currentTurn ? 'true' : 'false');
                                 queen.style.transform = pieceElement.style.transform;
                                 square.removeChild(pieceElement);
@@ -821,28 +865,28 @@
         function updateCapturedPiecesDisplay() {
             const container = document.getElementById('captured-pieces-container');
             container.innerHTML = '';
-            
+
             for (const color of turnOrder) {
                 if (capturedPieces[color].length > 0) {
                     const section = document.createElement('div');
                     section.className = 'captured-pieces-section';
-                    
+
                     const title = document.createElement('div');
                     title.className = 'captured-pieces-title';
                     title.textContent = `By ${color}:`;
                     section.appendChild(title);
-                    
+
                     const pieces = document.createElement('div');
                     pieces.className = 'captured-pieces';
-                    
+
                     capturedPieces[color].forEach(piece => {
                         const img = document.createElement('img');
-                        img.src = `img/${piece.color}/${piece.type}.svg`;
+                        img.src = getPieceUrl(piece.color, piece.type);
                         img.className = 'captured-piece';
                         img.title = `${piece.color} ${piece.type}`;
                         pieces.appendChild(img);
                     });
-                    
+
                     section.appendChild(pieces);
                     container.appendChild(section);
                 }
@@ -936,13 +980,13 @@
                 { type: 'queen', positions: [[startRow, startCol + 3]] },
                 { type: 'king', positions: [[startRow, startCol + 4]] }
             ];
-            
+
             pieces.forEach(piece => {
                 piece.positions.forEach(([row, col]) => {
                     const square = getSquareAt(col, row);
                     if (square) {
                         const img = document.createElement('img');
-                        img.src = `img/${color}/${piece.type}.svg`;
+                        img.src = getPieceUrl(color, piece.type);
                         img.className = `piece ${color} ${piece.type}`;
                         img.setAttribute('draggable', 'false');
                         img.style.transform = 'rotate(0deg)';
@@ -950,13 +994,13 @@
                     }
                 });
             });
-            
+
             // Place pawns
             for (let i = 0; i < 8; i++) {
                 const square = getSquareAt(startCol + i, startRow + 1);
                 if (square) {
                     const img = document.createElement('img');
-                    img.src = `img/${color}/pawn.svg`;
+                    img.src = getPieceUrl(color, 'pawn');
                     img.className = `piece ${color} pawn first-move move-2`;
                     img.setAttribute('draggable', 'false');
                     img.style.transform = 'rotate(0deg)';

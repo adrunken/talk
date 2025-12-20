@@ -3883,6 +3883,10 @@ function ready() {
             pendingUserMove = null; premoveQueue = []; updateConfirmButton();
             showRejoinPrompt();
         }
+        else if (data['type'] === '4player_game_start') {
+            try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], players: data['players'], is4player: true })); } catch(e){}
+            start4PlayerGame(data);
+        }
         else if (data['type'] === 'chess_start') {
             try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], white: data['white'], black: data['black'] })); } catch(e){}
             startChessGame(data);

@@ -49,6 +49,7 @@ export class BoardRenderer {
           pieceEl.className = `chess-piece piece-${this.getPlayerInitial(piece.player)}${piece.type}`;
           pieceEl.dataset.piece = piece.type;
           pieceEl.dataset.player = piece.player;
+          pieceEl.textContent = this.getPieceSymbol(piece.type, piece.player);
           square.appendChild(pieceEl);
         }
 

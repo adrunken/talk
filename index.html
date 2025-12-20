@@ -770,6 +770,61 @@ html {
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
 
+/* Chess Game Setup Modal */
+.chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
+.chess-setup-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+.chess-setup-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.35); z-index: 1001; }
+.chess-setup-overlay.show { display: flex; }
+
+.chess-setup-modal { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 1.5rem; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+
+.chess-setup-title { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; }
+
+.setup-section { margin-bottom: 1.5rem; }
+
+.setup-section-label { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+
+.setup-options { display: grid; gap: 0.5rem; }
+
+.setup-option-btn { padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; text-align: left; transition: all 0.2s ease; display: flex; align-items: center; gap: 0.5rem; }
+
+.setup-option-btn:hover { border-color: var(--accent-primary); background: var(--accent-secondary); }
+
+.setup-option-btn.selected { border-color: var(--accent-primary); background: var(--accent-secondary); color: var(--accent-primary); font-weight: 600; }
+
+.setup-option-btn i { font-size: 1rem; min-width: 1.25rem; text-align: center; }
+
+.users-list { border: 1px solid var(--border-light); border-radius: var(--radius-md); max-height: 200px; overflow-y: auto; background: var(--bg-tertiary); }
+
+.user-checkbox-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s ease; }
+
+.user-checkbox-item:last-child { border-bottom: none; }
+
+.user-checkbox-item:hover { background: var(--bg-secondary); }
+
+.user-checkbox-item input[type="checkbox"] { cursor: pointer; width: 1rem; height: 1rem; }
+
+.user-checkbox-label { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-primary); }
+
+.user-checkbox-item .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.setup-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+.setup-action-btn { flex: 1; padding: 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; font-weight: 500; transition: all 0.2s ease; }
+
+.setup-action-btn:hover:not(:disabled) { background: var(--accent-secondary); color: var(--accent-primary); }
+
+.setup-action-btn.primary { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+
+.setup-action-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.setup-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.setup-validation-msg { font-size: 0.8rem; color: #dc2626; margin-top: 0.5rem; display: none; }
+
+.setup-validation-msg.show { display: block; }
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>

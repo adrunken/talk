@@ -4004,5 +4004,18 @@ window.addEventListener('error', function(ev) {
   } catch (e) { /* ignore */ }
 });
 </script>
+<script type="module">
+// Import and expose 4-player chess GameController functions
+try {
+  const chessInit = await import('./client/src/chess/init.js');
+  window.initializeChessGame = chessInit.default;
+  window.handleChess4pMove = chessInit.handleChess4pMove;
+  window.getGameController = chessInit.getGameController;
+  window.cleanupChessGame = chessInit.cleanupChessGame;
+  console.log('[4P Chess] GameController initialized');
+} catch(e) {
+  console.warn('[4P Chess] Failed to load GameController:', e);
+}
+</script>
 </body>
 </html>

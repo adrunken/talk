@@ -195,8 +195,8 @@ export class GameController {
         this.updateUI();
 
         // Send move to server if not a local game
-        if (!this.isLocalGame && result.lastMove) {
-          this.sendMoveMessage(result.lastMove);
+        if (!this.isLocalGame && this.game.lastMove) {
+          this.sendMoveMessage(this.game.lastMove);
         }
       }
     }

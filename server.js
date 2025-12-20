@@ -1836,10 +1836,16 @@ wss.on('connection', (ws, req) => {
       }
       // Handle 2-player chess
       else {
+        const board = g.board;
+
+        if (!board) {
+          send(ws, { type: 'chess_error', message: 'Game board not initialized' });
+          return;
+        }
+
         const src = String(msg.from || '');
         const dst = String(msg.to || '');
         const promo = (msg.promotion || '').toLowerCase();
-        const board = g.board;
 
         const expected = board.turn() === 'w' ? g.white : g.black;
         if (player !== expected) {

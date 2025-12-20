@@ -3771,24 +3771,50 @@ function ready() {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();
         var gameMode = data['gameMode'] || '2player';
-        chessGame = {
-            id: data['game_id'],
-            white: data['white'],
-            black: data['black'],
-            color: (data['white'] === me) ? 'white' : 'black',
-            fen: data['fen'],
-            turn: data['turn'],
-            lastMove: null,
-            over: false,
-            moveHistory: [{ fen: data['fen'], from: null, to: null }],
-            historyIndex: 0,
-            gameMode: gameMode,
-            timeControl: data['timeControl']
-        };
-        hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
-        $('#chess-white').text(chessGame.white);
-        $('#chess-black').text(chessGame.black);
-        $('#chess-status').text('Your color: ' + chessGame.color);
+        var is4Player = data['is4Player'] || false;
+
+        if (is4Player) {
+            // 4-player game structure
+            chessGame = {
+                id: data['game_id'],
+                players: data['players'] || [],
+                playerColors: data['colors'] || {},
+                color: data['colors'] ? data['colors'][me] : 'unknown',
+                fen: data['fen'],
+                turn: data['turn'],
+                lastMove: null,
+                over: false,
+                moveHistory: [{ fen: data['fen'], from: null, to: null }],
+                historyIndex: 0,
+                gameMode: gameMode,
+                timeControl: data['timeControl'],
+                is4Player: true
+            };
+            // For 4-player, we'll need to render the 4-player board differently
+            $('#chess-status').text('Your color: ' + chessGame.color);
+        } else {
+            // 2-player game structure
+            chessGame = {
+                id: data['game_id'],
+                white: data['white'],
+                black: data['black'],
+                color: (data['white'] === me) ? 'white' : 'black',
+                fen: data['fen'],
+                turn: data['turn'],
+                lastMove: null,
+                over: false,
+                moveHistory: [{ fen: data['fen'], from: null, to: null }],
+                historyIndex: 0,
+                gameMode: gameMode,
+                timeControl: data['timeControl'],
+                is4Player: false
+            };
+            hideRejoinPrompt();
+            $('#chess-white').text(chessGame.white);
+            $('#chess-black').text(chessGame.black);
+            $('#chess-status').text('Your color: ' + chessGame.color);
+        }
+
         pendingUserMove = null; premoveQueue = []; updateConfirmButton();
 
         renderBoard();
@@ -3798,11 +3824,29 @@ function ready() {
         $('#chess-modal').addClass('hidden');
         $('#four-player-chess-overlay').addClass('hidden');
 
+        // Remove the invite item since game is starting
+        if (chessGame.id) {
+            $('#invites .invite-item').each(function() {
+                $(this).fadeOut(300, function() { $(this).remove(); });
+            });
+        }
+
         // Open the appropriate modal based on game mode
-        if (gameMode === '2player') {
-            $('#chess-modal').removeClass('hidden');
-        } else if (gameMode === '4player') {
+        if (gameMode === '4player' && is4Player) {
             $('#four-player-chess-overlay').removeClass('hidden');
+            // Initialize 4-player specific UI
+            var playersList = $('#players-list');
+            if (playersList.length) {
+                playersList.empty();
+                chessGame.players.forEach(function(player) {
+                    var color = chessGame.playerColors[player];
+                    var isMe = player === me;
+                    var item = $('<div class="player-status ' + color + '">' + player + (isMe ? ' (You)' : '') + '</div>');
+                    playersList.append(item);
+                });
+            }
+        } else if (gameMode === '2player' || !is4Player) {
+            $('#chess-modal').removeClass('hidden');
         } else {
             // Default to 2-player if mode is unknown
             $('#chess-modal').removeClass('hidden');

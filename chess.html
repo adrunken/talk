@@ -538,10 +538,6 @@
         function onPieceDragStart(e, row, col) {
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
-            gameState.validMoves.forEach(({ row: r, col: c }) => {
-                const sq = document.querySelector(`[data-x="${c}"][data-y="${r}"]`);
-                if (sq) sq.classList.add('valid-move');
-            });
         }
 
         function onSquareDrop(e, toRow, toCol) {

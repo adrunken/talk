@@ -3976,6 +3976,73 @@ if (document.readyState === 'loading') {
     initializeRouting();
 }
 
+// Initialize 4-player chess GameController
+(function() {
+  function initChess4pFunctions() {
+    if (typeof window.GameController !== 'undefined') {
+      return; // Already initialized
+    }
+
+    // Simple wrapper to initialize chess game
+    window.initializeChessGame = function(gameData) {
+      try {
+        if (typeof window.GameController === 'undefined') {
+          console.error('[4P Chess] GameController class not available');
+          return null;
+        }
+
+        const boardElement = document.getElementById('chess-board');
+        if (!boardElement) {
+          console.error('[4P Chess] Board element not found');
+          return null;
+        }
+
+        const controller = new window.GameController('chess-board', gameData);
+        controller.gameId = gameData.game_id;
+        controller.playerMap = gameData.players;
+        controller.currentPlayer = gameData.currentPlayer;
+        controller.isLocalGame = false;
+
+        window.current4pGameController = controller;
+        return controller;
+      } catch(e) {
+        console.error('[4P Chess] Error initializing game:', e);
+        return null;
+      }
+    };
+
+    window.handleChess4pMove = function(moveData) {
+      try {
+        if (window.current4pGameController) {
+          window.current4pGameController.updateFromMove(moveData);
+        }
+      } catch(e) {
+        console.error('[4P Chess] Error handling move:', e);
+      }
+    };
+
+    window.getGameController = function() {
+      return window.current4pGameController;
+    };
+
+    window.cleanupChessGame = function() {
+      if (window.current4pGameController) {
+        window.current4pGameController.saveGame();
+        window.current4pGameController = null;
+      }
+    };
+
+    console.log('[4P Chess] Functions initialized');
+  }
+
+  // Try to initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initChess4pFunctions);
+  } else {
+    initChess4pFunctions();
+  }
+})();
+
 </script>
 <script>
 // Global handlers to suppress/handle external iframe evaluation timeouts (e.g. from builder.io CDN)

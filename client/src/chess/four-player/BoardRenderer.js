@@ -78,13 +78,13 @@ export class BoardRenderer {
   highlightMoves(moves) {
     this.validMoves.forEach(m => {
       const sq = this.boardElement.querySelector(`[data-rank="${m[0]}"][data-file="${m[1]}"]`);
-      if (sq) sq.classList.remove('valid-move');
+      if (sq) sq.classList.remove('legal-move');
     });
 
     this.validMoves = moves;
     moves.forEach(([rank, file]) => {
       const sq = this.boardElement.querySelector(`[data-rank="${rank}"][data-file="${file}"]`);
-      if (sq) sq.classList.add('valid-move');
+      if (sq) sq.classList.add('legal-move');
     });
   }
 

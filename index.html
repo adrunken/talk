@@ -3747,6 +3747,12 @@ function ready() {
         gameState4P.timeControl = timeControl;
         gameState4P.startTime = Date.now();
 
+        // Calculate initial rotation based on player's position
+        var currentUsername = $('#username').text();
+        var playerIndex = players.indexOf(currentUsername);
+        gameState4P.playerIndex = playerIndex >= 0 ? playerIndex : 0;
+        gameState4P.initialRotation = gameState4P.playerIndex * 90;
+
         renderBoard4P();
         updatePlayersDisplay4P(players);
         startGameTimer4P();

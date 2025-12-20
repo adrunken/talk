@@ -4062,6 +4062,14 @@ function ready() {
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
         }
+        else if (data['type'] === '4playerMoveUpdate') {
+            if (gameState4P && gameState4P.gameId) {
+                apply4PlayerMoveUpdate(data);
+            }
+        }
+        else if (data['type'] === '4playerMoveRejected') {
+            flashStatus('Move rejected: ' + (data['reason'] || 'Invalid move'));
+        }
         else if (data['type'] === 'cleared') {
             $('#main').empty();
             firstId = Infinity;

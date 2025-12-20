@@ -428,7 +428,7 @@
                 for (let c = 3; c < 11; c++) {
                     piece('pawn', pawnRow, c);
                 }
-                const backRow = color === 'white' ? 13 : 0;
+                const backRow = color === 'blue' ? 13 : 0;
                 piece('rook', backRow, 3);
                 piece('knight', backRow, 4);
                 piece('bishop', backRow, 5);
@@ -441,7 +441,7 @@
                 for (let r = 3; r < 11; r++) {
                     piece('pawn', r, pawnRow);
                 }
-                const backCol = color === 'red' ? 13 : 0;
+                const backCol = color === 'yellow' ? 13 : 0;
                 piece('rook', 3, backCol);
                 piece('knight', 4, backCol);
                 piece('bishop', 5, backCol);

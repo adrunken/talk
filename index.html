@@ -2974,28 +2974,38 @@ function ready() {
         var fromUser = $inviteItem.data('from');
         var gameMode = $inviteItem.data('mode') || '2player';
         var timeControl = $inviteItem.data('time-control') || '';
+        var sessionId = $inviteItem.data('session-id');
 
         if (ws && ws.readyState === 1) {
             var acceptPayload = { type: 'chess_invite_accept', from: fromUser };
             if (gameMode) acceptPayload.mode = gameMode;
             if (timeControl) acceptPayload.timeControl = timeControl;
+            if (sessionId) acceptPayload.sessionId = sessionId;
             ws.send(JSON.stringify(acceptPayload));
         }
 
-        // Open the appropriate chess modal based on game mode (close others first)
-        setTimeout(function() {
-            // Close any existing modals
-            $('#chess-modal').addClass('hidden');
-            $('#four-player-chess-overlay').addClass('hidden');
+        // For 4-player games, show waiting state instead of immediately opening modal
+        if (gameMode === '4player' && sessionId) {
+            // Replace the accept/decline buttons with a waiting message
+            var $actions = $inviteItem.find('.invite-actions');
+            $actions.html('<span style="color: var(--text-muted); font-size: 0.85rem;">Waiting for other players...</span>');
+            // Don't remove the item yet - keep it until game starts
+        } else {
+            // For 2-player games, open modal immediately
+            setTimeout(function() {
+                // Close any existing modals
+                $('#chess-modal').addClass('hidden');
+                $('#four-player-chess-overlay').addClass('hidden');
 
-            if (gameMode === '2player') {
-                $('#chess-modal').removeClass('hidden');
-            } else if (gameMode === '4player') {
-                $('#four-player-chess-overlay').removeClass('hidden');
-            }
-        }, 100);
+                if (gameMode === '2player') {
+                    $('#chess-modal').removeClass('hidden');
+                } else if (gameMode === '4player') {
+                    $('#four-player-chess-overlay').removeClass('hidden');
+                }
+            }, 100);
 
-        $inviteItem.remove();
+            $inviteItem.remove();
+        }
     });
     $('#invites').on('click', '.invite-decline', function() {
         $(this).closest('.invite-item').remove();

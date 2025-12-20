@@ -413,10 +413,10 @@
         function initializeBoard() {
             gameState.board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
 
-            setupPlayerPieces(3, 12, 13, 12, 'white', 'vertical');
-            setupPlayerPieces(0, 0, 1, 1, 'black', 'vertical');
-            setupPlayerPieces(1, 13, 12, 12, 'red', 'horizontal');
-            setupPlayerPieces(2, 0, 1, 1, 'blue', 'horizontal');
+            setupPlayerPieces(0, 12, 13, 12, 'blue', 'vertical');
+            setupPlayerPieces(1, 13, 12, 12, 'yellow', 'horizontal');
+            setupPlayerPieces(2, 0, 1, 1, 'green', 'vertical');
+            setupPlayerPieces(3, 0, 1, 1, 'red', 'horizontal');
         }
 
         function setupPlayerPieces(colorIdx, homeRow1, homeRow2, pawnRow, color, orient) {

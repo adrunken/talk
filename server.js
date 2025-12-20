@@ -1635,19 +1635,12 @@ wss.on('connection', (ws, req) => {
           });
 
           // Initialize 4-player game state
-          const playerWsMap = new Map();
-          for (const player of playersArray) {
-            const playerWs = getWsByUsername(player);
-            if (playerWs) playerWsMap.set(player, playerWs);
-          }
-
           fourPlayerGames.set(gid, {
             players: playersArray,
             board: Array(14).fill(null).map(() => Array(14).fill(null)),
             currentTurn: 0,
             activePlayers: [0, 1, 2, 3],
-            moveCount: 0,
-            playerWs: playerWsMap
+            moveCount: 0
           });
 
           const payload = {

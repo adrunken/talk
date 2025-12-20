@@ -1159,6 +1159,14 @@ var boardPiecesSettings = {
     piecesData: null
 };
 
+// Chess game setup state
+var chessSetupState = {
+    mode: null, // '2player' or '4player'
+    timeControl: null, // '1m', '3m', '5m', '10m', '30m', 'unlimited'
+    selectedUsers: [], // Array of usernames to invite
+    allUsers: [] // List of all available users (excluding current user)
+};
+
 // Load boards and pieces data from local file
 function loadBoardPiecesData() {
     return fetch('board-pieces-data.json?t=' + Date.now())

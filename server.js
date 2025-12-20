@@ -364,6 +364,10 @@ app.get('/games', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/chess', (req, res) => {
+  res.sendFile(path.join(__dirname, 'chess.html'));
+});
+
 // Serve static files BEFORE the catch-all route
 app.use(express.static(path.join(__dirname)));
 

@@ -1,5 +1,8 @@
 {
   "zahir": {
-    "lichessToken": "lip_JtHjfquvAkaavlLcrASJ"
+    "confirmMoves": true,
+    "premoveEnabled": true,
+    "selectedBoard": "tan",
+    "selectedPieces": "classic"
   }
 }

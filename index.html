@@ -3741,6 +3741,61 @@ function ready() {
         $('#admin-bans-list').empty();
     }
 
+    function start4PlayerGame(data) {
+        __chessUnread = 0; __updateTitleBadge();
+        var gameId = data['game_id'];
+        var players = data['players'] || [];
+        var mode = data['mode'] || '4player';
+        var timeControl = data['timeControl'] || '5m';
+
+        if (!gameState4P) {
+            initializeBoard4P();
+        }
+
+        gameState4P.gameId = gameId;
+        gameState4P.players = players;
+        gameState4P.mode = mode;
+        gameState4P.timeControl = timeControl;
+        gameState4P.startTime = Date.now();
+
+        renderBoard4P();
+        updatePlayersDisplay4P(players);
+        startGameTimer4P();
+
+        $('#four-player-chess-overlay').removeClass('hidden');
+        console.log('[chess] 4-player game started:', gameId, 'players:', players.join(', '));
+    }
+
+    function updatePlayersDisplay4P(players) {
+        var playersList = $('#players-list');
+        if (!playersList.length) return;
+        playersList.empty();
+
+        players.forEach(function(player, index) {
+            var color = COLORS_4PLAYER[index];
+            var item = $('<div style="padding: 0.5rem 0; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem;" />');
+            var colorDot = $('<div style="width: 12px; height: 12px; border-radius: 50%; background: ' + color + '; flex-shrink: 0;" />');
+            var nameSpan = $('<span />').text(player);
+            item.append(colorDot);
+            item.append(nameSpan);
+            playersList.append(item);
+        });
+    }
+
+    function startGameTimer4P() {
+        if (gameTimer4P) clearInterval(gameTimer4P);
+        gameTimer4P = setInterval(function() {
+            if (!gameState4P) {
+                clearInterval(gameTimer4P);
+                return;
+            }
+            var elapsed = Math.floor((Date.now() - gameState4P.startTime) / 1000);
+            var mins = Math.floor(elapsed / 60);
+            var secs = elapsed % 60;
+            $('#game-time').text(mins + ':' + (secs < 10 ? '0' : '') + secs);
+        }, 1000);
+    }
+
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();

@@ -2957,19 +2957,7 @@ function ready() {
     });
 
     // Delegated handlers for invites and users
-    $('#right').on('click', '.invite-user-btn', function() {
-        var toUser = $(this).data('user');
-        if (!toUser) return;
-        if (ws && ws.readyState === 1) {
-            ws.send(JSON.stringify({ type: 'chess_invite', to: toUser }));
-            flashStatus('Invite sent to ' + toUser);
-        }
-        var row = $(this).closest('.user-row');
-        row.find('.link-sent').remove();
-        var msg = $('<span class="link-sent">link sent</span>');
-        row.append(msg);
-        setTimeout(function(){ msg.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
-    });
+    // Note: Quick invite buttons removed - all invites must go through the chess setup modal to select game mode
     $('#invites').on('click', '.invite-accept', function() {
         var $inviteItem = $(this).closest('.invite-item');
         var fromUser = $inviteItem.data('from');

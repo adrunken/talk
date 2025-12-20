@@ -3300,6 +3300,20 @@ function ready() {
         clearValidMoves4P();
         gameState4P.selectedSquare = null;
         gameState4P.validMoves = [];
+
+        // Send move to server
+        if (ws && ws.readyState === 1) {
+            const movePayload = {
+                type: 'chess_move',
+                game_id: gameState4P.gameId,
+                fromRow: fromRow,
+                fromCol: fromCol,
+                toRow: toRow,
+                toCol: toCol
+            };
+            ws.send(JSON.stringify(movePayload));
+        }
+
         advanceTurn4P();
         renderBoard4P();
         updateUI4P();

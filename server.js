@@ -2167,10 +2167,15 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      // Check if it's this player's turn
-      const activePlayerIndex = game.activePlayers[game.currentTurn];
-      if (activePlayerIndex !== playerIndex) {
+      // Check if it's this player's turn (game.currentTurn is the player index 0-3)
+      if (game.currentTurn !== playerIndex) {
         send(ws, { type: '4playerMoveRejected', reason: 'Not your turn' });
+        return;
+      }
+
+      // Check that this player is still active
+      if (!game.activePlayers.includes(playerIndex)) {
+        send(ws, { type: 'chess_error', message: 'You have been eliminated' });
         return;
       }
 

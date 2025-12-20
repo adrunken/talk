@@ -3301,10 +3301,6 @@ function ready() {
     function onPieceDragStart4P(e, row, col) {
         gameState4P.selectedSquare = { row, col };
         gameState4P.validMoves = calculateValidMoves4P(row, col);
-        gameState4P.validMoves.forEach(function(m) {
-            const sq = document.querySelector('[data-x="' + m.col + '"][data-y="' + m.row + '"]');
-            if (sq) sq.classList.add('valid-move');
-        });
     }
 
     function onSquareDrop4P(e, toRow, toCol) {

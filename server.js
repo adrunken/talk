@@ -1305,7 +1305,14 @@ function deliverQueuedInvites(username) {
     const inviter = parts[0];
     const target = parts[1];
     if (target === username) {
-      sendToUsername(username, { type: 'chess_invite', from: inviter, offline: true });
+      const inviteData = invites.get(key);
+      const payload = { type: 'chess_invite', from: inviter, offline: true };
+      // Include mode and timeControl if they exist
+      if (inviteData && typeof inviteData === 'object') {
+        if (inviteData.mode) payload.mode = inviteData.mode;
+        if (inviteData.timeControl) payload.timeControl = inviteData.timeControl;
+      }
+      sendToUsername(username, payload);
     }
   }
 }

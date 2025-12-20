@@ -16,13 +16,13 @@
     "draws": 1
   },
   "zahir": {
-    "elo": 1209,
-    "gamesPlayed": 3,
-    "wins": 1
+    "elo": 1240,
+    "gamesPlayed": 5,
+    "wins": 3
   },
   "no": {
-    "elo": 1200,
-    "gamesPlayed": 0,
+    "elo": 1185,
+    "gamesPlayed": 1,
     "wins": 0
   },
   "x": {
@@ -31,8 +31,8 @@
     "wins": 1
   },
   "zahr": {
-    "elo": 1200,
-    "gamesPlayed": 0,
+    "elo": 1184,
+    "gamesPlayed": 1,
     "wins": 0
   }
 }

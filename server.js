@@ -1590,20 +1590,65 @@ wss.on('connection', (ws, req) => {
       }
     }
     else if (msg.type === 'chess_invite_accept') {
-      const target = users.get(ws); // acceptor
+      const acceptor = users.get(ws);
       const inviter = String(msg.from || '');
-      const key = inviter + '\u0000' + target;
-      if (!inviter || !target || !invites.has(key)) {
-        send(ws, { type: 'chess_error', message: 'Invite not found' });
+      const sessionId = msg.sessionId;
+
+      if (!inviter || !acceptor) {
+        send(ws, { type: 'chess_error', message: 'Invalid invite' });
+      } else if (sessionId && fourPlayerSessions.has(sessionId)) {
+        const session = fourPlayerSessions.get(sessionId);
+
+        if (!session.acceptedPlayers.includes(acceptor)) {
+          session.acceptedPlayers.push(acceptor);
+        }
+
+        if (session.acceptedPlayers.length === 4) {
+          const gid = nextGameId++;
+          games.set(gid, {
+            board: null,
+            players: session.players,
+            over: false,
+            isAiGame: false,
+            is4player: true,
+            mode: session.mode,
+            timeControl: session.timeControl
+          });
+
+          const payload = {
+            type: '4player_game_start',
+            game_id: gid,
+            players: session.players,
+            mode: session.mode,
+            timeControl: session.timeControl
+          };
+
+          for (const player of session.players) {
+            sendToUsername(player, payload);
+          }
+
+          fourPlayerSessions.delete(sessionId);
+          console.log('[chess] 4-player game created:', gid, 'players:', session.players.join(', '));
+        } else {
+          send(ws, {
+            type: 'chess_info',
+            message: 'Waiting for ' + (4 - session.acceptedPlayers.length) + ' more player(s) to accept...'
+          });
+        }
       } else {
-        const gid = nextGameId++;
-        const board = new ChessCtor();
-        let white, black;
-        if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false });
-        const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
-        sendToUsername(white, payload); sendToUsername(black, payload);
-        invites.delete(key);
+        const key = inviter + '\u0000' + acceptor;
+        if (!invites.has(key)) {
+          send(ws, { type: 'chess_error', message: 'Invite not found' });
+        } else {
+          const gid = nextGameId++;
+          const board = new ChessCtor();
+          let white, black;
+          if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
+          games.set(gid, { board, white, black, over: false, isAiGame: false });
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+          sendToUsername(white, payload); sendToUsername(black, payload);
+          invites.delete(key);
+        }
       }
     }
     else if (msg.type === 'chess_move') {

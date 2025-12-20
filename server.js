@@ -1812,6 +1812,10 @@ wss.on('connection', (ws, req) => {
         board[fromRow][fromCol] = null;
         g.moveCount++;
 
+        // Advance to next player
+        const nextPlayerIdx = (currentPlayerIdx + 1) % 4;
+        g.currentPlayerIndex = nextPlayerIdx;
+
         // Broadcast move to all players
         const movePayload = {
           type: 'chess_move',
@@ -1821,16 +1825,14 @@ wss.on('connection', (ws, req) => {
           toRow: toRow,
           toCol: toCol,
           board: board,
-          currentPlayer: g.players[(currentPlayerIdx + 1) % 4],
+          currentPlayerIndex: nextPlayerIdx,
+          currentPlayer: g.players[nextPlayerIdx],
           moveCount: g.moveCount
         };
 
         for (const p of g.players) {
           sendToUsername(p, movePayload);
         }
-
-        // Advance to next player
-        g.currentPlayerIndex = (currentPlayerIdx + 1) % 4;
 
         console.log('[4p-chess] Move:', {gid, from: `${fromRow},${fromCol}`, to: `${toRow},${toCol}`, nextPlayer: g.players[g.currentPlayerIndex]});
       }

@@ -2904,12 +2904,20 @@ function ready() {
     // Close 4-player chess modal
     $('#four-player-close').on('click', function(){
         $('#four-player-chess-overlay').addClass('hidden');
+        if (fourPlayerGameTimer) {
+            clearInterval(fourPlayerGameTimer);
+            fourPlayerGameTimer = null;
+        }
     });
 
     // Close 4-player chess modal when clicking overlay background
     $('#four-player-chess-overlay').on('click', function(e){
         if (e.target === this) {
             $(this).addClass('hidden');
+            if (fourPlayerGameTimer) {
+                clearInterval(fourPlayerGameTimer);
+                fourPlayerGameTimer = null;
+            }
         }
     });
 

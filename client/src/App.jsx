@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Editor from './components/Editor';
 import ErrorDialog from './components/ErrorDialog';
 import PreviewModal from './components/PreviewModal';
+import Chess from './components/Chess';
 
 export default function App() {
   const [prompt, setPrompt] = useState('');

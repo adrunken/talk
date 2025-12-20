@@ -2528,8 +2528,12 @@ function ready() {
         // Close the modal
         hideChessSetupModal();
 
-        // Open the appropriate chess modal
+        // Open the appropriate chess modal (close others first)
         setTimeout(function() {
+            // Close any existing modals
+            $('#chess-modal').addClass('hidden');
+            $('#four-player-chess-overlay').addClass('hidden');
+
             if (chessSetupState.mode === '2player') {
                 // For 2-player, open the regular chess modal
                 $('#chess-modal').removeClass('hidden');

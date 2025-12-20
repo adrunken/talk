@@ -3851,34 +3851,40 @@ function ready() {
         }
         else if (data['type'] === 'chess_4p_start') {
             var me = $('#username').text();
-            var playerMap = {};
-            if (Array.isArray(data['players'])) {
-                var colors = ['white', 'red', 'black', 'blue'];
-                data['players'].forEach(function(username, idx) {
-                    playerMap[idx] = username;
-                });
-            } else {
-                playerMap = data['players'];
-            }
+
+            // Set up game object for 4-player
+            chessGame = {
+                id: data['game_id'],
+                players: data['players'],
+                is4Player: true,
+                moveHistory: []
+            };
 
             try { localStorage.setItem('active_game_4p', JSON.stringify({ id: data['game_id'], players: data['players'] })); } catch(e){}
 
-            var gameData = {
-                game_id: data['game_id'],
-                players: playerMap,
-                currentPlayer: me
-            };
-
-            try {
-                if (typeof window.initializeChessGame === 'function') {
-                    window.initializeChessGame(gameData);
-                } else {
-                    console.warn('[4P Chess] GameController not loaded');
-                }
-            } catch(e) {
-                console.error('[4P Chess] Error initializing game:', e);
+            // Update player displays
+            var colors = ['white', 'red', 'black', 'blue'];
+            var playerNames = data['players'];
+            if (Array.isArray(playerNames)) {
+                playerNames.forEach(function(username, idx) {
+                    $('#chess-4p-' + colors[idx]).text(username || '—');
+                });
+            } else {
+                $('#chess-4p-white').text(playerNames.white || '—');
+                $('#chess-4p-red').text(playerNames.red || '—');
+                $('#chess-4p-black').text(playerNames.black || '—');
+                $('#chess-4p-blue').text(playerNames.blue || '—');
             }
 
+            // Show 4-player display and hide 2-player display
+            $('#chess-4player-players').removeClass('hidden').css('display', 'block');
+            $('#chess-white').text('');
+            $('#chess-black').text('');
+
+            // Render the 14x14 cross-shaped board
+            render4PlayerBoard();
+            updateChessStatus();
+            $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
         }
         else if (data['type'] === 'chess_4p_move') {

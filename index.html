@@ -3177,6 +3177,7 @@ function ready() {
                     if (piece) {
                         const pieceEl = document.createElement('div');
                         pieceEl.className = 'piece';
+                        pieceEl.style.transform = 'rotate(' + (-(gameState4P.initialRotation || 0)) + 'deg)';
 
                         const img = document.createElement('img');
                         img.src = PIECE_IMAGES_4PLAYER[piece.color][piece.type];

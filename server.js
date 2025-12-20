@@ -1305,7 +1305,14 @@ function deliverQueuedInvites(username) {
     const inviter = parts[0];
     const target = parts[1];
     if (target === username) {
-      sendToUsername(username, { type: 'chess_invite', from: inviter, offline: true });
+      const inviteData = invites.get(key);
+      const payload = { type: 'chess_invite', from: inviter, offline: true };
+      // Include mode and timeControl if they exist
+      if (inviteData && typeof inviteData === 'object') {
+        if (inviteData.mode) payload.mode = inviteData.mode;
+        if (inviteData.timeControl) payload.timeControl = inviteData.timeControl;
+      }
+      sendToUsername(username, payload);
     }
   }
 }
@@ -1530,7 +1537,11 @@ wss.on('connection', (ws, req) => {
         send(ws, { type: 'chess_error', message: 'Invalid invite' });
       } else {
         const key = inviter + '\u0000' + target;
-        invites.set(key, Date.now());
+        // Store invite with mode and timeControl for queued delivery
+        const inviteData = { timestamp: Date.now() };
+        if (msg.mode) inviteData.mode = msg.mode;
+        if (msg.timeControl) inviteData.timeControl = msg.timeControl;
+        invites.set(key, inviteData);
         const invitePayload = { type: 'chess_invite', from: inviter };
         if (msg.mode) invitePayload.mode = msg.mode;
         if (msg.timeControl) invitePayload.timeControl = msg.timeControl;

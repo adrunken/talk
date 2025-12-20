@@ -3858,9 +3858,15 @@ function ready() {
         var players = data['players'] || [];
         var mode = data['mode'] || '4player';
         var timeControl = data['timeControl'] || '5m';
+        var boardData = data['board'];
 
         if (!gameState4P) {
             initializeBoard4P();
+        }
+
+        // Use board from server if provided, otherwise use the locally initialized board
+        if (boardData) {
+            gameState4P.board = boardData;
         }
 
         gameState4P.gameId = gameId;
@@ -3880,7 +3886,7 @@ function ready() {
         startGameTimer4P();
 
         $('#four-player-chess-overlay').removeClass('hidden');
-        console.log('[chess] 4-player game started:', gameId, 'players:', players.join(', '));
+        console.log('[chess] 4-player game started:', gameId, 'players:', players.join(', '), 'board received:', !!boardData);
     }
 
     function updatePlayersDisplay4P(players) {

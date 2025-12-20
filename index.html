@@ -1996,9 +1996,24 @@ function render4PlayerBoard() {
     board.css('backgroundColor', '#8b7355');
     board.css('backgroundImage', 'none');
 
-    // Render all 14x14 squares
+    // Helper function to check if a square is in an invalid corner region (cross shape)
+    function isInvalidSquare(rank, file) {
+        // rank and file are 0-indexed (0-13)
+        if (rank < 2 && file < 2) return true;    // Top-left corner
+        if (rank < 2 && file > 11) return true;   // Top-right corner
+        if (rank > 11 && file < 2) return true;   // Bottom-left corner
+        if (rank > 11 && file > 11) return true;  // Bottom-right corner
+        return false;
+    }
+
+    // Render cross-shaped 14x14 board (skip invalid corners)
     for (var r = 13; r >= 0; r--) {
         for (var f = 0; f < 14; f++) {
+            // Skip invalid corner squares to create cross shape
+            if (isInvalidSquare(r, f)) {
+                continue;
+            }
+
             var file = files[f];
             var rank = 14 - r;
             var sq = file + String(rank);

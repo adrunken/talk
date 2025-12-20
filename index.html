@@ -2523,21 +2523,10 @@ function ready() {
             }));
         });
 
-        flashStatus('Game created! Invites sent to ' + chessSetupState.selectedUsers.length + ' player' + (chessSetupState.selectedUsers.length !== 1 ? 's' : ''));
+        flashStatus('Game created! Waiting for ' + chessSetupState.selectedUsers.length + ' player' + (chessSetupState.selectedUsers.length !== 1 ? 's' : '') + ' to accept...');
 
         // Close the modal
         hideChessSetupModal();
-
-        // Open the appropriate chess modal
-        setTimeout(function() {
-            if (chessSetupState.mode === '2player') {
-                // For 2-player, open the regular chess modal
-                $('#chess-modal').removeClass('hidden');
-            } else if (chessSetupState.mode === '4player') {
-                // For 4-player, open the 4-player chess overlay
-                $('#four-player-chess-overlay').removeClass('hidden');
-            }
-        }, 100);
     }
 
     function showFirstLoginModal() {

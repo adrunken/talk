@@ -148,10 +148,10 @@
             min-width: 100px;
         }
 
-        .player-timer.white { border-color: #f3f4f6; color: #f3f4f6; }
-        .player-timer.red { border-color: #ef4444; color: #ef4444; }
-        .player-timer.black { border-color: #1f2937; color: #1f2937; }
         .player-timer.blue { border-color: #3b82f6; color: #3b82f6; }
+        .player-timer.yellow { border-color: #eab308; color: #eab308; }
+        .player-timer.green { border-color: #22c55e; color: #22c55e; }
+        .player-timer.red { border-color: #ef4444; color: #ef4444; }
 
         .timer-time {
             font-size: 1.2rem;
@@ -226,10 +226,10 @@
             text-transform: capitalize;
         }
 
-        .player-status.white { border-left-color: #f3f4f6; }
-        .player-status.red { border-left-color: #ef4444; }
-        .player-status.black { border-left-color: #1f2937; }
         .player-status.blue { border-left-color: #3b82f6; }
+        .player-status.yellow { border-left-color: #eab308; }
+        .player-status.green { border-left-color: #22c55e; }
+        .player-status.red { border-left-color: #ef4444; }
 
         .player-status.eliminated {
             opacity: 0.5;
@@ -294,9 +294,9 @@
     <div class="container">
         <div class="board-area">
             <div class="player-timers">
-                <div class="player-timer black" id="timer-black">
-                    <div class="timer-time" id="time-black">1:00</div>
-                    <div class="timer-label">Black</div>
+                <div class="player-timer green" id="timer-green">
+                    <div class="timer-time" id="time-green">1:00</div>
+                    <div class="timer-label">Green</div>
                 </div>
             </div>
 
@@ -309,9 +309,9 @@
                     <div class="timer-time" id="time-blue">1:00</div>
                     <div class="timer-label">Blue</div>
                 </div>
-                <div class="player-timer white" id="timer-white">
-                    <div class="timer-time" id="time-white">1:00</div>
-                    <div class="timer-label">White</div>
+                <div class="player-timer yellow" id="timer-yellow">
+                    <div class="timer-time" id="time-yellow">1:00</div>
+                    <div class="timer-label">Yellow</div>
                 </div>
                 <div class="player-timer red" id="timer-red">
                     <div class="timer-time" id="time-red">1:00</div>
@@ -354,14 +354,41 @@
 
     <script>
         const BOARD_SIZE = 14;
-        const COLORS = ['white', 'red', 'black', 'blue'];
-        const PIECE_UNICODE = {
-            pawn: '♟',
-            rook: '♜',
-            knight: '♞',
-            bishop: '♝',
-            queen: '♛',
-            king: '♚'
+        const COLORS = ['blue', 'yellow', 'green', 'red'];
+
+        const PIECE_IMAGES = {
+            blue: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F9054d3e68a0d44f6aa5779ad27c15d8a?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fb13db36d7eb544e98a5d7aab2edaccfb?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F9bbc311bfa5445b9a8f2c4220d6a72b8?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F823e488e4ac5428f9a284d690873287b?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F6142be03f89a4b2292ef01a2fd96d359?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fcaaa6ab817624a0c958269516b53c0b2?format=webp&width=800'
+            },
+            green: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F137b396961674c1597c9e910a6fb17f8?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F13776e5e0ec14d7dbc20bd195092dddd?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fefdaed5b6d574def99a2d478ec46cc63?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fcaf8f3bca51e4cf2bc9bdff7a809591e?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F590af1dbba22429094dbe4e65c55b977?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F933d2ce4dbc54694bc5bafbe32c71207?format=webp&width=800'
+            },
+            red: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F75d125a2152943fcb78cb06411ececf7?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fde123f76f71a41698adeaf0a3f83af6e?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F160925441fd94af2a0dce145966225a4?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F42e5c01cfd3e4da486c0cd8fed1ea7d7?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fd1084f6d2dc94436b2d05a44c1f1ef54?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Ffed2672f588145918b131f6279672c33?format=webp&width=800'
+            },
+            yellow: {
+                bishop: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F763163fd81c449e0b8d6371c8f688dfc?format=webp&width=800',
+                king: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F4c2b49ed40af4d7da856cd8cb68c9bed?format=webp&width=800',
+                knight: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F8ba0092e757c475a812ff0c470f0425e?format=webp&width=800',
+                rook: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2Fbfda1d86ba904fb3bca5ba7e885a4944?format=webp&width=800',
+                queen: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F211438b1dca94f54a03beb5e8829d99f?format=webp&width=800',
+                pawn: 'https://cdn.builder.io/api/v1/image/assets%2Fcf2d7bc3206547dc9f9264d9f3b6d066%2F164ca3e23c674237964c454f24cee710?format=webp&width=800'
+            }
         };
 
         let gameState = {
@@ -386,10 +413,10 @@
         function initializeBoard() {
             gameState.board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
 
-            setupPlayerPieces(3, 12, 13, 12, 'white', 'vertical');
-            setupPlayerPieces(0, 0, 1, 1, 'black', 'vertical');
-            setupPlayerPieces(1, 13, 12, 12, 'red', 'horizontal');
-            setupPlayerPieces(2, 0, 1, 1, 'blue', 'horizontal');
+            setupPlayerPieces(0, 12, 13, 12, 'blue', 'vertical');
+            setupPlayerPieces(1, 13, 12, 12, 'yellow', 'horizontal');
+            setupPlayerPieces(2, 0, 1, 1, 'green', 'vertical');
+            setupPlayerPieces(3, 0, 1, 1, 'red', 'horizontal');
         }
 
         function setupPlayerPieces(colorIdx, homeRow1, homeRow2, pawnRow, color, orient) {
@@ -401,7 +428,7 @@
                 for (let c = 3; c < 11; c++) {
                     piece('pawn', pawnRow, c);
                 }
-                const backRow = color === 'white' ? 13 : 0;
+                const backRow = color === 'blue' ? 13 : 0;
                 piece('rook', backRow, 3);
                 piece('knight', backRow, 4);
                 piece('bishop', backRow, 5);
@@ -414,7 +441,7 @@
                 for (let r = 3; r < 11; r++) {
                     piece('pawn', r, pawnRow);
                 }
-                const backCol = color === 'red' ? 13 : 0;
+                const backCol = color === 'yellow' ? 13 : 0;
                 piece('rook', 3, backCol);
                 piece('knight', 4, backCol);
                 piece('bishop', 5, backCol);
@@ -447,8 +474,16 @@
                         if (piece) {
                             const pieceEl = document.createElement('div');
                             pieceEl.className = 'piece';
-                            pieceEl.textContent = PIECE_UNICODE[piece.type];
-                            pieceEl.style.color = getColorCode(piece.color);
+
+                            const img = document.createElement('img');
+                            img.src = PIECE_IMAGES[piece.color][piece.type];
+                            img.alt = piece.type;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'contain';
+                            img.draggable = false;
+
+                            pieceEl.appendChild(img);
                             pieceEl.draggable = isCurrentPlayerPiece(piece);
 
                             if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {
@@ -470,10 +505,10 @@
 
         function getColorCode(color) {
             const codes = {
-                white: '#f3f4f6',
-                red: '#ef4444',
-                black: '#1f2937',
-                blue: '#3b82f6'
+                blue: '#3b82f6',
+                yellow: '#eab308',
+                green: '#22c55e',
+                red: '#ef4444'
             };
             return codes[color];
         }
@@ -538,10 +573,10 @@
 
             const moves = [];
             const directions = {
-                white: { forward: { row: -1, col: 0 }, pawnCapture: [{ row: -1, col: -1 }, { row: -1, col: 1 }] },
-                red: { forward: { row: 0, col: -1 }, pawnCapture: [{ row: -1, col: -1 }, { row: 1, col: -1 }] },
-                black: { forward: { row: 1, col: 0 }, pawnCapture: [{ row: 1, col: -1 }, { row: 1, col: 1 }] },
-                blue: { forward: { row: 0, col: 1 }, pawnCapture: [{ row: -1, col: 1 }, { row: 1, col: 1 }] }
+                blue: { forward: { row: -1, col: 0 }, pawnCapture: [{ row: -1, col: -1 }, { row: -1, col: 1 }] },
+                yellow: { forward: { row: 0, col: -1 }, pawnCapture: [{ row: -1, col: -1 }, { row: 1, col: -1 }] },
+                green: { forward: { row: 1, col: 0 }, pawnCapture: [{ row: 1, col: -1 }, { row: 1, col: 1 }] },
+                red: { forward: { row: 0, col: 1 }, pawnCapture: [{ row: -1, col: 1 }, { row: 1, col: 1 }] }
             };
 
             const playerDir = directions[piece.color];
@@ -639,10 +674,10 @@
         }
 
         function isPromotionRank(row, col, color) {
-            if (color === 'white') return row === 0;
-            if (color === 'black') return row === 13;
-            if (color === 'red') return col === 0;
-            if (color === 'blue') return col === 13;
+            if (color === 'blue') return row === 0;
+            if (color === 'yellow') return col === 0;
+            if (color === 'green') return row === 13;
+            if (color === 'red') return col === 13;
             return false;
         }
 

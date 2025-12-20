@@ -2316,7 +2316,12 @@ function ready() {
 
         // Send invites to selected users
         chessSetupState.selectedUsers.forEach(function(toUser) {
-            ws.send(JSON.stringify({ type: 'chess_invite', to: toUser }));
+            ws.send(JSON.stringify({
+                type: 'chess_invite',
+                to: toUser,
+                mode: chessSetupState.mode,
+                timeControl: chessSetupState.timeControl
+            }));
         });
 
         flashStatus('Game created! Invites sent to ' + chessSetupState.selectedUsers.length + ' player' + (chessSetupState.selectedUsers.length !== 1 ? 's' : ''));

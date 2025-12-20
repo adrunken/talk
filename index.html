@@ -3845,83 +3845,62 @@ function ready() {
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
         }
-        else if (data['type'] === 'chess_4player_invite') {
+        else if (data['type'] === 'chess_4p_invite') {
             addInvite(data['from'], '4player');
             if (document.hidden) { __chessUnread += 1; __updateTitleBadge(); }
         }
-        else if (data['type'] === 'chess_4player_start') {
+        else if (data['type'] === 'chess_4p_start') {
             var me = $('#username').text();
-            chessGame = {
-                id: data['game_id'],
-                players: data['players'],
-                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false,
-                is4Player: true,
-                moveHistory: []
+            var playerMap = {};
+            if (Array.isArray(data['players'])) {
+                var colors = ['white', 'red', 'black', 'blue'];
+                data['players'].forEach(function(username, idx) {
+                    playerMap[idx] = username;
+                });
+            } else {
+                playerMap = data['players'];
+            }
+
+            try { localStorage.setItem('active_game_4p', JSON.stringify({ id: data['game_id'], players: data['players'] })); } catch(e){}
+
+            var gameData = {
+                game_id: data['game_id'],
+                players: playerMap,
+                currentPlayer: me
             };
-            try { localStorage.setItem('active_game_4p', JSON.stringify({ id: chessGame.id, players: chessGame.players })); } catch(e){}
-            $('#chess-4player-players').removeClass('hidden').css('display', '');
-            $('#chess-4p-white').text(data['players'].white || '—');
-            $('#chess-4p-red').text(data['players'].red || '—');
-            $('#chess-4p-black').text(data['players'].black || '—');
-            $('#chess-4p-blue').text(data['players'].blue || '—');
-            $('#chess-white').text('');
-            $('#chess-black').text('');
-            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
-            renderBoard();
-            updateChessStatus();
-            resetChessTimers(60);
-            startChessTimer();
-            $('#chess-modal').removeClass('hidden');
+
+            try {
+                if (typeof window.initializeChessGame === 'function') {
+                    window.initializeChessGame(gameData);
+                } else {
+                    console.warn('[4P Chess] GameController not loaded');
+                }
+            } catch(e) {
+                console.error('[4P Chess] Error initializing game:', e);
+            }
+
             __chessUnread = 0; __updateTitleBadge();
         }
-        else if (data['type'] === 'chess_4player_move') {
-            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
-                chessGame.fen = data['fen'];
-                chessGame.turn = data['turn'];
-                chessGame.lastMove = { from: data['from'], to: data['to'] };
-                chessGame.moveHistory = chessGame.moveHistory || [];
-                chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });
-                renderBoard();
-                updateChessStatus();
-                clearPendingMove();
-                if (document.hidden && chessGame.turn === chessGame.color) { __chessUnread += 1; __updateTitleBadge(); }
+        else if (data['type'] === 'chess_4p_move') {
+            try {
+                if (typeof window.handleChess4pMove === 'function') {
+                    window.handleChess4pMove({
+                        game_id: data['game_id'],
+                        from: data['from'],
+                        to: data['to'],
+                        player: data['player']
+                    });
+                }
+            } catch(e) {
+                console.error('[4P Chess] Error handling move:', e);
             }
         }
-        else if (data['type'] === 'chess_4player_over') {
+        else if (data['type'] === 'chess_4p_resign' || data['type'] === 'chess_4p_over') {
             try { localStorage.removeItem('active_game_4p'); } catch(e){}
-            if (chessGame && chessGame.is4Player && chessGame.id === data['game_id']) {
-                chessGame.over = true;
-                stopChessTimer();
-                $('#chess-status').text('Game over - Winner: ' + data['winner'] + ' (' + data['reason'] + ')');
-                hideRejoinPrompt();
-            }
-        }
-        else if (data['type'] === 'chess_4player_resume') {
-            var me = $('#username').text();
-            chessGame = {
-                id: data['game_id'],
-                players: data['players'],
-                color: Object.keys(data['players']).find(function(c) { return data['players'][c] === me; }),
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false,
-                is4Player: true,
-                moveHistory: []
-            };
-            $('#chess-4player-players').removeClass('hidden').css('display', '');
-            $('#chess-4p-white').text(data['players'].white || '—');
-            $('#chess-4p-red').text(data['players'].red || '—');
-            $('#chess-4p-black').text(data['players'].black || '—');
-            $('#chess-4p-blue').text(data['players'].blue || '—');
-            $('#chess-white').text('');
-            $('#chess-black').text('');
-            pendingUserMove = null; premoveQueue = []; updateConfirmButton();
-            showRejoinPrompt();
+            var statusMsg = data['type'] === 'chess_4p_resign'
+                ? 'Player resigned'
+                : ('Game over - Winner: ' + (data['winner'] || 'Unknown'));
+            $('#chess-status').text(statusMsg);
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

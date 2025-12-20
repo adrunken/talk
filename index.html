@@ -3863,17 +3863,17 @@ function ready() {
             var squareMap = {};
 
             // 4-player chess standard starting position
-            // Player 0 (Red): Ranks 1-2, WHITE pieces (R N B Q K B N R R N B R Q B + pawns)
-            // Player 1 (Blue): Files a-b, WHITE pieces
-            // Player 2 (Yellow): Ranks 13-14, BLACK pieces
-            // Player 3 (Green): Files m-n, BLACK pieces
+            // Player 0 (Red): Ranks 1-2, WHITE pieces (w = white)
+            // Player 1 (Blue): Files a-b, WHITE pieces (w = white)
+            // Player 2 (Yellow): Ranks 13-14, BLACK pieces (b = black)
+            // Player 3 (Green): Files m-n, BLACK pieces (b = black)
 
-            var standardBackRow = ['R','N','B','Q','K','B','N','R','R','N','B','R','Q','B'];
-            var standardPawnRow = Array(14).fill('P');
-            var blackBackRow = ['r','n','b','q','k','b','n','r','r','n','b','r','q','b'];
-            var blackPawnRow = Array(14).fill('p');
+            var standardBackRow = ['wr','wn','wb','wq','wk','wb','wn','wr','wr','wn','wb','wr','wq','wb'];
+            var standardPawnRow = Array(14).fill('wp');
+            var blackBackRow = ['br','bn','bb','bq','bk','bb','bn','br','br','bn','bb','br','bq','bb'];
+            var blackPawnRow = Array(14).fill('bp');
 
-            // Red (Player 0): Ranks 1-2 (top)
+            // Red (Player 0): Ranks 1-2 (top) - uses white pieces
             standardBackRow.forEach(function(piece, f) {
                 squareMap[files[f] + '1'] = piece;
             });
@@ -3881,7 +3881,7 @@ function ready() {
                 squareMap[files[f] + '2'] = piece;
             });
 
-            // Blue (Player 1): Files a-b (left side)
+            // Blue (Player 1): Files a-b (left side) - uses white pieces
             standardBackRow.forEach(function(piece, r) {
                 if (r < 14 && !squareMap['a' + (r+1)]) {
                     squareMap['a' + (r+1)] = piece;
@@ -3893,7 +3893,7 @@ function ready() {
                 }
             });
 
-            // Yellow (Player 2): Ranks 13-14 (bottom)
+            // Yellow (Player 2): Ranks 13-14 (bottom) - uses black pieces
             blackBackRow.forEach(function(piece, f) {
                 squareMap[files[f] + '14'] = piece;
             });
@@ -3901,7 +3901,7 @@ function ready() {
                 squareMap[files[f] + '13'] = piece;
             });
 
-            // Green (Player 3): Files m-n (right side)
+            // Green (Player 3): Files m-n (right side) - uses black pieces
             blackBackRow.forEach(function(piece, r) {
                 if (r < 14 && !squareMap['n' + (r+1)]) {
                     squareMap['n' + (r+1)] = piece;

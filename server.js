@@ -1552,8 +1552,9 @@ wss.on('connection', (ws, req) => {
         }
 
         if (!session) {
+          const sessionId = nextSessionId++;
           session = {
-            sessionId: nextSessionId++,
+            sessionId: sessionId,
             sessionKey: sessionKey,
             initiator: inviter,
             players: new Set([inviter]),
@@ -1562,15 +1563,14 @@ wss.on('connection', (ws, req) => {
             timeControl: timeControl,
             createdAt: Date.now()
           };
-          fourPlayerSessions.set(session.sessionId, session);
-          console.log('[chess] 4-player session created:', session.sessionId, 'initiator:', inviter);
+          fourPlayerSessions.set(sessionId, session);
+          console.log('[4p-chess] Session created:', {sessionId, initiator: inviter, sessionKey});
         }
 
         for (const target of targets) {
           if (!target || inviter === target) continue;
           if (!session.players.has(target)) {
             session.players.add(target);
-            console.log('[chess] Added player to session', session.sessionId, ':', target);
           }
 
           const invitePayload = {
@@ -1580,10 +1580,9 @@ wss.on('connection', (ws, req) => {
             timeControl: timeControl,
             sessionId: session.sessionId
           };
+          console.log('[4p-chess] Sending invite:', {sessionId: session.sessionId, from: inviter, to: target});
           sendToUsername(target, invitePayload);
         }
-
-        console.log('[chess] Sent invites for session', session.sessionId, '- players:', Array.from(session.players).join(', '));
       } else {
         const target = String(msg.to || '');
         if (!target || inviter === target) {

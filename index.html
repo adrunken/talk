@@ -3352,6 +3352,7 @@ function ready() {
 
     function clearValidMoves4P() {
         document.querySelectorAll('.valid-move').forEach(function(sq) { sq.classList.remove('valid-move'); });
+        document.querySelectorAll('.selected').forEach(function(sq) { sq.classList.remove('selected'); });
         gameState4P.validMoves = [];
     }
 

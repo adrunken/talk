@@ -474,8 +474,16 @@
                         if (piece) {
                             const pieceEl = document.createElement('div');
                             pieceEl.className = 'piece';
-                            pieceEl.textContent = PIECE_UNICODE[piece.type];
-                            pieceEl.style.color = getColorCode(piece.color);
+
+                            const img = document.createElement('img');
+                            img.src = PIECE_IMAGES[piece.color][piece.type];
+                            img.alt = piece.type;
+                            img.style.width = '100%';
+                            img.style.height = '100%';
+                            img.style.objectFit = 'contain';
+                            img.draggable = false;
+
+                            pieceEl.appendChild(img);
                             pieceEl.draggable = isCurrentPlayerPiece(piece);
 
                             if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {

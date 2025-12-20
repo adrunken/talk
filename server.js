@@ -1535,49 +1535,58 @@ wss.on('connection', (ws, req) => {
     else if (msg.type === 'chess_invite') {
       const inviter = users.get(ws);
       const target = String(msg.to || '');
+      const mode = msg.mode || '2player';
+      const timeControl = msg.timeControl || '5m';
+
       if (!inviter || !target || inviter === target) {
         send(ws, { type: 'chess_error', message: 'Invalid invite' });
-      } else {
-        const mode = msg.mode || '2player';
-        const timeControl = msg.timeControl || '5m';
+      } else if (mode === '4player') {
+        const sessionKey = inviter + '::' + mode + '::' + timeControl;
+        let session = null;
 
-        if (mode === '4player') {
-          const key = inviter + '\u0000' + target;
-          const sessionId = nextSessionId++;
-          fourPlayerSessions.set(sessionId, {
+        for (const [sid, s] of fourPlayerSessions) {
+          if (s.sessionKey === sessionKey) {
+            session = s;
+            break;
+          }
+        }
+
+        if (!session) {
+          session = {
+            sessionId: nextSessionId++,
+            sessionKey: sessionKey,
             initiator: inviter,
             players: [inviter, target],
             acceptedPlayers: [inviter],
             mode: mode,
             timeControl: timeControl,
-            createdAt: Date.now(),
-            sessionId: sessionId
-          });
-          const invitePayload = {
-            type: 'chess_invite',
-            from: inviter,
-            mode: mode,
-            timeControl: timeControl,
-            sessionId: sessionId
+            createdAt: Date.now()
           };
-          sendToUsername(target, invitePayload);
-          send(ws, {
-            type: 'chess_info',
-            message: 'Waiting for ' + target + ' to accept...'
-          });
+          fourPlayerSessions.set(session.sessionId, session);
         } else {
-          const key = inviter + '\u0000' + target;
-          const inviteData = { timestamp: Date.now() };
-          if (msg.mode) inviteData.mode = msg.mode;
-          if (msg.timeControl) inviteData.timeControl = msg.timeControl;
-          invites.set(key, inviteData);
-          const invitePayload = { type: 'chess_invite', from: inviter };
-          if (msg.mode) invitePayload.mode = msg.mode;
-          if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
-          const ok = sendToUsername(target, invitePayload);
-          if (!ok) {
+          if (!session.players.includes(target)) {
+            session.players.push(target);
           }
         }
+
+        const invitePayload = {
+          type: 'chess_invite',
+          from: inviter,
+          mode: mode,
+          timeControl: timeControl,
+          sessionId: session.sessionId
+        };
+        sendToUsername(target, invitePayload);
+      } else {
+        const key = inviter + '\u0000' + target;
+        const inviteData = { timestamp: Date.now() };
+        if (msg.mode) inviteData.mode = msg.mode;
+        if (msg.timeControl) inviteData.timeControl = msg.timeControl;
+        invites.set(key, inviteData);
+        const invitePayload = { type: 'chess_invite', from: inviter };
+        if (msg.mode) invitePayload.mode = msg.mode;
+        if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
+        sendToUsername(target, invitePayload);
       }
     }
     else if (msg.type === 'chess_invite_accept') {

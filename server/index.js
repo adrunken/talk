@@ -168,6 +168,20 @@ app.use(
   })
 );
 
+// Serve chess page
+app.get('/chess', (req, res) => {
+  const chessPagePath = path.join(__dirname, '..', 'chess.html');
+  res.sendFile(chessPagePath, (err) => {
+    if (err) {
+      console.error('Error serving chess.html:', err.message);
+      res.status(500).send('Error loading chess page');
+    }
+  });
+});
+
+// Serve static assets for chess (images directory)
+app.use('/img', express.static(path.join(__dirname, '..', 'img')));
+
 // Serve chat page as main page
 app.get('/', (req, res) => {
   const chatPagePath = path.join(__dirname, '..', 'index.html');

@@ -1555,6 +1555,8 @@ wss.on('connection', (ws, req) => {
     else if (msg.type === 'chess_invite_accept') {
       const target = users.get(ws); // acceptor
       const inviter = String(msg.from || '');
+      const gameMode = String(msg.mode || '2player');
+      const timeControl = String(msg.timeControl || '');
       const key = inviter + '\u0000' + target;
       if (!inviter || !target || !invites.has(key)) {
         send(ws, { type: 'chess_error', message: 'Invite not found' });
@@ -1563,8 +1565,8 @@ wss.on('connection', (ws, req) => {
         const board = new ChessCtor();
         let white, black;
         if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false });
-        const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+        games.set(gid, { board, white, black, over: false, isAiGame: false, gameMode, timeControl });
+        const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', gameMode, timeControl };
         sendToUsername(white, payload); sendToUsername(black, payload);
         invites.delete(key);
       }

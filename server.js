@@ -2157,6 +2157,106 @@ wss.on('connection', (ws, req) => {
         }
       }, delayBeforeAiMove);
     }
+    else if (msg.type === '4player_move') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (!gid || !fourPlayerGames.has(gid)) {
+        send(ws, { type: 'chess_error', message: 'Game not found' });
+        return;
+      }
+
+      const game = fourPlayerGames.get(gid);
+      const playerIndex = game.players.indexOf(username);
+
+      if (playerIndex === -1) {
+        send(ws, { type: 'chess_error', message: 'Not a player in this game' });
+        return;
+      }
+
+      // Check if it's this player's turn
+      const activePlayerIndex = game.activePlayers[game.currentTurn];
+      if (activePlayerIndex !== playerIndex) {
+        send(ws, { type: '4playerMoveRejected', reason: 'Not your turn' });
+        return;
+      }
+
+      const { from, to, piece } = msg;
+
+      if (!from || !to || !piece) {
+        send(ws, { type: 'chess_error', message: 'Invalid move data' });
+        return;
+      }
+
+      const fromRow = from.row;
+      const fromCol = from.col;
+      const toRow = to.row;
+      const toCol = to.col;
+
+      // Validate position bounds
+      if (fromRow < 0 || fromRow >= 14 || fromCol < 0 || fromCol >= 14 ||
+          toRow < 0 || toRow >= 14 || toCol < 0 || toCol >= 14) {
+        send(ws, { type: 'chess_error', message: 'Move out of bounds' });
+        return;
+      }
+
+      // Check if source has the piece
+      if (game.board[fromRow][fromCol] === null) {
+        send(ws, { type: 'chess_error', message: 'No piece at source' });
+        return;
+      }
+
+      const sourcePiece = game.board[fromRow][fromCol];
+      if (sourcePiece.color !== piece.color || sourcePiece.type !== piece.type) {
+        send(ws, { type: 'chess_error', message: 'Invalid piece at source' });
+        return;
+      }
+
+      // Apply move on server
+      game.board[toRow][toCol] = piece;
+      game.board[fromRow][fromCol] = null;
+      game.moveCount++;
+
+      let eliminatedColor = null;
+      const capturedPiece = game.board[toRow][toCol];
+      if (capturedPiece && capturedPiece.type === 'king') {
+        eliminatedColor = game.players.indexOf(capturedPiece.color);
+        if (eliminatedColor !== -1) {
+          const colorIndex = game.players.indexOf(capturedPiece.color);
+          if (colorIndex !== -1) {
+            game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
+          }
+        }
+      }
+
+      // Advance turn
+      let nextTurn = (game.currentTurn + 1) % 4;
+      while (!game.activePlayers.includes(nextTurn) && game.activePlayers.length > 1) {
+        nextTurn = (nextTurn + 1) % 4;
+      }
+      game.currentTurn = nextTurn;
+
+      // Broadcast move to all players in the game
+      const COLORS = ['blue', 'yellow', 'green', 'red'];
+      const moveUpdate = {
+        type: '4playerMoveUpdate',
+        from,
+        to,
+        piece,
+        eliminatedColor,
+        nextTurn: game.currentTurn,
+        activePlayers: game.activePlayers,
+        moveCount: game.moveCount
+      };
+
+      for (const player of game.players) {
+        if (game.playerWs.has(player)) {
+          send(game.playerWs.get(player), moveUpdate);
+        }
+      }
+
+      console.log('[4p-chess] Move recorded:', {gid, player: username, from, to, moveCount: game.moveCount});
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

@@ -1177,7 +1177,9 @@ const pings = new Map(); // ws -> timestamp
 const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
+const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
 let nextGameId = 1;
+let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
@@ -1532,41 +1534,141 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'chess_invite') {
       const inviter = users.get(ws);
-      const target = String(msg.to || '');
-      if (!inviter || !target || inviter === target) {
-        send(ws, { type: 'chess_error', message: 'Invalid invite' });
+      const targets = Array.isArray(msg.to) ? msg.to : [String(msg.to || '')];
+      const mode = msg.mode || '2player';
+      const timeControl = msg.timeControl || '5m';
+
+      if (!inviter) {
+        send(ws, { type: 'chess_error', message: 'Not authenticated' });
+      } else if (mode === '4player') {
+        const sessionKey = inviter + '::' + mode + '::' + timeControl;
+        let session = null;
+
+        for (const [sid, s] of fourPlayerSessions) {
+          if (s.sessionKey === sessionKey) {
+            session = s;
+            break;
+          }
+        }
+
+        if (!session) {
+          const sessionId = nextSessionId++;
+          session = {
+            sessionId: sessionId,
+            sessionKey: sessionKey,
+            initiator: inviter,
+            players: new Set([inviter]),
+            acceptedPlayers: new Set([inviter]),
+            mode: mode,
+            timeControl: timeControl,
+            createdAt: Date.now()
+          };
+          fourPlayerSessions.set(sessionId, session);
+          console.log('[4p-chess] Session created:', {sessionId, initiator: inviter, sessionKey});
+        }
+
+        for (const target of targets) {
+          if (!target || inviter === target) continue;
+          if (!session.players.has(target)) {
+            session.players.add(target);
+          }
+
+          const invitePayload = {
+            type: 'chess_invite',
+            from: inviter,
+            mode: mode,
+            timeControl: timeControl,
+            sessionId: session.sessionId
+          };
+          console.log('[4p-chess] Sending invite:', {sessionId: session.sessionId, from: inviter, to: target});
+          sendToUsername(target, invitePayload);
+        }
       } else {
-        const key = inviter + '\u0000' + target;
-        // Store invite with mode and timeControl for queued delivery
-        const inviteData = { timestamp: Date.now() };
-        if (msg.mode) inviteData.mode = msg.mode;
-        if (msg.timeControl) inviteData.timeControl = msg.timeControl;
-        invites.set(key, inviteData);
-        const invitePayload = { type: 'chess_invite', from: inviter };
-        if (msg.mode) invitePayload.mode = msg.mode;
-        if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
-        const ok = sendToUsername(target, invitePayload);
-        if (!ok) {
-          // queued for offline delivery; optional ack
-          // send(ws, { type: 'chess_info', message: 'Invite queued for delivery when user is online' });
+        const target = String(msg.to || '');
+        if (!target || inviter === target) {
+          send(ws, { type: 'chess_error', message: 'Invalid invite' });
+        } else {
+          const key = inviter + '\u0000' + target;
+          const inviteData = { timestamp: Date.now() };
+          if (msg.mode) inviteData.mode = msg.mode;
+          if (msg.timeControl) inviteData.timeControl = msg.timeControl;
+          invites.set(key, inviteData);
+          const invitePayload = { type: 'chess_invite', from: inviter };
+          if (msg.mode) invitePayload.mode = msg.mode;
+          if (msg.timeControl) invitePayload.timeControl = msg.timeControl;
+          sendToUsername(target, invitePayload);
         }
       }
     }
     else if (msg.type === 'chess_invite_accept') {
-      const target = users.get(ws); // acceptor
+      const acceptor = users.get(ws);
       const inviter = String(msg.from || '');
-      const key = inviter + '\u0000' + target;
-      if (!inviter || !target || !invites.has(key)) {
-        send(ws, { type: 'chess_error', message: 'Invite not found' });
+      const sessionId = msg.sessionId;
+
+      console.log('[4p-chess] Accept received:', {acceptor, inviter, sessionId, hasSession: fourPlayerSessions.has(sessionId)});
+
+      if (!inviter || !acceptor) {
+        send(ws, { type: 'chess_error', message: 'Invalid invite' });
+      } else if (fourPlayerSessions.has(sessionId)) {
+        const session = fourPlayerSessions.get(sessionId);
+
+        if (!session.acceptedPlayers.has(acceptor)) {
+          session.acceptedPlayers.add(acceptor);
+        }
+
+        const playersArray = Array.from(session.players);
+        const acceptedArray = Array.from(session.acceptedPlayers);
+
+        console.log('[4p-chess] Status:', {sessionId, accepted: acceptedArray.length, total: playersArray.length, acceptedPlayers: acceptedArray, allPlayers: playersArray});
+
+        if (acceptedArray.length === playersArray.length && playersArray.length === 4) {
+          const gid = nextGameId++;
+          games.set(gid, {
+            board: null,
+            players: playersArray,
+            over: false,
+            isAiGame: false,
+            is4player: true,
+            mode: session.mode,
+            timeControl: session.timeControl
+          });
+
+          const payload = {
+            type: '4player_game_start',
+            game_id: gid,
+            players: playersArray,
+            mode: session.mode,
+            timeControl: session.timeControl
+          };
+
+          console.log('[4p-chess] Game started:', {gid, players: playersArray});
+
+          for (const player of playersArray) {
+            sendToUsername(player, payload);
+          }
+
+          fourPlayerSessions.delete(sessionId);
+        } else {
+          send(ws, {
+            type: 'chess_info',
+            message: 'Waiting for ' + (playersArray.length - acceptedArray.length) + ' more player(s) to accept...'
+          });
+        }
       } else {
-        const gid = nextGameId++;
-        const board = new ChessCtor();
-        let white, black;
-        if (Math.random() < 0.5) { white = inviter; black = target; } else { white = target; black = inviter; }
-        games.set(gid, { board, white, black, over: false, isAiGame: false });
-        const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
-        sendToUsername(white, payload); sendToUsername(black, payload);
-        invites.delete(key);
+        console.log('[4p-chess] Session not found, treating as 2-player invite');
+        const key = inviter + '\u0000' + acceptor;
+        if (!invites.has(key)) {
+          send(ws, { type: 'chess_error', message: 'Invite not found' });
+        } else {
+          const gid = nextGameId++;
+          const board = new ChessCtor();
+          let white, black;
+          if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
+          games.set(gid, { board, white, black, over: false, isAiGame: false });
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+          sendToUsername(white, payload); sendToUsername(black, payload);
+          invites.delete(key);
+        }
       }
     }
     else if (msg.type === 'chess_move') {

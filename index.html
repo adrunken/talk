@@ -2973,12 +2973,22 @@ function ready() {
     $('#invites').on('click', '.invite-accept', function() {
         var $inviteItem = $(this).closest('.invite-item');
         var fromUser = $inviteItem.data('from');
-        var gameMode = $inviteItem.data('mode') || '4player';
+        var gameMode = $inviteItem.data('mode') || '2player';
+        var timeControl = $inviteItem.data('time-control') || '';
 
-        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'chess_invite_accept', from: fromUser }));
+        if (ws && ws.readyState === 1) {
+            var acceptPayload = { type: 'chess_invite_accept', from: fromUser };
+            if (gameMode) acceptPayload.mode = gameMode;
+            if (timeControl) acceptPayload.timeControl = timeControl;
+            ws.send(JSON.stringify(acceptPayload));
+        }
 
-        // Open the appropriate chess modal based on game mode
+        // Open the appropriate chess modal based on game mode (close others first)
         setTimeout(function() {
+            // Close any existing modals
+            $('#chess-modal').addClass('hidden');
+            $('#four-player-chess-overlay').addClass('hidden');
+
             if (gameMode === '2player') {
                 $('#chess-modal').removeClass('hidden');
             } else if (gameMode === '4player') {

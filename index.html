@@ -2923,6 +2923,9 @@ function ready() {
         players: {}
     };
 
+    // Timer for updating 4-player game time
+    var fourPlayerGameTimer = null;
+
     // Initialize 4-player colors display
     function initializeFourPlayerColorDisplay() {
         var colorsList = $('#four-player-colors-list');

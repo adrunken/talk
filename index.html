@@ -2913,6 +2913,114 @@ function ready() {
         }
     });
 
+    // 4-Player Chess Game State Management
+    var fourPlayerGameState = {
+        currentTurn: 0,
+        activePlayers: [0, 1, 2, 3],
+        moveCount: 0,
+        gameStartTime: null,
+        colors: ['blue', 'yellow', 'green', 'red'],
+        players: {}
+    };
+
+    // Initialize 4-player colors display
+    function initializeFourPlayerColorDisplay() {
+        var colorsList = $('#four-player-colors-list');
+        colorsList.empty();
+
+        var colorCodes = {
+            blue: '#3b82f6',
+            yellow: '#eab308',
+            green: '#22c55e',
+            red: '#ef4444'
+        };
+
+        fourPlayerGameState.colors.forEach(function(color, idx) {
+            var playerName = fourPlayerGameState.players[color] || color.charAt(0).toUpperCase() + color.slice(1);
+            var isActive = fourPlayerGameState.activePlayers.includes(idx);
+            var isCurrentTurn = (fourPlayerGameState.activePlayers[fourPlayerGameState.currentTurn] === idx) && isActive;
+
+            var colorItem = document.createElement('div');
+            colorItem.style.cssText = 'padding: 0.5rem; background: rgba(' + hexToRgb(colorCodes[color]).join(',') + ', 0.1); border-left: 3px solid ' + colorCodes[color] + '; border-radius: 0.25rem; font-size: 0.8rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;';
+            if (!isActive) {
+                colorItem.style.opacity = '0.5';
+                colorItem.style.textDecoration = 'line-through';
+            }
+            if (isCurrentTurn) {
+                colorItem.style.background = 'rgba(' + hexToRgb(colorCodes[color]).join(',') + ', 0.2)';
+                colorItem.style.fontWeight = '600';
+            }
+            colorItem.innerHTML = '<span>' + playerName + '</span><span style="color: ' + colorCodes[color] + '; font-weight: 600;">' + (isCurrentTurn ? '★' : '') + '</span>';
+            colorsList.append(colorItem);
+        });
+    }
+
+    // Helper function to convert hex to RGB
+    function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+        ] : [0, 0, 0];
+    }
+
+    // Update 4-player game info from iframe
+    function updateFourPlayerGameInfo(gameState) {
+        if (!gameState) return;
+
+        // Update game state
+        fourPlayerGameState.currentTurn = gameState.currentTurn || 0;
+        fourPlayerGameState.activePlayers = gameState.activePlayers || [0, 1, 2, 3];
+        fourPlayerGameState.moveCount = gameState.moveCount || 0;
+        fourPlayerGameState.players = gameState.players || {};
+
+        if (gameState.gameStartTime && !fourPlayerGameState.gameStartTime) {
+            fourPlayerGameState.gameStartTime = gameState.gameStartTime;
+        }
+
+        // Update color display
+        initializeFourPlayerColorDisplay();
+
+        // Update turn display
+        var currentColor = fourPlayerGameState.colors[fourPlayerGameState.activePlayers[fourPlayerGameState.currentTurn]];
+        var currentPlayerName = fourPlayerGameState.players[currentColor] || currentColor.charAt(0).toUpperCase() + currentColor.slice(1);
+        $('#four-player-turn-display').text(currentPlayerName + "'s Turn");
+
+        // Update move count
+        $('#four-player-move-count').text(fourPlayerGameState.moveCount);
+
+        // Update game time
+        if (fourPlayerGameState.gameStartTime) {
+            var elapsed = Math.floor((Date.now() - fourPlayerGameState.gameStartTime) / 1000);
+            var mins = Math.floor(elapsed / 60);
+            var secs = elapsed % 60;
+            $('#four-player-game-time').text(mins + ':' + secs.toString().padStart(2, '0'));
+        }
+    }
+
+    // Listen for messages from the 4-player chess iframe
+    window.addEventListener('message', function(event) {
+        if (event.source !== document.getElementById('four-player-iframe').contentWindow) {
+            return;
+        }
+
+        if (event.data.type === 'fourPlayerGameUpdate') {
+            updateFourPlayerGameInfo(event.data.gameState);
+        }
+    });
+
+    // When opening 4-player chess modal, request game state from iframe
+    $('#nav-chess').on('click', function(){
+        $('#four-player-chess-overlay').removeClass('hidden');
+        setTimeout(function() {
+            var iframeWindow = document.getElementById('four-player-iframe').contentWindow;
+            if (iframeWindow) {
+                iframeWindow.postMessage({ type: 'requestGameState' }, '*');
+            }
+        }, 100);
+    });
+
     $('#chess-close').on('click', function(){
         $('#chess-modal').addClass('hidden');
         $('#chess-settings-dropdown').addClass('hidden');

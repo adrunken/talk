@@ -3486,6 +3486,24 @@ function ready() {
         gameState4P.currentTurn = nextTurn;
     }
 
+    function apply4PlayerMoveUpdate(data) {
+        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount } = data;
+
+        gameState4P.board[to.row][to.col] = piece;
+        gameState4P.board[from.row][from.col] = null;
+
+        if (eliminatedColor !== undefined && eliminatedColor !== null) {
+            eliminatePlayer4P(eliminatedColor);
+        }
+
+        gameState4P.moveCount = moveCount;
+        gameState4P.currentTurn = nextTurn;
+        gameState4P.activePlayers = activePlayers;
+
+        renderBoard4P();
+        updateUI4P();
+    }
+
     function updateUI4P() {
         const currentColor = COLORS_4PLAYER[gameState4P.activePlayers[gameState4P.currentTurn]];
         document.querySelectorAll('.player-timer').forEach(function(timer) {

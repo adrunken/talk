@@ -541,7 +541,6 @@
         }
 
         function onSquareDrop(e, toRow, toCol) {
-            clearValidMoves();
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;
@@ -549,6 +548,7 @@
 
             if (!move) {
                 gameState.selectedSquare = null;
+                gameState.validMoves = [];
                 return;
             }
 
@@ -574,11 +574,6 @@
             renderBoard();
             updateUI();
             sendGameStateToParent();
-        }
-
-        function clearValidMoves() {
-            document.querySelectorAll('.valid-move').forEach(sq => sq.classList.remove('valid-move'));
-            gameState.validMoves = [];
         }
 
         function calculateValidMoves(row, col) {

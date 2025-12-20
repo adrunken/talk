@@ -3654,6 +3654,7 @@ function ready() {
     }
 
     function addInvite(fromUser, mode, timeControl, sessionId) {
+        console.log('[4p-chess-client] Creating invite item:', {from: fromUser, mode: mode, timeControl: timeControl, sessionId: sessionId});
         var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-mode', mode || '').attr('data-time-control', timeControl || '').attr('data-session-id', sessionId || '').text('Invite from ' + fromUser);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');

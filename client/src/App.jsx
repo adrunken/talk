@@ -133,6 +133,11 @@ export default function App() {
               previewExists={!!preview}
             />
           </div>
+
+          {/* Chess Game Panel */}
+          <div className="flex-1 overflow-y-auto">
+            <Chess />
+          </div>
         </div>
       </div>
 

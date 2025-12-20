@@ -14,8 +14,8 @@
         }
 
         body {
+            background: #0b1220;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #f1f5f9;
             height: 100vh;
             overflow: hidden;
@@ -25,78 +25,85 @@
             display: flex;
             height: 100vh;
             width: 100vw;
+            gap: 1rem;
+            padding: 1rem;
         }
 
         .board-area {
             flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
+            gap: 1.5rem;
         }
 
         .board-wrapper {
-            position: relative;
-            width: min(70vh, 70vw);
-            height: min(70vh, 70vw);
+            background: #1b2436;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.4),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         }
 
-        .board {
+        .chessboard {
             display: grid;
-            grid-template-columns: repeat(14, 1fr);
-            grid-template-rows: repeat(14, 1fr);
-            gap: 0;
-            width: 100%;
-            height: 100%;
-            background: #8b7355;
-            border: 4px solid #5a4a3a;
-            border-radius: 0.5rem;
+            grid-template-columns: repeat(14, 52px);
+            grid-template-rows: repeat(14, 52px);
+            border-radius: 8px;
+            overflow: hidden;
             transition: transform 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .square {
-            aspect-ratio: 1;
+            width: 52px;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
             cursor: grab;
             user-select: none;
-            border: none;
-            background: #d4a574;
+            position: relative;
         }
 
-        .square:nth-child(2n) {
-            background: #c19a6b;
+        .square.light {
+            background: #f0d9b5;
         }
 
-        .square.invalid {
-            background: #8b7355;
+        .square.dark {
+            background: #b58863;
+        }
+
+        .square.inactive {
+            background: #1b2436;
             cursor: not-allowed;
         }
 
-        .square.valid-move {
-            background: rgba(34, 197, 94, 0.4) !important;
-            box-shadow: inset 0 0 10px rgba(34, 197, 94, 0.6);
+        .square.valid-move.light {
+            background: rgba(34, 197, 94, 0.5);
+        }
+
+        .square.valid-move.dark {
+            background: rgba(34, 197, 94, 0.5);
         }
 
         .piece {
-            width: 80%;
-            height: 80%;
-            font-size: 1.8rem;
+            width: 44px;
+            height: 44px;
+            font-size: 2.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: grab;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
             user-select: none;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
             transition: transform 0.1s;
         }
 
         .piece:hover:not(.eliminated) {
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
-            transform: scale(1.1);
+            transform: scale(1.15);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
         }
 
         .piece:active:not(.eliminated) {
@@ -108,75 +115,49 @@
             cursor: not-allowed;
         }
 
-        /* Player position indicators */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .player-timers {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            width: 100%;
+        }
+
         .player-timer {
-            position: absolute;
-            width: 120px;
             text-align: center;
             font-weight: 600;
-            font-size: 1.1rem;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            background: rgba(0, 0, 0, 0.6);
+            font-size: 0.95rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
             border: 2px solid;
+            border-radius: 0.5rem;
+            min-width: 100px;
         }
 
-        .player-timer.white {
-            bottom: -120px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-color: #f3f4f6;
-            color: #f3f4f6;
-        }
-
-        .player-timer.red {
-            right: -120px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-color: #ef4444;
-            color: #ef4444;
-        }
-
-        .player-timer.black {
-            top: -120px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-color: #1f2937;
-            color: #1f2937;
-        }
-
-        .player-timer.blue {
-            left: -120px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
+        .player-timer.white { border-color: #f3f4f6; color: #f3f4f6; }
+        .player-timer.red { border-color: #ef4444; color: #ef4444; }
+        .player-timer.black { border-color: #1f2937; color: #1f2937; }
+        .player-timer.blue { border-color: #3b82f6; color: #3b82f6; }
 
         .timer-time {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
         }
 
         .timer-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            opacity: 0.8;
+            opacity: 0.7;
         }
 
         .player-timer.active {
             background: rgba(59, 130, 246, 0.2);
-            box-shadow: 0 0 15px currentColor;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 1rem;
-            z-index: 10;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
         }
 
         .button {
@@ -278,6 +259,10 @@
         }
 
         @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
             .sidebar {
                 width: 100%;
                 border-left: none;
@@ -298,37 +283,39 @@
 <body>
     <div class="container">
         <div class="board-area">
-            <div class="board-wrapper">
-                <div class="board" id="board"></div>
-                
-                <div class="player-timer white" id="timer-white">
-                    <div class="timer-time" id="time-white">1:00</div>
-                    <div class="timer-label">White</div>
-                </div>
-
-                <div class="player-timer red" id="timer-red">
-                    <div class="timer-time" id="time-red">1:00</div>
-                    <div class="timer-label">Red</div>
-                </div>
-
+            <div class="player-timers">
                 <div class="player-timer black" id="timer-black">
                     <div class="timer-time" id="time-black">1:00</div>
                     <div class="timer-label">Black</div>
                 </div>
+            </div>
 
+            <div class="board-wrapper">
+                <div class="chessboard" id="chessboard"></div>
+            </div>
+
+            <div class="player-timers" style="flex-direction: row; justify-content: center; width: 100%; gap: 2rem;">
                 <div class="player-timer blue" id="timer-blue">
                     <div class="timer-time" id="time-blue">1:00</div>
                     <div class="timer-label">Blue</div>
                 </div>
-
-                <div class="controls">
-                    <button class="button" id="undo-btn" title="Undo last move">
-                        <i class="fas fa-undo"></i> Undo
-                    </button>
-                    <button class="button" id="resign-btn" title="Resign from the game">
-                        <i class="fas fa-flag"></i> Resign
-                    </button>
+                <div class="player-timer white" id="timer-white">
+                    <div class="timer-time" id="time-white">1:00</div>
+                    <div class="timer-label">White</div>
                 </div>
+                <div class="player-timer red" id="timer-red">
+                    <div class="timer-time" id="time-red">1:00</div>
+                    <div class="timer-label">Red</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="button" id="undo-btn" title="Undo last move">
+                    <i class="fas fa-undo"></i> Undo
+                </button>
+                <button class="button" id="resign-btn" title="Resign from the game">
+                    <i class="fas fa-flag"></i> Resign
+                </button>
             </div>
         </div>
 
@@ -374,16 +361,16 @@
             moveCount: 0,
             gameStartTime: Date.now(),
             selectedSquare: null,
-            validMoves: [],
-            playerTimes: { white: 60, red: 60, black: 60, blue: 60 },
-            paused: false
+            validMoves: []
         };
 
-        function isInvalidSquare(row, col) {
-            return (row < 3 && col < 3) ||
-                   (row < 3 && col > 10) ||
-                   (row > 10 && col < 3) ||
-                   (row > 10 && col > 10);
+        function isInactive(x, y) {
+            return (
+                (x < 3 && y < 3) ||
+                (x > 10 && y < 3) ||
+                (x < 3 && y > 10) ||
+                (x > 10 && y > 10)
+            );
         }
 
         function initializeBoard() {
@@ -401,8 +388,6 @@
             };
 
             if (orient === 'vertical') {
-                // Vertical players: white (bottom) and black (top)
-                // 8 pawns and 8 back rank pieces (columns 3-10)
                 for (let c = 3; c < 11; c++) {
                     piece('pawn', pawnRow, c);
                 }
@@ -416,8 +401,6 @@
                 piece('knight', backRow, 9);
                 piece('rook', backRow, 10);
             } else {
-                // Horizontal players: red (right) and blue (left)
-                // 8 pawns and 8 back rank pieces (rows 3-10)
                 for (let r = 3; r < 11; r++) {
                     piece('pawn', r, pawnRow);
                 }
@@ -434,42 +417,43 @@
         }
 
         function renderBoard() {
-            const boardEl = document.getElementById('board');
-            boardEl.innerHTML = '';
-            boardEl.style.transform = `rotate(${gameState.currentTurn * 90}deg)`;
+            const board = document.getElementById('chessboard');
+            board.innerHTML = '';
+            board.style.transform = `rotate(${gameState.currentTurn * 90}deg)`;
 
-            for (let row = 0; row < BOARD_SIZE; row++) {
-                for (let col = 0; col < BOARD_SIZE; col++) {
-                    const square = document.createElement('div');
-                    square.className = 'square';
-                    square.dataset.row = row;
-                    square.dataset.col = col;
+            for (let y = 0; y < 14; y++) {
+                for (let x = 0; x < 14; x++) {
+                    const sq = document.createElement('div');
 
-                    if (isInvalidSquare(row, col)) {
-                        square.classList.add('invalid');
-                    }
+                    if (isInactive(x, y)) {
+                        sq.className = 'square inactive';
+                    } else {
+                        const isDark = (x + y) % 2 === 1;
+                        sq.className = `square ${isDark ? 'dark' : 'light'}`;
+                        sq.dataset.x = x;
+                        sq.dataset.y = y;
 
-                    const piece = gameState.board[row][col];
-                    if (piece) {
-                        const pieceEl = document.createElement('div');
-                        pieceEl.className = 'piece';
-                        pieceEl.textContent = PIECE_UNICODE[piece.type];
-                        pieceEl.style.color = getColorCode(piece.color);
-                        pieceEl.dataset.row = row;
-                        pieceEl.dataset.col = col;
-                        pieceEl.draggable = isCurrentPlayerPiece(piece);
-                        
-                        if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {
-                            pieceEl.classList.add('eliminated');
+                        const piece = gameState.board[y][x];
+                        if (piece) {
+                            const pieceEl = document.createElement('div');
+                            pieceEl.className = 'piece';
+                            pieceEl.textContent = PIECE_UNICODE[piece.type];
+                            pieceEl.style.color = getColorCode(piece.color);
+                            pieceEl.draggable = isCurrentPlayerPiece(piece);
+
+                            if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {
+                                pieceEl.classList.add('eliminated');
+                            }
+
+                            pieceEl.addEventListener('dragstart', (e) => onPieceDragStart(e, y, x));
+                            sq.appendChild(pieceEl);
                         }
 
-                        pieceEl.addEventListener('dragstart', (e) => onPieceDragStart(e, row, col));
-                        square.appendChild(pieceEl);
+                        sq.addEventListener('dragover', (e) => e.preventDefault());
+                        sq.addEventListener('drop', (e) => onSquareDrop(e, y, x));
                     }
 
-                    square.addEventListener('dragover', (e) => e.preventDefault());
-                    square.addEventListener('drop', (e) => onSquareDrop(e, row, col));
-                    boardEl.appendChild(square);
+                    board.appendChild(sq);
                 }
             }
         }
@@ -493,7 +477,7 @@
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
             gameState.validMoves.forEach(({ row: r, col: c }) => {
-                const sq = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                const sq = document.querySelector(`[data-x="${c}"][data-y="${r}"]`);
                 if (sq) sq.classList.add('valid-move');
             });
         }
@@ -641,7 +625,7 @@
         }
 
         function isValidPos(row, col) {
-            return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE && !isInvalidSquare(row, col);
+            return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE && !isInactive(col, row);
         }
 
         function isPromotionRank(row, col, color) {

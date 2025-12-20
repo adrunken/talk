@@ -63,6 +63,19 @@ export class BoardRenderer {
     return initials[playerIndex] || '';
   }
 
+  getPieceSymbol(pieceType, playerIndex) {
+    const isLight = playerIndex === 0;
+    const symbols = {
+      p: isLight ? '♙' : '♟',
+      n: isLight ? '♘' : '♞',
+      b: isLight ? '♗' : '♝',
+      r: isLight ? '♖' : '♜',
+      q: isLight ? '♕' : '♛',
+      k: isLight ? '♔' : '♚'
+    };
+    return symbols[pieceType] || '';
+  }
+
   getSquareAtEvent(event) {
     const square = event.target.closest('[data-rank][data-file]');
     if (square) {

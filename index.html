@@ -2542,9 +2542,14 @@ function ready() {
         }
     });
 
-    // Chess button - navigate to chess page
+    // Chess button - open 4-player chess modal
     $('#nav-chess').on('click', function(){
-        window.location.href = '/chess';
+        $('#four-player-chess-modal').removeClass('hidden');
+    });
+
+    // Close 4-player chess modal
+    $('#four-player-close').on('click', function(){
+        $('#four-player-chess-modal').addClass('hidden');
     });
 
     $('#chess-close').on('click', function(){

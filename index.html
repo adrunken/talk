@@ -1035,6 +1035,60 @@ html {
   </div>
 </div>
 
+<!-- Chess Game Setup Modal -->
+<div id="chess-setup-overlay" class="chess-setup-overlay">
+  <div class="chess-setup-modal">
+    <h2 class="chess-setup-title">Create Chess Game</h2>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Game Mode</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-mode="2player" title="2-player chess">
+          <i class="fas fa-users"></i> 2-Player Chess
+        </button>
+        <button class="setup-option-btn" data-mode="4player" title="4-player chess">
+          <i class="fas fa-users"></i> 4-Player Chess
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Time Control</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-time="1m" title="1 minute per player">
+          <i class="fas fa-hourglass-start"></i> 1 minute
+        </button>
+        <button class="setup-option-btn" data-time="3m" title="3 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 3 minutes
+        </button>
+        <button class="setup-option-btn" data-time="5m" title="5 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 5 minutes
+        </button>
+        <button class="setup-option-btn" data-time="10m" title="10 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 10 minutes
+        </button>
+        <button class="setup-option-btn" data-time="30m" title="30 minutes per player">
+          <i class="fas fa-hourglass-start"></i> 30 minutes
+        </button>
+        <button class="setup-option-btn" data-time="unlimited" title="No time limit">
+          <i class="fas fa-infinity"></i> No limit
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Invite Players <span id="setup-player-count" style="color: var(--text-secondary); font-weight: 400; font-size: 0.8rem;">(select up to 1)</span></div>
+      <div class="users-list" id="setup-users-list"></div>
+      <div class="setup-validation-msg" id="setup-validation-msg"></div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="setup-action-btn" id="setup-cancel-btn">Cancel</button>
+      <button class="setup-action-btn primary" id="setup-create-btn" disabled>Create Game</button>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies

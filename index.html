@@ -3762,6 +3762,7 @@ function ready() {
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();
+        var gameMode = data['gameMode'] || '2player';
         chessGame = {
             id: data['game_id'],
             white: data['white'],
@@ -3772,7 +3773,9 @@ function ready() {
             lastMove: null,
             over: false,
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
-            historyIndex: 0
+            historyIndex: 0,
+            gameMode: gameMode,
+            timeControl: data['timeControl']
         };
         hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
         $('#chess-white').text(chessGame.white);
@@ -3782,7 +3785,21 @@ function ready() {
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
-        $('#chess-modal').removeClass('hidden'); // Show the modal
+
+        // Close any existing modals first
+        $('#chess-modal').addClass('hidden');
+        $('#four-player-chess-overlay').addClass('hidden');
+
+        // Open the appropriate modal based on game mode
+        if (gameMode === '2player') {
+            $('#chess-modal').removeClass('hidden');
+        } else if (gameMode === '4player') {
+            $('#four-player-chess-overlay').removeClass('hidden');
+        } else {
+            // Default to 2-player if mode is unknown
+            $('#chess-modal').removeClass('hidden');
+        }
+
         updateSettingUI('confirm-moves');
     }
 

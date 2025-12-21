@@ -115,6 +115,15 @@
             cursor: not-allowed;
         }
 
+        .square.valid-target {
+            background: rgba(34, 197, 94, 0.3) !important;
+            box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.6);
+        }
+
+        .square.valid-target .piece {
+            cursor: cell;
+        }
+
         .controls {
             display: flex;
             gap: 1rem;

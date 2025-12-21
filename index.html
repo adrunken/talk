@@ -1352,7 +1352,13 @@ var __processingPremoves = false;
 var chessSettings = {
     confirmMoves: true,
     premoveEnabled: true,
-    showLegalMoves: localStorage.getItem('chessSettings_showLegalMoves') !== 'false'
+    showLegalMoves: (function() {
+        try {
+            return localStorage.getItem('chessSettings_showLegalMoves') !== 'false';
+        } catch(e) {
+            return true;
+        }
+    })()
 };
 
 // Board and Pieces settings

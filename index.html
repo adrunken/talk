@@ -1567,6 +1567,7 @@ function saveUserSettings(username) {
         selectedPieces: boardPiecesSettings.selectedPieces
     };
     console.log('Saving settings for user:', username, settings);
+    localStorage.setItem('chessSettings_showLegalMoves', chessSettings.showLegalMoves);
     fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

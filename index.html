@@ -3260,6 +3260,19 @@ function ready() {
                 board.appendChild(sq);
             }
         }
+
+        // Highlight kings that are in check
+        for (let colorIdx = 0; colorIdx < COLORS_4PLAYER.length; colorIdx++) {
+            if (gameState4P.activePlayers.includes(colorIdx) && isKingInCheck4P(colorIdx)) {
+                const kingPos = findKing4P(colorIdx);
+                if (kingPos) {
+                    const kingSq = document.querySelector('[data-x="' + kingPos.col + '"][data-y="' + kingPos.row + '"]');
+                    if (kingSq) {
+                        kingSq.classList.add('in-check');
+                    }
+                }
+            }
+        }
     }
 
     function isCurrentPlayerPiece4P(piece) {

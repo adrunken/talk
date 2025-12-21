@@ -3299,6 +3299,12 @@ function ready() {
     }
 
     function onPieceDragStart4P(e, row, col) {
+        const piece = gameState4P.board[row][col];
+        // Only allow dragging pieces that belong to the current player
+        if (!piece || !isCurrentPlayerPiece4P(piece)) {
+            e.preventDefault();
+            return;
+        }
         gameState4P.selectedSquare = { row, col };
         gameState4P.validMoves = calculateValidMoves4P(row, col);
     }
@@ -3309,6 +3315,12 @@ function ready() {
 
         const fromRow = gameState4P.selectedSquare.row;
         const fromCol = gameState4P.selectedSquare.col;
+        const piece = gameState4P.board[fromRow][fromCol];
+        // Verify the piece belongs to the current player before allowing the move
+        if (!piece || !isCurrentPlayerPiece4P(piece)) {
+            gameState4P.selectedSquare = null;
+            return;
+        }
         const move = gameState4P.validMoves.find(function(m) { return m.row === toRow && m.col === toCol; });
 
         if (!move) {

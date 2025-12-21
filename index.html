@@ -3200,7 +3200,7 @@ function ready() {
                         pieceEl.addEventListener('dragstart', function(e) { onPieceDragStart4P(e, y, x); });
                         pieceEl.addEventListener('click', function(e) {
                             e.stopPropagation();
-                            if (isCurrentPlayerPiece4P(piece)) {
+                            if (isPlayerOwnPiece4P(piece)) {
                                 onPieceClick4P(y, x);
                             }
                         });

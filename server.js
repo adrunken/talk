@@ -2235,12 +2235,16 @@ wss.on('connection', (ws, req) => {
       game.board[fromRow][fromCol] = null;
       game.moveCount++;
 
-      // Advance turn
-      let nextTurn = (game.currentTurn + 1) % 4;
-      while (!game.activePlayers.includes(nextTurn) && game.activePlayers.length > 1) {
-        nextTurn = (nextTurn + 1) % 4;
+      // Advance turn to next position in activePlayers
+      // currentTurn is a position in the activePlayers array
+      if (game.activePlayers.length > 1) {
+        let nextTurnPos = (game.currentTurn + 1) % game.activePlayers.length;
+        game.currentTurn = nextTurnPos;
+      } else if (game.activePlayers.length === 1) {
+        game.currentTurn = 0; // Only one player left, keep turn at 0
+      } else {
+        game.currentTurn = 0; // No active players (shouldn't happen)
       }
-      game.currentTurn = nextTurn;
 
       // Broadcast move to all players in the game
       const moveUpdate = {

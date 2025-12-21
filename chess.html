@@ -601,7 +601,15 @@
             });
         }
 
+        function clearHighlights() {
+            document.querySelectorAll('.square.valid-target').forEach(sq => {
+                sq.classList.remove('valid-target');
+            });
+        }
+
         function onSquareDrop(e, toRow, toCol) {
+            clearHighlights();
+
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;

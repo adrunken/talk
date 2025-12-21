@@ -3236,8 +3236,12 @@ function ready() {
     }
 
     function isCurrentPlayerPiece4P(piece) {
+        // Check if it's the current player's turn AND if this piece belongs to the local player
+        const myColor = COLORS_4PLAYER[gameState4P.playerIndex];
         const currentColor = COLORS_4PLAYER[gameState4P.activePlayers[gameState4P.currentTurn]];
-        return piece.color === currentColor && gameState4P.activePlayers.includes(COLORS_4PLAYER.indexOf(piece.color));
+        const isMyTurn = myColor === currentColor;
+        const isMyPiece = piece.color === myColor;
+        return isMyTurn && isMyPiece;
     }
 
     function onPieceClick4P(row, col) {

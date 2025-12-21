@@ -1639,7 +1639,7 @@ wss.on('connection', (ws, req) => {
             players: playersArray,
             board: Array(14).fill(null).map(() => Array(14).fill(null)),
             currentTurn: 0,
-            activePlayers: [0, 1, 2, 3],
+            activePlayers: [0, 3, 2, 1],
             moveCount: 0
           });
 

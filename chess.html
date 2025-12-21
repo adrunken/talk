@@ -569,6 +569,11 @@
             return piece.color === currentColor && gameState.activePlayers.includes(COLORS.indexOf(piece.color));
         }
 
+        function isPlayerOwnPiece(piece) {
+            const playerColor = COLORS[gameState.playerIndex];
+            return piece.color === playerColor;
+        }
+
         function onPieceDragStart(e, row, col) {
             const piece = gameState.board[row][col];
             // Only allow dragging pieces that belong to the current player

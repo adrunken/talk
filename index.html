@@ -3301,6 +3301,19 @@ function ready() {
         advanceTurn4P();
         renderBoard4P();
         updateUI4P();
+
+        if (ws && ws.readyState === 1) {
+            console.log('[4p-chess-client] Sending move (click):', {gameId: gameState4P.gameId, from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}});
+            ws.send(JSON.stringify({
+                type: '4player_move',
+                game_id: gameState4P.gameId,
+                from: { row: fromRow, col: fromCol },
+                to: { row: toRow, col: toCol },
+                piece: piece
+            }));
+        } else {
+            console.warn('[4p-chess-client] WebSocket not ready:', {wsReady: ws ? ws.readyState : 'no ws'});
+        }
     }
 
     function onPieceDragStart4P(e, row, col) {
@@ -3333,10 +3346,29 @@ function ready() {
             return;
         }
 
+        const captured = gameState4P.board[toRow][toCol];
+
+        gameState4P.board[toRow][toCol] = piece;
+        gameState4P.board[fromRow][fromCol] = null;
+        piece.hasMoved = true;
+
+        if (captured && captured.type === 'king') {
+            eliminatePlayer4P(COLORS_4PLAYER.indexOf(captured.color));
+        }
+
+        if (piece.type === 'pawn' && isPromotionRank4P(toRow, toCol, piece.color)) {
+            piece.type = 'queen';
+        }
+
+        gameState4P.moveCount++;
         gameState4P.selectedSquare = null;
         gameState4P.validMoves = [];
+        advanceTurn4P();
+        renderBoard4P();
+        updateUI4P();
 
         if (ws && ws.readyState === 1) {
+            console.log('[4p-chess-client] Sending move:', {gameId: gameState4P.gameId, from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}});
             ws.send(JSON.stringify({
                 type: '4player_move',
                 game_id: gameState4P.gameId,
@@ -3344,6 +3376,8 @@ function ready() {
                 to: { row: toRow, col: toCol },
                 piece: piece
             }));
+        } else {
+            console.warn('[4p-chess-client] WebSocket not ready:', {wsReady: ws ? ws.readyState : 'no ws'});
         }
     }
 

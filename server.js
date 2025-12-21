@@ -1330,6 +1330,16 @@ function findOngoingGameByUsername(username) {
   return null;
 }
 
+function findOngoing4PlayerGameByUsername(username) {
+  // Find the first ongoing 4-player game where this username is a player
+  for (const [gid, g] of games.entries()) {
+    if (!g.over && g.is4player && g.players && Array.isArray(g.players) && g.players.includes(username)) {
+      return { gid, game: g };
+    }
+  }
+  return null;
+}
+
 // Cleanup stale users
 setInterval(() => {
   const t = now();
@@ -1509,11 +1519,11 @@ wss.on('connection', (ws, req) => {
       sendUserList();
       deliverQueuedInvites(username);
 
-      // Check for ongoing games associated with this username
+      // Check for ongoing 2-player games associated with this username
       const ongoingGameInfo = findOngoingGameByUsername(username);
       if (ongoingGameInfo) {
         const { gid, game } = ongoingGameInfo;
-        console.log(`[chess] User ${username} reconnected, found ongoing game ${gid}`);
+        console.log(`[chess] User ${username} reconnected, found ongoing 2-player game ${gid}`);
         const payload = {
           type: 'chess_resume',
           game_id: gid,
@@ -1523,6 +1533,28 @@ wss.on('connection', (ws, req) => {
           turn: game.board.turn() === 'w' ? 'white' : 'black'
         };
         send(ws, payload);
+      }
+
+      // Check for ongoing 4-player games associated with this username
+      const ongoing4PlayerGameInfo = findOngoing4PlayerGameByUsername(username);
+      if (ongoing4PlayerGameInfo) {
+        const { gid, game } = ongoing4PlayerGameInfo;
+        const gameState = fourPlayerGames.get(gid);
+        if (gameState) {
+          console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
+          const payload = {
+            type: '4player_resume',
+            game_id: gid,
+            players: game.players,
+            mode: game.mode,
+            timeControl: game.timeControl,
+            board: gameState.board,
+            currentTurn: gameState.currentTurn,
+            activePlayers: gameState.activePlayers,
+            moveCount: gameState.moveCount
+          };
+          send(ws, payload);
+        }
       }
     }
     else if (msg.type === 'forget_me') {
@@ -1639,7 +1671,7 @@ wss.on('connection', (ws, req) => {
             players: playersArray,
             board: Array(14).fill(null).map(() => Array(14).fill(null)),
             currentTurn: 0,
-            activePlayers: [0, 1, 2, 3],
+            activePlayers: [0, 3, 2, 1],
             moveCount: 0
           });
 
@@ -2167,15 +2199,22 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      // Check if it's this player's turn (game.currentTurn is the player index 0-3)
-      if (game.currentTurn !== playerIndex) {
-        send(ws, { type: '4playerMoveRejected', reason: 'Not your turn' });
-        return;
-      }
-
       // Check that this player is still active
       if (!game.activePlayers.includes(playerIndex)) {
         send(ws, { type: 'chess_error', message: 'You have been eliminated' });
+        return;
+      }
+
+      // Check if it's this player's turn
+      // currentTurn is a position in activePlayers array, so we need to get the actual player index
+      if (game.activePlayers.length > 0) {
+        const currentPlayerIndex = game.activePlayers[game.currentTurn % game.activePlayers.length];
+        if (currentPlayerIndex !== playerIndex) {
+          send(ws, { type: '4playerMoveRejected', reason: 'Not your turn' });
+          return;
+        }
+      } else {
+        send(ws, { type: 'chess_error', message: 'No active players' });
         return;
       }
 
@@ -2219,7 +2258,15 @@ wss.on('connection', (ws, req) => {
         const colorIndex = COLORS_4PLAYER.indexOf(capturedPiece.color);
         if (colorIndex !== -1 && game.activePlayers.includes(colorIndex)) {
           eliminatedColor = colorIndex;
+          // Remove the eliminated player from activePlayers
+          const wasAtPos = game.activePlayers.indexOf(colorIndex);
           game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
+          // Adjust currentTurn if necessary (if we eliminated someone before current position)
+          if (wasAtPos < game.currentTurn && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn > 0 ? game.currentTurn - 1 : 0;
+          } else if (game.currentTurn >= game.activePlayers.length && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn % game.activePlayers.length;
+          }
         }
       }
 
@@ -2228,12 +2275,16 @@ wss.on('connection', (ws, req) => {
       game.board[fromRow][fromCol] = null;
       game.moveCount++;
 
-      // Advance turn
-      let nextTurn = (game.currentTurn + 1) % 4;
-      while (!game.activePlayers.includes(nextTurn) && game.activePlayers.length > 1) {
-        nextTurn = (nextTurn + 1) % 4;
+      // Advance turn to next position in activePlayers
+      // currentTurn is a position in the activePlayers array
+      if (game.activePlayers.length > 1) {
+        let nextTurnPos = (game.currentTurn + 1) % game.activePlayers.length;
+        game.currentTurn = nextTurnPos;
+      } else if (game.activePlayers.length === 1) {
+        game.currentTurn = 0; // Only one player left, keep turn at 0
+      } else {
+        game.currentTurn = 0; // No active players (shouldn't happen)
       }
-      game.currentTurn = nextTurn;
 
       // Broadcast move to all players in the game
       const moveUpdate = {
@@ -2248,14 +2299,18 @@ wss.on('connection', (ws, req) => {
         moveCount: game.moveCount
       };
 
+      let broadcastCount = 0;
       for (const player of game.players) {
         const playerWs = getWsByUsername(player);
-        if (playerWs) {
+        if (playerWs && playerWs.readyState === 1) {
           send(playerWs, moveUpdate);
+          broadcastCount++;
+        } else {
+          console.warn('[4p-chess] Failed to send move to player:', player, 'ws:', playerWs ? 'found' : 'not found', 'ready:', playerWs ? playerWs.readyState : 'N/A');
         }
       }
 
-      console.log('[4p-chess] Move recorded:', {gid, player: username, from, to, moveCount: game.moveCount});
+      console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length});
     }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);

@@ -4077,7 +4077,7 @@ function ready() {
             flashStatus(data['message'] || 'Error');
         }
         else if (data['type'] === '4playerMoveUpdate') {
-            if (gameState4P && gameState4P.gameId) {
+            if (gameState4P && gameState4P.gameId && gameState4P.gameId === data.game_id) {
                 apply4PlayerMoveUpdate(data);
             }
         }

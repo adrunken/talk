@@ -3572,6 +3572,10 @@ function ready() {
     $('#resign-btn').on('click', function() {
         if (!gameState4P) return;
         const currentColorIdx = gameState4P.activePlayers[gameState4P.currentTurn];
+        // Only allow the current player to resign
+        if (gameState4P.playerIndex !== currentColorIdx) {
+            return;
+        }
         eliminatePlayer4P(currentColorIdx);
         advanceTurn4P();
         renderBoard4P();

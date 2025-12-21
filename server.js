@@ -1178,6 +1178,7 @@ const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
+const fourPlayerGames = new Map(); // game_id -> {players: [p0, p1, p2, p3], board: [...], currentTurn: 0, activePlayers: [0,1,2,3], moveCount: 0, playerWs: Map<playerName -> ws>}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
@@ -1631,6 +1632,15 @@ wss.on('connection', (ws, req) => {
             is4player: true,
             mode: session.mode,
             timeControl: session.timeControl
+          });
+
+          // Initialize 4-player game state
+          fourPlayerGames.set(gid, {
+            players: playersArray,
+            board: Array(14).fill(null).map(() => Array(14).fill(null)),
+            currentTurn: 0,
+            activePlayers: [0, 1, 2, 3],
+            moveCount: 0
           });
 
           const payload = {
@@ -2139,6 +2149,112 @@ wss.on('connection', (ws, req) => {
           send(ws, { type: 'chess_error', message: 'AI move generation failed' });
         }
       }, delayBeforeAiMove);
+    }
+    else if (msg.type === '4player_move') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (!gid || !fourPlayerGames.has(gid)) {
+        send(ws, { type: 'chess_error', message: 'Game not found' });
+        return;
+      }
+
+      const game = fourPlayerGames.get(gid);
+      const playerIndex = game.players.indexOf(username);
+
+      if (playerIndex === -1) {
+        send(ws, { type: 'chess_error', message: 'Not a player in this game' });
+        return;
+      }
+
+      // Check if it's this player's turn (game.currentTurn is the player index 0-3)
+      if (game.currentTurn !== playerIndex) {
+        send(ws, { type: '4playerMoveRejected', reason: 'Not your turn' });
+        return;
+      }
+
+      // Check that this player is still active
+      if (!game.activePlayers.includes(playerIndex)) {
+        send(ws, { type: 'chess_error', message: 'You have been eliminated' });
+        return;
+      }
+
+      const { from, to, piece } = msg;
+
+      if (!from || !to || !piece) {
+        send(ws, { type: 'chess_error', message: 'Invalid move data' });
+        return;
+      }
+
+      const fromRow = from.row;
+      const fromCol = from.col;
+      const toRow = to.row;
+      const toCol = to.col;
+
+      // Validate position bounds
+      if (fromRow < 0 || fromRow >= 14 || fromCol < 0 || fromCol >= 14 ||
+          toRow < 0 || toRow >= 14 || toCol < 0 || toCol >= 14) {
+        send(ws, { type: 'chess_error', message: 'Move out of bounds' });
+        return;
+      }
+
+      // Check if source has the piece
+      if (game.board[fromRow][fromCol] === null) {
+        send(ws, { type: 'chess_error', message: 'No piece at source' });
+        return;
+      }
+
+      const sourcePiece = game.board[fromRow][fromCol];
+      if (sourcePiece.color !== piece.color || sourcePiece.type !== piece.type) {
+        send(ws, { type: 'chess_error', message: 'Invalid piece at source' });
+        return;
+      }
+
+      // Check for captured piece before applying move
+      // Note: colors are 'blue', 'yellow', 'green', 'red' and map to indices 0, 1, 2, 3
+      const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
+      let eliminatedColor = null;
+      const capturedPiece = game.board[toRow][toCol];
+      if (capturedPiece && capturedPiece.type === 'king') {
+        const colorIndex = COLORS_4PLAYER.indexOf(capturedPiece.color);
+        if (colorIndex !== -1 && game.activePlayers.includes(colorIndex)) {
+          eliminatedColor = colorIndex;
+          game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
+        }
+      }
+
+      // Apply move on server
+      game.board[toRow][toCol] = piece;
+      game.board[fromRow][fromCol] = null;
+      game.moveCount++;
+
+      // Advance turn
+      let nextTurn = (game.currentTurn + 1) % 4;
+      while (!game.activePlayers.includes(nextTurn) && game.activePlayers.length > 1) {
+        nextTurn = (nextTurn + 1) % 4;
+      }
+      game.currentTurn = nextTurn;
+
+      // Broadcast move to all players in the game
+      const moveUpdate = {
+        type: '4playerMoveUpdate',
+        from,
+        to,
+        piece,
+        eliminatedColor,
+        nextTurn: game.currentTurn,
+        activePlayers: game.activePlayers,
+        moveCount: game.moveCount
+      };
+
+      for (const player of game.players) {
+        const playerWs = getWsByUsername(player);
+        if (playerWs) {
+          send(playerWs, moveUpdate);
+        }
+      }
+
+      console.log('[4p-chess] Move recorded:', {gid, player: username, from, to, moveCount: game.moveCount});
     }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);

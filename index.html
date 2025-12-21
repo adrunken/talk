@@ -859,13 +859,6 @@ html {
     cursor: not-allowed;
 }
 
-.square.valid-move.light {
-    background: rgba(34, 197, 94, 0.5);
-}
-
-.square.valid-move.dark {
-    background: rgba(34, 197, 94, 0.5);
-}
 
 .square.selected {
     box-shadow: inset 0 0 0 3px rgba(59, 130, 246, 0.8);
@@ -3257,11 +3250,6 @@ function ready() {
 
         const selectedSq = document.querySelector('[data-x="' + col + '"][data-y="' + row + '"]');
         if (selectedSq) selectedSq.classList.add('selected');
-
-        gameState4P.validMoves.forEach(function(m) {
-            const sq = document.querySelector('[data-x="' + m.col + '"][data-y="' + m.row + '"]');
-            if (sq) sq.classList.add('valid-move');
-        });
     }
 
     function onSquareClick4P(toRow, toCol) {
@@ -3308,10 +3296,6 @@ function ready() {
     function onPieceDragStart4P(e, row, col) {
         gameState4P.selectedSquare = { row, col };
         gameState4P.validMoves = calculateValidMoves4P(row, col);
-        gameState4P.validMoves.forEach(function(m) {
-            const sq = document.querySelector('[data-x="' + m.col + '"][data-y="' + m.row + '"]');
-            if (sq) sq.classList.add('valid-move');
-        });
     }
 
     function onSquareDrop4P(e, toRow, toCol) {
@@ -3328,26 +3312,18 @@ function ready() {
         }
 
         const piece = gameState4P.board[fromRow][fromCol];
-        const captured = gameState4P.board[toRow][toCol];
-
-        gameState4P.board[toRow][toCol] = piece;
-        gameState4P.board[fromRow][fromCol] = null;
-        piece.hasMoved = true;
-
-        if (captured && captured.type === 'king') {
-            eliminatePlayer4P(COLORS_4PLAYER.indexOf(captured.color));
-        }
-
-        if (piece.type === 'pawn' && isPromotionRank4P(toRow, toCol, piece.color)) {
-            piece.type = 'queen';
-        }
-
-        gameState4P.moveCount++;
         gameState4P.selectedSquare = null;
         gameState4P.validMoves = [];
-        advanceTurn4P();
-        renderBoard4P();
-        updateUI4P();
+
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: '4player_move',
+                game_id: gameState4P.gameId,
+                from: { row: fromRow, col: fromCol },
+                to: { row: toRow, col: toCol },
+                piece: piece
+            }));
+        }
     }
 
     function clearValidMoves4P() {
@@ -3492,6 +3468,32 @@ function ready() {
             nextTurn = (nextTurn + 1) % 4;
         }
         gameState4P.currentTurn = nextTurn;
+    }
+
+    function apply4PlayerMoveUpdate(data) {
+        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount } = data;
+
+        gameState4P.board[to.row][to.col] = piece;
+        gameState4P.board[from.row][from.col] = null;
+
+        // If a player was eliminated, clear their pieces from the board
+        if (eliminatedColor !== undefined && eliminatedColor !== null) {
+            const eliminatedColor_str = COLORS_4PLAYER[eliminatedColor];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (gameState4P.board[r][c] && gameState4P.board[r][c].color === eliminatedColor_str) {
+                        gameState4P.board[r][c] = null;
+                    }
+                }
+            }
+        }
+
+        gameState4P.moveCount = moveCount;
+        gameState4P.currentTurn = nextTurn;
+        gameState4P.activePlayers = activePlayers;
+
+        renderBoard4P();
+        updateUI4P();
     }
 
     function updateUI4P() {
@@ -4069,6 +4071,14 @@ function ready() {
         }
         else if (data['type'] === 'chess_error') {
             flashStatus(data['message'] || 'Error');
+        }
+        else if (data['type'] === '4playerMoveUpdate') {
+            if (gameState4P && gameState4P.gameId) {
+                apply4PlayerMoveUpdate(data);
+            }
+        }
+        else if (data['type'] === '4playerMoveRejected') {
+            flashStatus('Move rejected: ' + (data['reason'] || 'Invalid move'));
         }
         else if (data['type'] === 'cleared') {
             $('#main').empty();

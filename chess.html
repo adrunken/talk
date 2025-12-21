@@ -87,13 +87,6 @@
             cursor: not-allowed;
         }
 
-        .square.valid-move.light {
-            background: rgba(34, 197, 94, 0.5);
-        }
-
-        .square.valid-move.dark {
-            background: rgba(34, 197, 94, 0.5);
-        }
 
         .piece {
             width: 44px;
@@ -422,8 +415,40 @@
         window.addEventListener('message', function(event) {
             if (event.data.type === 'requestGameState') {
                 sendGameStateToParent();
+            } else if (event.data.type === '4playerMoveUpdate') {
+                applyRemoteMove(event.data);
+            } else if (event.data.type === '4playerMoveRejected') {
+                console.log('Move rejected:', event.data.reason);
             }
         });
+
+        function applyRemoteMove(data) {
+            const { from, to, piece, eliminatedColor } = data;
+
+            gameState.board[to.row][to.col] = piece;
+            gameState.board[from.row][from.col] = null;
+
+            const capturedPiece = gameState.board[to.row][to.col];
+            if (capturedPiece && capturedPiece.type === 'king') {
+                eliminatePlayer(COLORS.indexOf(capturedPiece.color));
+            }
+
+            if (piece.type === 'pawn' && isPromotionRank(to.row, to.col, piece.color)) {
+                piece.type = 'queen';
+            }
+
+            if (eliminatedColor !== undefined && eliminatedColor !== null) {
+                eliminatePlayer(eliminatedColor);
+            }
+
+            gameState.moveCount++;
+            gameState.currentTurn = data.nextTurn;
+            gameState.activePlayers = data.activePlayers;
+
+            renderBoard();
+            updateUI();
+            sendGameStateToParent();
+        }
 
         function isInactive(x, y) {
             return (
@@ -545,14 +570,9 @@
         function onPieceDragStart(e, row, col) {
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
-            gameState.validMoves.forEach(({ row: r, col: c }) => {
-                const sq = document.querySelector(`[data-x="${c}"][data-y="${r}"]`);
-                if (sq) sq.classList.add('valid-move');
-            });
         }
 
         function onSquareDrop(e, toRow, toCol) {
-            clearValidMoves();
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;
@@ -560,10 +580,27 @@
 
             if (!move) {
                 gameState.selectedSquare = null;
+                gameState.validMoves = [];
                 return;
             }
 
             const piece = gameState.board[fromRow][fromCol];
+
+            gameState.selectedSquare = null;
+            gameState.validMoves = [];
+
+            // For multiplayer games via server, send move to parent
+            if (window.parent !== window && typeof window.parent.postMessage === 'function') {
+                window.parent.postMessage({
+                    type: '4playerMove',
+                    from: { row: fromRow, col: fromCol },
+                    to: { row: toRow, col: toCol },
+                    piece: piece
+                }, '*');
+                return;
+            }
+
+            // For local/standalone play, apply move immediately
             const captured = gameState.board[toRow][toCol];
 
             gameState.board[toRow][toCol] = piece;
@@ -579,17 +616,10 @@
             }
 
             gameState.moveCount++;
-            gameState.selectedSquare = null;
-            gameState.validMoves = [];
             advanceTurn();
             renderBoard();
             updateUI();
             sendGameStateToParent();
-        }
-
-        function clearValidMoves() {
-            document.querySelectorAll('.valid-move').forEach(sq => sq.classList.remove('valid-move'));
-            gameState.validMoves = [];
         }
 
         function calculateValidMoves(row, col) {

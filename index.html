@@ -3272,7 +3272,7 @@ function ready() {
         if (!move) {
             if (gameState4P.board[toRow] && gameState4P.board[toRow][toCol]) {
                 const piece = gameState4P.board[toRow][toCol];
-                if (isCurrentPlayerPiece4P(piece)) {
+                if (isPlayerOwnPiece4P(piece)) {
                     onPieceClick4P(toRow, toCol);
                 }
             }

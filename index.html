@@ -3260,6 +3260,19 @@ function ready() {
                 board.appendChild(sq);
             }
         }
+
+        // Highlight kings that are in check
+        for (let colorIdx = 0; colorIdx < COLORS_4PLAYER.length; colorIdx++) {
+            if (gameState4P.activePlayers.includes(colorIdx) && isKingInCheck4P(colorIdx)) {
+                const kingPos = findKing4P(colorIdx);
+                if (kingPos) {
+                    const kingSq = document.querySelector('[data-x="' + kingPos.col + '"][data-y="' + kingPos.row + '"]');
+                    if (kingSq) {
+                        kingSq.classList.add('in-check');
+                    }
+                }
+            }
+        }
     }
 
     function isCurrentPlayerPiece4P(piece) {
@@ -3534,6 +3547,109 @@ function ready() {
         return false;
     }
 
+    function findKing4P(colorIndex) {
+        const color = COLORS_4PLAYER[colorIndex];
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const piece = gameState4P.board[r][c];
+                if (piece && piece.type === 'king' && piece.color === color) {
+                    return { row: r, col: c };
+                }
+            }
+        }
+        return null;
+    }
+
+    function canSlidingAttack4P(fromRow, fromCol, toRow, toCol, directions) {
+        for (const d of directions) {
+            let nr = fromRow + d[0];
+            let nc = fromCol + d[1];
+            while (isValidPos4P(nr, nc)) {
+                if (nr === toRow && nc === toCol) {
+                    return true;
+                }
+                if (gameState4P.board[nr][nc]) {
+                    break;
+                }
+                nr += d[0];
+                nc += d[1];
+            }
+        }
+        return false;
+    }
+
+    function canAttackPosition4P(fromRow, fromCol, piece, toRow, toCol) {
+        const directions = {
+            blue: { forward: { row: -1, col: 0 }, pawnCapture: [{ row: -1, col: -1 }, { row: -1, col: 1 }] },
+            yellow: { forward: { row: 0, col: -1 }, pawnCapture: [{ row: -1, col: -1 }, { row: 1, col: -1 }] },
+            green: { forward: { row: 1, col: 0 }, pawnCapture: [{ row: 1, col: -1 }, { row: 1, col: 1 }] },
+            red: { forward: { row: 0, col: 1 }, pawnCapture: [{ row: -1, col: 1 }, { row: 1, col: 1 }] }
+        };
+
+        const playerDir = directions[piece.color];
+
+        switch (piece.type) {
+            case 'pawn':
+                for (const cap of playerDir.pawnCapture) {
+                    const cRow = fromRow + cap.row;
+                    const cCol = fromCol + cap.col;
+                    if (cRow === toRow && cCol === toCol && isValidPos4P(cRow, cCol)) {
+                        return true;
+                    }
+                }
+                return false;
+
+            case 'rook':
+                return canSlidingAttack4P(fromRow, fromCol, toRow, toCol, [[0, 1], [0, -1], [1, 0], [-1, 0]]);
+
+            case 'bishop':
+                return canSlidingAttack4P(fromRow, fromCol, toRow, toCol, [[1, 1], [1, -1], [-1, 1], [-1, -1]]);
+
+            case 'queen':
+                return canSlidingAttack4P(fromRow, fromCol, toRow, toCol, [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]);
+
+            case 'knight':
+                const knightMoves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]];
+                for (const d of knightMoves) {
+                    if (fromRow + d[0] === toRow && fromCol + d[1] === toCol) {
+                        return true;
+                    }
+                }
+                return false;
+
+            case 'king':
+                const kingMoves = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+                for (const d of kingMoves) {
+                    if (fromRow + d[0] === toRow && fromCol + d[1] === toCol) {
+                        return true;
+                    }
+                }
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    function isKingInCheck4P(colorIndex) {
+        const kingPos = findKing4P(colorIndex);
+        if (!kingPos) return false;
+
+        const color = COLORS_4PLAYER[colorIndex];
+
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const piece = gameState4P.board[r][c];
+                if (piece && piece.color !== color) {
+                    if (canAttackPosition4P(r, c, piece, kingPos.row, kingPos.col)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     function eliminatePlayer4P(colorIdx) {
         gameState4P.activePlayers = gameState4P.activePlayers.filter(function(p) { return p !== colorIdx; });
         for (let r = 0; r < BOARD_SIZE; r++) {
@@ -3560,7 +3676,7 @@ function ready() {
     }
 
     function apply4PlayerMoveUpdate(data) {
-        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount } = data;
+        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount, checkmatedPlayers } = data;
 
         gameState4P.board[to.row][to.col] = piece;
         gameState4P.board[from.row][from.col] = null;
@@ -3574,6 +3690,12 @@ function ready() {
                         gameState4P.board[r][c] = null;
                     }
                 }
+            }
+
+            // Show checkmate message if a player was eliminated by checkmate
+            if (checkmatedPlayers && checkmatedPlayers.length > 0) {
+                const checkmatedColor = COLORS_4PLAYER[eliminatedColor];
+                console.log('[4p-chess] Player eliminated by checkmate:', checkmatedColor);
             }
         }
 

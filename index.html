@@ -3586,6 +3586,9 @@ function ready() {
                 clearInterval(gameTimer4P);
                 gameTimer4P = null;
             }
+            if (gameState4P && gameState4P.gameId) {
+                show4PlayerRejoinPrompt();
+            }
         }
     });
 

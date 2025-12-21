@@ -3793,6 +3793,24 @@ function ready() {
         $('#rejoin-wrapper').remove();
     }
 
+    function show4PlayerRejoinPrompt() {
+        if (!$('#invites #rejoin-game-4p').length) {
+            var wrap = $('<div class="user-row" id="rejoin-wrapper-4p" />');
+            var btn = $('<button class="invite-user-btn" id="rejoin-game-4p">game in progress</button>');
+            wrap.append(btn);
+            $('#invites').append(wrap);
+            btn.on('click', function() {
+                if (gameState4P && gameState4P.gameId) {
+                    $('#four-player-chess-overlay').removeClass('hidden');
+                }
+            });
+        }
+    }
+
+    function hide4PlayerRejoinPrompt() {
+        $('#rejoin-wrapper-4p').remove();
+    }
+
     function showAdminDeleteUsersModal(users) {
         var usersList = $('#admin-users-list');
         usersList.empty();

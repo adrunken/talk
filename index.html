@@ -3365,6 +3365,7 @@ function ready() {
         updateUI4P();
 
         if (ws && ws.readyState === 1) {
+            console.log('[4p-chess-client] Sending move:', {gameId: gameState4P.gameId, from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}});
             ws.send(JSON.stringify({
                 type: '4player_move',
                 game_id: gameState4P.gameId,
@@ -3372,6 +3373,8 @@ function ready() {
                 to: { row: toRow, col: toCol },
                 piece: piece
             }));
+        } else {
+            console.warn('[4p-chess-client] WebSocket not ready:', {wsReady: ws ? ws.readyState : 'no ws'});
         }
     }
 

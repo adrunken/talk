@@ -576,8 +576,8 @@
 
         function onPieceDragStart(e, row, col) {
             const piece = gameState.board[row][col];
-            // Only allow dragging pieces that belong to this player (not dependent on turn)
-            if (!piece || !isPlayerOwnPiece(piece)) {
+            // Only allow dragging pieces that are the current player's turn AND belong to this player
+            if (!piece || !isCurrentPlayerPiece(piece)) {
                 e.preventDefault();
                 return;
             }

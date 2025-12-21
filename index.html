@@ -3582,6 +3582,12 @@ function ready() {
             clearInterval(gameTimer4P);
             gameTimer4P = null;
         }
+        if (gameState4P && !gameState4P.over) {
+            show4PlayerRejoinPrompt();
+            try { localStorage.setItem('active_game', JSON.stringify({ id: gameState4P.gameId, players: gameState4P.players, is4player: true })); } catch(e){}
+        } else if (gameState4P && gameState4P.over) {
+            hide4PlayerRejoinPrompt();
+        }
     });
 
     // Close 4-player chess modal when clicking overlay background

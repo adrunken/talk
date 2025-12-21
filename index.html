@@ -4086,10 +4086,22 @@ function ready() {
             if (!gameState4P) {
                 initializeBoard4P();
             }
+            // Restore game state from server
             gameState4P.gameId = data['game_id'];
             gameState4P.players = data['players'];
             gameState4P.mode = data['mode'];
             gameState4P.timeControl = data['timeControl'];
+            gameState4P.board = data['board'] || gameState4P.board;
+            gameState4P.currentTurn = data['currentTurn'] !== undefined ? data['currentTurn'] : gameState4P.currentTurn;
+            gameState4P.activePlayers = data['activePlayers'] || gameState4P.activePlayers;
+            gameState4P.moveCount = data['moveCount'] || gameState4P.moveCount;
+
+            // Calculate player index based on current username
+            var currentUsername = $('#username').text();
+            gameState4P.playerIndex = gameState4P.players.indexOf(currentUsername);
+            if (gameState4P.playerIndex < 0) gameState4P.playerIndex = 0;
+            gameState4P.initialRotation = gameState4P.playerIndex * 90;
+
             show4PlayerRejoinPrompt();
             console.log('[chess] 4-player game resumed:', data['game_id'], 'players:', data['players'].join(', '));
         }

@@ -3301,6 +3301,16 @@ function ready() {
         advanceTurn4P();
         renderBoard4P();
         updateUI4P();
+
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: '4player_move',
+                game_id: gameState4P.gameId,
+                from: { row: fromRow, col: fromCol },
+                to: { row: toRow, col: toCol },
+                piece: piece
+            }));
+        }
     }
 
     function onPieceDragStart4P(e, row, col) {

@@ -593,6 +593,12 @@
             }
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
+
+            // Highlight valid target squares
+            gameState.validMoves.forEach(move => {
+                const sq = document.querySelector(`[data-x="${move.col}"][data-y="${move.row}"]`);
+                if (sq) sq.classList.add('valid-target');
+            });
         }
 
         function onSquareDrop(e, toRow, toCol) {

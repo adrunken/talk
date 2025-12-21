@@ -3807,6 +3807,10 @@ function ready() {
             $('#invites').append(wrap);
             btn.on('click', function() {
                 if (gameState4P && gameState4P.gameId) {
+                    renderBoard4P();
+                    updatePlayersDisplay4P(gameState4P.players);
+                    updateUI4P();
+                    startGameTimer4P();
                     $('#four-player-chess-overlay').removeClass('hidden');
                 }
             });

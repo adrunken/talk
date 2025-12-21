@@ -1539,15 +1539,22 @@ wss.on('connection', (ws, req) => {
       const ongoing4PlayerGameInfo = findOngoing4PlayerGameByUsername(username);
       if (ongoing4PlayerGameInfo) {
         const { gid, game } = ongoing4PlayerGameInfo;
-        console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
-        const payload = {
-          type: '4player_resume',
-          game_id: gid,
-          players: game.players,
-          mode: game.mode,
-          timeControl: game.timeControl
-        };
-        send(ws, payload);
+        const gameState = fourPlayerGames.get(gid);
+        if (gameState) {
+          console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
+          const payload = {
+            type: '4player_resume',
+            game_id: gid,
+            players: game.players,
+            mode: game.mode,
+            timeControl: game.timeControl,
+            board: gameState.board,
+            currentTurn: gameState.currentTurn,
+            activePlayers: gameState.activePlayers,
+            moveCount: gameState.moveCount
+          };
+          send(ws, payload);
+        }
       }
     }
     else if (msg.type === 'forget_me') {

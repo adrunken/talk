@@ -3233,6 +3233,11 @@ function ready() {
         return piece.color === currentColor && gameState4P.activePlayers.includes(COLORS_4PLAYER.indexOf(piece.color));
     }
 
+    function isPlayerOwnPiece4P(piece) {
+        const playerColor = COLORS_4PLAYER[gameState4P.playerIndex];
+        return piece.color === playerColor;
+    }
+
     function onPieceClick4P(row, col) {
         clearValidMoves4P();
         const currentSelectedRow = gameState4P.selectedSquare?.row;

@@ -2605,15 +2605,40 @@ wss.on('connection', (ws, req) => {
       game.board[fromRow][fromCol] = null;
       game.moveCount++;
 
-      // Advance turn to next position in activePlayers
-      // currentTurn is a position in the activePlayers array
+      // Advance turn to next position in activePlayers and check for checkmate
+      const checkmatedPlayers = [];
       if (game.activePlayers.length > 1) {
         let nextTurnPos = (game.currentTurn + 1) % game.activePlayers.length;
-        game.currentTurn = nextTurnPos;
+
+        // Check if next player(s) are checkmated
+        let checkPos = nextTurnPos;
+        let checksRemaining = game.activePlayers.length;
+        while (checksRemaining > 0) {
+          const nextPlayerIndex = game.activePlayers[checkPos];
+          if (isCheckmate4P(game.board, nextPlayerIndex)) {
+            console.log('[4p-chess] Checkmate detected for player:', COLORS_4PLAYER[nextPlayerIndex]);
+            checkmatedPlayers.push(nextPlayerIndex);
+            eliminatedColor = nextPlayerIndex;
+            // Remove this player from activePlayers
+            game.activePlayers = game.activePlayers.filter(p => p !== nextPlayerIndex);
+            // Don't advance checkPos since we removed a player
+            if (game.activePlayers.length === 0) break;
+            checkPos = checkPos % game.activePlayers.length;
+          } else {
+            // This player is not checkmated, they're next
+            game.currentTurn = checkPos;
+            break;
+          }
+          checksRemaining--;
+        }
+
+        if (game.activePlayers.length === 0) {
+          game.currentTurn = 0;
+        }
       } else if (game.activePlayers.length === 1) {
-        game.currentTurn = 0; // Only one player left, keep turn at 0
+        game.currentTurn = 0;
       } else {
-        game.currentTurn = 0; // No active players (shouldn't happen)
+        game.currentTurn = 0;
       }
 
       // Broadcast move to all players in the game
@@ -2626,7 +2651,8 @@ wss.on('connection', (ws, req) => {
         eliminatedColor,
         nextTurn: game.currentTurn,
         activePlayers: game.activePlayers,
-        moveCount: game.moveCount
+        moveCount: game.moveCount,
+        checkmatedPlayers: checkmatedPlayers.length > 0 ? checkmatedPlayers : undefined
       };
 
       let broadcastCount = 0;
@@ -2640,7 +2666,7 @@ wss.on('connection', (ws, req) => {
         }
       }
 
-      console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length});
+      console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);

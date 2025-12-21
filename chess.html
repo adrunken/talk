@@ -599,11 +599,14 @@
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
 
-            // Highlight valid target squares
-            gameState.validMoves.forEach(move => {
-                const sq = document.querySelector(`[data-x="${move.col}"][data-y="${move.row}"]`);
-                if (sq) sq.classList.add('valid-target');
-            });
+            // Highlight valid target squares if setting is enabled
+            const showLegalMoves = localStorage.getItem('chessSettings_showLegalMoves') !== 'false';
+            if (showLegalMoves) {
+                gameState.validMoves.forEach(move => {
+                    const sq = document.querySelector(`[data-x="${move.col}"][data-y="${move.row}"]`);
+                    if (sq) sq.classList.add('valid-target');
+                });
+            }
         }
 
         function clearHighlights() {

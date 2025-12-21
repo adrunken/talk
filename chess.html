@@ -567,6 +567,19 @@
                     board.appendChild(sq);
                 }
             }
+
+            // Highlight kings that are in check
+            for (let colorIdx = 0; colorIdx < COLORS.length; colorIdx++) {
+                if (gameState.activePlayers.includes(colorIdx) && isKingInCheck(colorIdx)) {
+                    const kingPos = findKing(colorIdx);
+                    if (kingPos) {
+                        const kingSq = document.querySelector(`[data-x="${kingPos.col}"][data-y="${kingPos.row}"]`);
+                        if (kingSq) {
+                            kingSq.classList.add('in-check');
+                        }
+                    }
+                }
+            }
         }
 
         function getColorCode(color) {

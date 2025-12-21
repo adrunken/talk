@@ -536,6 +536,7 @@
 
                             pieceEl.appendChild(img);
                             pieceEl.draggable = isCurrentPlayerPiece(piece);
+                            pieceEl.style.cursor = isCurrentPlayerPiece(piece) ? 'grab' : 'default';
 
                             if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {
                                 pieceEl.classList.add('eliminated');

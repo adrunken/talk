@@ -669,6 +669,13 @@
             }
 
             // For local/standalone play, apply move immediately
+            // Validate that the move doesn't leave the king in check
+            const playerColorIdx = COLORS.indexOf(piece.color);
+            if (!isLegalMove(playerColorIdx, fromRow, fromCol, toRow, toCol)) {
+                console.log('Illegal move - would leave king in check');
+                return;
+            }
+
             const captured = gameState.board[toRow][toCol];
 
             gameState.board[toRow][toCol] = piece;

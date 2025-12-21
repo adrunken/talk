@@ -981,6 +981,29 @@
                 nextTurn = (nextTurn + 1) % 4;
             }
             gameState.currentTurn = nextTurn;
+
+            // Check for checkmate and eliminate checkmated players
+            let checksRemaining = gameState.activePlayers.length;
+            while (checksRemaining > 0 && gameState.activePlayers.length > 1) {
+                const currentPlayerIdx = gameState.activePlayers[gameState.currentTurn];
+                if (isCheckmate(currentPlayerIdx)) {
+                    console.log(`Checkmate detected for ${COLORS[currentPlayerIdx]}!`);
+                    eliminatePlayer(currentPlayerIdx);
+                    if (gameState.activePlayers.length === 1) {
+                        const winner = COLORS[gameState.activePlayers[0]];
+                        alert(`${winner.toUpperCase()} wins by checkmate!`);
+                        break;
+                    }
+                    // Move to next player
+                    nextTurn = (gameState.currentTurn) % gameState.activePlayers.length;
+                    gameState.currentTurn = nextTurn;
+                } else {
+                    // Current player is not checkmated, done checking
+                    break;
+                }
+                checksRemaining--;
+            }
+
             sendGameStateToParent();
         }
 

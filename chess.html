@@ -552,6 +552,11 @@
                             }
 
                             pieceEl.addEventListener('dragstart', (e) => onPieceDragStart(e, y, x));
+                            pieceEl.addEventListener('dragend', () => {
+                                clearHighlights();
+                                gameState.selectedSquare = null;
+                                gameState.validMoves = [];
+                            });
                             sq.appendChild(pieceEl);
                         }
 

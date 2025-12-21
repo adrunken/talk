@@ -2186,7 +2186,10 @@ wss.on('connection', (ws, req) => {
       const gid = msg.game_id;
       const username = users.get(ws);
 
+      console.log('[4p-chess] Received 4player_move:', {gid, username, hasGame: fourPlayerGames.has(gid), from: msg.from, to: msg.to});
+
       if (!gid || !fourPlayerGames.has(gid)) {
+        console.warn('[4p-chess] Game not found for gid:', gid);
         send(ws, { type: 'chess_error', message: 'Game not found' });
         return;
       }

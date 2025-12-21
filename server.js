@@ -2296,13 +2296,17 @@ wss.on('connection', (ws, req) => {
       }
 
       // Check if source has the piece
+      console.log('[4p-chess] Checking source piece:', {fromRow, fromCol, sourcePiece: game.board[fromRow][fromCol]});
+
       if (game.board[fromRow][fromCol] === null) {
+        console.warn('[4p-chess] No piece at source:', {fromRow, fromCol});
         send(ws, { type: 'chess_error', message: 'No piece at source' });
         return;
       }
 
       const sourcePiece = game.board[fromRow][fromCol];
       if (sourcePiece.color !== piece.color || sourcePiece.type !== piece.type) {
+        console.warn('[4p-chess] Piece mismatch:', {sourcePiece, clientPiece: piece});
         send(ws, { type: 'chess_error', message: 'Invalid piece at source' });
         return;
       }

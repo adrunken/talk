@@ -1393,10 +1393,20 @@ function deliverQueuedInvites(username) {
 }
 
 function findOngoingGameByUsername(username) {
-  // Find the first ongoing game where this username is a player
+  // Find the first ongoing 2-player game where this username is a player
   for (const [gid, g] of games.entries()) {
-    if (!g.over && (g.white === username || g.black === username)) {
-      return { gid, game: g };
+    if (!g.over && !g.is4player && (g.white === username || g.black === username)) {
+      return { gid, game: g, type: '2player' };
+    }
+  }
+  return null;
+}
+
+function findOngoing4PlayerGameByUsername(username) {
+  // Find the first ongoing 4-player game where this username is a player
+  for (const [gid, g] of games.entries()) {
+    if (!g.over && g.is4player && g.players && g.players.includes(username)) {
+      return { gid, game: g, type: '4player' };
     }
   }
   return null;

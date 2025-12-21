@@ -3240,6 +3240,11 @@ function ready() {
 
     function onPieceClick4P(row, col) {
         clearValidMoves4P();
+        const piece = gameState4P.board[row][col];
+        // Only allow selecting pieces that belong to the current player
+        if (!piece || !isCurrentPlayerPiece4P(piece)) {
+            return;
+        }
         const currentSelectedRow = gameState4P.selectedSquare?.row;
         const currentSelectedCol = gameState4P.selectedSquare?.col;
 

@@ -3729,6 +3729,16 @@ function ready() {
         }
     });
 
+    $('#invites').on('click', '#rejoin-4player-game', function(){
+        if (gameState4P && !gameState4P.over) {
+            renderBoard4P();
+            updateUI4P();
+            startTimer4P();
+            $('#four-player-chess-overlay').removeClass('hidden');
+            __chessUnread = 0; __updateTitleBadge();
+        }
+    });
+
     function renderUserLists() {
         var me = $('#username').text();
         var allUsers = [];

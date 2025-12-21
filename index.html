@@ -4066,6 +4066,34 @@ function ready() {
             pendingUserMove = null; premoveQueue = []; updateConfirmButton();
             showRejoinPrompt();
         }
+        else if (data['type'] === '4player_resume') {
+            var me = $('#username').text();
+            if (!gameState4P) {
+                initializeBoard4P();
+            }
+            gameState4P.gameId = data['game_id'];
+            gameState4P.players = data['players'] || [];
+            gameState4P.mode = data['mode'] || '4player';
+            gameState4P.timeControl = data['timeControl'] || '5m';
+            gameState4P.board = data['board'];
+            gameState4P.moveCount = data['moveCount'] || 0;
+            gameState4P.startTime = Date.now();
+
+            var playerIndex = gameState4P.players.indexOf(me);
+            gameState4P.playerIndex = playerIndex >= 0 ? playerIndex : 0;
+            gameState4P.initialRotation = gameState4P.playerIndex * 90;
+
+            // Sync turn from server
+            if (typeof data['currentPlayerIndex'] === 'number') {
+                gameState4P.currentTurn = gameState4P.activePlayers.indexOf(data['currentPlayerIndex']);
+                if (gameState4P.currentTurn === -1) {
+                    gameState4P.currentTurn = 0;
+                }
+            }
+
+            try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], players: data['players'], is4player: true })); } catch(e){}
+            show4PlayerRejoinPrompt();
+        }
         else if (data['type'] === '4player_game_start') {
             try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], players: data['players'], is4player: true })); } catch(e){}
             start4PlayerGame(data);

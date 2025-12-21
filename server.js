@@ -2573,9 +2573,14 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      // Validate that the move is legal (doesn't leave the king in check)
+      if (!isLegalMove4P(game.board, playerIndex, fromRow, fromCol, toRow, toCol)) {
+        console.warn('[4p-chess] Illegal move (leaves king in check):', {from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}});
+        send(ws, { type: '4playerMoveRejected', reason: 'Illegal move - would leave king in check' });
+        return;
+      }
+
       // Check for captured piece before applying move
-      // Note: colors are 'blue', 'yellow', 'green', 'red' and map to indices 0, 1, 2, 3
-      const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
       let eliminatedColor = null;
       const capturedPiece = game.board[toRow][toCol];
       if (capturedPiece && capturedPiece.type === 'king') {

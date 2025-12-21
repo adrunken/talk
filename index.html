@@ -4080,6 +4080,19 @@ function ready() {
             pendingUserMove = null; premoveQueue = []; updateConfirmButton();
             showRejoinPrompt();
         }
+        else if (data['type'] === '4player_resume') {
+            // User reconnected with an ongoing 4-player game
+            __chessUnread += 1; __updateTitleBadge();
+            if (!gameState4P) {
+                initializeBoard4P();
+            }
+            gameState4P.gameId = data['game_id'];
+            gameState4P.players = data['players'];
+            gameState4P.mode = data['mode'];
+            gameState4P.timeControl = data['timeControl'];
+            show4PlayerRejoinPrompt();
+            console.log('[chess] 4-player game resumed:', data['game_id'], 'players:', data['players'].join(', '));
+        }
         else if (data['type'] === '4player_game_start') {
             try { localStorage.setItem('active_game', JSON.stringify({ id: data['game_id'], players: data['players'], is4player: true })); } catch(e){}
             start4PlayerGame(data);

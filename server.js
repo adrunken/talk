@@ -1360,6 +1360,268 @@ setInterval(() => {
   if (changed) sendUserList();
 }, 10000);
 
+// 4-Player Chess: Check and Checkmate Detection
+const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
+const BOARD_SIZE = 14;
+
+function isValidPos4P(row, col) {
+  return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+}
+
+function isInactive4P(col, row) {
+  const corners = [
+    { minR: 0, maxR: 2, minC: 0, maxC: 2 },
+    { minR: 0, maxR: 2, minC: 11, maxC: 13 },
+    { minR: 11, maxR: 13, minC: 0, maxC: 2 },
+    { minR: 11, maxR: 13, minC: 11, maxC: 13 }
+  ];
+  return corners.some(c => row >= c.minR && row <= c.maxR && col >= c.minC && col <= c.maxC);
+}
+
+function findKing4P(board, colorIndex) {
+  const color = COLORS_4PLAYER[colorIndex];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const piece = board[r][c];
+      if (piece && piece.type === 'king' && piece.color === color) {
+        return { row: r, col: c };
+      }
+    }
+  }
+  return null;
+}
+
+function isKingInCheck4P(board, colorIndex) {
+  const kingPos = findKing4P(board, colorIndex);
+  if (!kingPos) return false;
+
+  const color = COLORS_4PLAYER[colorIndex];
+
+  // Check if any opponent piece can attack the king
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const piece = board[r][c];
+      if (piece && piece.color !== color) {
+        if (canAttackPosition4P(board, r, c, piece, kingPos.row, kingPos.col)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function canAttackPosition4P(board, fromRow, fromCol, piece, toRow, toCol) {
+  const directions = {
+    blue: { forward: { row: -1, col: 0 }, pawnCapture: [{ row: -1, col: -1 }, { row: -1, col: 1 }] },
+    yellow: { forward: { row: 0, col: -1 }, pawnCapture: [{ row: -1, col: -1 }, { row: 1, col: -1 }] },
+    green: { forward: { row: 1, col: 0 }, pawnCapture: [{ row: 1, col: -1 }, { row: 1, col: 1 }] },
+    red: { forward: { row: 0, col: 1 }, pawnCapture: [{ row: -1, col: 1 }, { row: 1, col: 1 }] }
+  };
+
+  const playerDir = directions[piece.color];
+
+  switch (piece.type) {
+    case 'pawn':
+      for (const cap of playerDir.pawnCapture) {
+        const cRow = fromRow + cap.row;
+        const cCol = fromCol + cap.col;
+        if (cRow === toRow && cCol === toCol && isValidPos4P(cRow, cCol)) {
+          return true;
+        }
+      }
+      return false;
+
+    case 'rook':
+      return canSlidingAttack4P(board, fromRow, fromCol, toRow, toCol, [[0, 1], [0, -1], [1, 0], [-1, 0]]);
+
+    case 'bishop':
+      return canSlidingAttack4P(board, fromRow, fromCol, toRow, toCol, [[1, 1], [1, -1], [-1, 1], [-1, -1]]);
+
+    case 'queen':
+      return canSlidingAttack4P(board, fromRow, fromCol, toRow, toCol, [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]);
+
+    case 'knight':
+      const knightMoves = [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]];
+      for (const d of knightMoves) {
+        if (fromRow + d[0] === toRow && fromCol + d[1] === toCol) {
+          return true;
+        }
+      }
+      return false;
+
+    case 'king':
+      const kingMoves = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+      for (const d of kingMoves) {
+        if (fromRow + d[0] === toRow && fromCol + d[1] === toCol) {
+          return true;
+        }
+      }
+      return false;
+
+    default:
+      return false;
+  }
+}
+
+function canSlidingAttack4P(board, fromRow, fromCol, toRow, toCol, directions) {
+  for (const d of directions) {
+    let nr = fromRow + d[0];
+    let nc = fromCol + d[1];
+    while (isValidPos4P(nr, nc) && !isInactive4P(nc, nr)) {
+      if (nr === toRow && nc === toCol) {
+        return true;
+      }
+      if (board[nr][nc]) {
+        break;
+      }
+      nr += d[0];
+      nc += d[1];
+    }
+  }
+  return false;
+}
+
+function getPossibleMoves4P(board, row, col) {
+  const piece = board[row][col];
+  if (!piece) return [];
+
+  const moves = [];
+  const directions = {
+    blue: { forward: { row: -1, col: 0 }, pawnCapture: [{ row: -1, col: -1 }, { row: -1, col: 1 }] },
+    yellow: { forward: { row: 0, col: -1 }, pawnCapture: [{ row: -1, col: -1 }, { row: 1, col: -1 }] },
+    green: { forward: { row: 1, col: 0 }, pawnCapture: [{ row: 1, col: -1 }, { row: 1, col: 1 }] },
+    red: { forward: { row: 0, col: 1 }, pawnCapture: [{ row: -1, col: 1 }, { row: 1, col: 1 }] }
+  };
+
+  const playerDir = directions[piece.color];
+
+  switch (piece.type) {
+    case 'pawn':
+      const fRow = row + playerDir.forward.row;
+      const fCol = col + playerDir.forward.col;
+      if (isValidPos4P(fRow, fCol) && !isInactive4P(fCol, fRow) && !board[fRow][fCol]) {
+        moves.push({ row: fRow, col: fCol });
+
+        if (!piece.hasMoved) {
+          const dRow = fRow + playerDir.forward.row;
+          const dCol = fCol + playerDir.forward.col;
+          if (isValidPos4P(dRow, dCol) && !isInactive4P(dCol, dRow) && !board[dRow][dCol]) {
+            moves.push({ row: dRow, col: dCol });
+          }
+        }
+      }
+      for (const cap of playerDir.pawnCapture) {
+        const cRow = row + cap.row;
+        const cCol = col + cap.col;
+        if (isValidPos4P(cRow, cCol) && !isInactive4P(cCol, cRow)) {
+          const target = board[cRow][cCol];
+          if (target && target.color !== piece.color) {
+            moves.push({ row: cRow, col: cCol });
+          }
+        }
+      }
+      break;
+
+    case 'rook':
+      addSlidingMoves4P(board, row, col, piece, [[0, 1], [0, -1], [1, 0], [-1, 0]], moves);
+      break;
+
+    case 'bishop':
+      addSlidingMoves4P(board, row, col, piece, [[1, 1], [1, -1], [-1, 1], [-1, -1]], moves);
+      break;
+
+    case 'queen':
+      addSlidingMoves4P(board, row, col, piece, [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]], moves);
+      break;
+
+    case 'knight':
+      [[2, 1], [2, -1], [-2, 1], [-2, -1], [1, 2], [1, -2], [-1, 2], [-1, -2]].forEach(function(d) {
+        const nr = row + d[0];
+        const nc = col + d[1];
+        if (isValidPos4P(nr, nc) && !isInactive4P(nc, nr)) {
+          const target = board[nr][nc];
+          if (!target || target.color !== piece.color) {
+            moves.push({ row: nr, col: nc });
+          }
+        }
+      });
+      break;
+
+    case 'king':
+      [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function(d) {
+        const nr = row + d[0];
+        const nc = col + d[1];
+        if (isValidPos4P(nr, nc) && !isInactive4P(nc, nr)) {
+          const target = board[nr][nc];
+          if (!target || target.color !== piece.color) {
+            moves.push({ row: nr, col: nc });
+          }
+        }
+      });
+      break;
+  }
+
+  return moves;
+}
+
+function addSlidingMoves4P(board, row, col, piece, directions, moves) {
+  directions.forEach(function(d) {
+    let nr = row + d[0];
+    let nc = col + d[1];
+    while (isValidPos4P(nr, nc) && !isInactive4P(nc, nr)) {
+      const target = board[nr][nc];
+      if (target) {
+        if (target.color !== piece.color) {
+          moves.push({ row: nr, col: nc });
+        }
+        break;
+      }
+      moves.push({ row: nr, col: nc });
+      nr += d[0];
+      nc += d[1];
+    }
+  });
+}
+
+function isLegalMove4P(board, colorIndex, fromRow, fromCol, toRow, toCol) {
+  const piece = board[fromRow][fromCol];
+  if (!piece || piece.color !== COLORS_4PLAYER[colorIndex]) {
+    return false;
+  }
+
+  // Make a copy of the board and apply the move
+  const boardCopy = board.map(row => [...row]);
+  const target = boardCopy[toRow][toCol];
+  boardCopy[toRow][toCol] = piece;
+  boardCopy[fromRow][fromCol] = null;
+
+  // Check if the king would still be in check after this move
+  return !isKingInCheck4P(boardCopy, colorIndex);
+}
+
+function hasLegalMoves4P(board, colorIndex) {
+  const color = COLORS_4PLAYER[colorIndex];
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      const piece = board[r][c];
+      if (piece && piece.color === color) {
+        const moves = getPossibleMoves4P(board, r, c);
+        for (const move of moves) {
+          if (isLegalMove4P(board, colorIndex, r, c, move.row, move.col)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function isCheckmate4P(board, colorIndex) {
+  return isKingInCheck4P(board, colorIndex) && !hasLegalMoves4P(board, colorIndex);
+}
+
 wss.on('connection', (ws, req) => {
   if (req.url && !req.url.startsWith('/ws')) {
     ws.close();

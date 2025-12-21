@@ -2238,6 +2238,7 @@ wss.on('connection', (ws, req) => {
       // Broadcast move to all players in the game
       const moveUpdate = {
         type: '4playerMoveUpdate',
+        game_id: gid,
         from,
         to,
         piece,

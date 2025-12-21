@@ -1667,9 +1667,61 @@ wss.on('connection', (ws, req) => {
           });
 
           // Initialize 4-player game state
+          const emptyBoard = Array(14).fill(null).map(() => Array(14).fill(null));
+
+          // Helper to set up pieces
+          const setPiece = (board, type, row, col, color) => {
+            board[row][col] = { type, color, hasMoved: false };
+          };
+
+          // Setup pieces for each player (matching client-side initialization)
+          // Player 0 (blue) - vertical, top side
+          for (let c = 3; c < 11; c++) setPiece(emptyBoard, 'pawn', 12, c, 'blue');
+          setPiece(emptyBoard, 'rook', 13, 3, 'blue');
+          setPiece(emptyBoard, 'knight', 13, 4, 'blue');
+          setPiece(emptyBoard, 'bishop', 13, 5, 'blue');
+          setPiece(emptyBoard, 'queen', 13, 6, 'blue');
+          setPiece(emptyBoard, 'king', 13, 7, 'blue');
+          setPiece(emptyBoard, 'bishop', 13, 8, 'blue');
+          setPiece(emptyBoard, 'knight', 13, 9, 'blue');
+          setPiece(emptyBoard, 'rook', 13, 10, 'blue');
+
+          // Player 1 (yellow) - horizontal, right side
+          for (let r = 3; r < 11; r++) setPiece(emptyBoard, 'pawn', r, 12, 'yellow');
+          setPiece(emptyBoard, 'rook', 3, 13, 'yellow');
+          setPiece(emptyBoard, 'knight', 4, 13, 'yellow');
+          setPiece(emptyBoard, 'bishop', 5, 13, 'yellow');
+          setPiece(emptyBoard, 'queen', 6, 13, 'yellow');
+          setPiece(emptyBoard, 'king', 7, 13, 'yellow');
+          setPiece(emptyBoard, 'bishop', 8, 13, 'yellow');
+          setPiece(emptyBoard, 'knight', 9, 13, 'yellow');
+          setPiece(emptyBoard, 'rook', 10, 13, 'yellow');
+
+          // Player 2 (green) - vertical, bottom side
+          for (let c = 3; c < 11; c++) setPiece(emptyBoard, 'pawn', 1, c, 'green');
+          setPiece(emptyBoard, 'rook', 0, 3, 'green');
+          setPiece(emptyBoard, 'knight', 0, 4, 'green');
+          setPiece(emptyBoard, 'bishop', 0, 5, 'green');
+          setPiece(emptyBoard, 'queen', 0, 6, 'green');
+          setPiece(emptyBoard, 'king', 0, 7, 'green');
+          setPiece(emptyBoard, 'bishop', 0, 8, 'green');
+          setPiece(emptyBoard, 'knight', 0, 9, 'green');
+          setPiece(emptyBoard, 'rook', 0, 10, 'green');
+
+          // Player 3 (red) - horizontal, left side
+          for (let r = 3; r < 11; r++) setPiece(emptyBoard, 'pawn', r, 1, 'red');
+          setPiece(emptyBoard, 'rook', 3, 0, 'red');
+          setPiece(emptyBoard, 'knight', 4, 0, 'red');
+          setPiece(emptyBoard, 'bishop', 5, 0, 'red');
+          setPiece(emptyBoard, 'queen', 6, 0, 'red');
+          setPiece(emptyBoard, 'king', 7, 0, 'red');
+          setPiece(emptyBoard, 'bishop', 8, 0, 'red');
+          setPiece(emptyBoard, 'knight', 9, 0, 'red');
+          setPiece(emptyBoard, 'rook', 10, 0, 'red');
+
           fourPlayerGames.set(gid, {
             players: playersArray,
-            board: Array(14).fill(null).map(() => Array(14).fill(null)),
+            board: emptyBoard,
             currentTurn: 0,
             activePlayers: [0, 3, 2, 1],
             moveCount: 0

@@ -115,6 +115,15 @@
             cursor: not-allowed;
         }
 
+        .square.valid-target {
+            background: rgba(34, 197, 94, 0.3) !important;
+            box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.6);
+        }
+
+        .square.valid-target .piece {
+            cursor: cell;
+        }
+
         .controls {
             display: flex;
             gap: 1rem;
@@ -536,12 +545,18 @@
 
                             pieceEl.appendChild(img);
                             pieceEl.draggable = isCurrentPlayerPiece(piece);
+                            pieceEl.style.cursor = isCurrentPlayerPiece(piece) ? 'grab' : 'default';
 
                             if (!gameState.activePlayers.includes(COLORS.indexOf(piece.color))) {
                                 pieceEl.classList.add('eliminated');
                             }
 
                             pieceEl.addEventListener('dragstart', (e) => onPieceDragStart(e, y, x));
+                            pieceEl.addEventListener('dragend', () => {
+                                clearHighlights();
+                                gameState.selectedSquare = null;
+                                gameState.validMoves = [];
+                            });
                             sq.appendChild(pieceEl);
                         }
 
@@ -583,9 +598,31 @@
             }
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
+
+            // Highlight valid target squares if setting is enabled
+            let showLegalMoves = true;
+            try {
+                showLegalMoves = localStorage.getItem('chessSettings_showLegalMoves') !== 'false';
+            } catch(e) {
+                showLegalMoves = true;
+            }
+            if (showLegalMoves) {
+                gameState.validMoves.forEach(move => {
+                    const sq = document.querySelector(`[data-x="${move.col}"][data-y="${move.row}"]`);
+                    if (sq) sq.classList.add('valid-target');
+                });
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.square.valid-target').forEach(sq => {
+                sq.classList.remove('valid-target');
+            });
         }
 
         function onSquareDrop(e, toRow, toCol) {
+            clearHighlights();
+
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;

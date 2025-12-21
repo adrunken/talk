@@ -416,7 +416,9 @@
             if (event.data.type === 'requestGameState') {
                 sendGameStateToParent();
             } else if (event.data.type === '4playerMoveUpdate') {
-                applyRemoteMove(event.data);
+                if (gameState.gameId && gameState.gameId === event.data.game_id) {
+                    applyRemoteMove(event.data);
+                }
             } else if (event.data.type === '4playerMoveRejected') {
                 console.log('Move rejected:', event.data.reason);
             }

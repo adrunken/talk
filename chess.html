@@ -416,7 +416,9 @@
             if (event.data.type === 'requestGameState') {
                 sendGameStateToParent();
             } else if (event.data.type === '4playerMoveUpdate') {
-                applyRemoteMove(event.data);
+                if (gameState.gameId && gameState.gameId === event.data.game_id) {
+                    applyRemoteMove(event.data);
+                }
             } else if (event.data.type === '4playerMoveRejected') {
                 console.log('Move rejected:', event.data.reason);
             }
@@ -567,7 +569,18 @@
             return piece.color === currentColor && gameState.activePlayers.includes(COLORS.indexOf(piece.color));
         }
 
+        function isPlayerOwnPiece(piece) {
+            const playerColor = COLORS[gameState.playerIndex];
+            return piece.color === playerColor;
+        }
+
         function onPieceDragStart(e, row, col) {
+            const piece = gameState.board[row][col];
+            // Only allow dragging pieces that are the current player's turn AND belong to this player
+            if (!piece || !isCurrentPlayerPiece(piece)) {
+                e.preventDefault();
+                return;
+            }
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
         }
@@ -576,6 +589,13 @@
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;
+            const piece = gameState.board[fromRow][fromCol];
+            // Verify the piece belongs to this player AND it's their turn
+            if (!piece || !isPlayerOwnPiece(piece) || !isCurrentPlayerPiece(piece)) {
+                gameState.selectedSquare = null;
+                gameState.validMoves = [];
+                return;
+            }
             const move = gameState.validMoves.find(m => m.row === toRow && m.col === toCol);
 
             if (!move) {
@@ -583,8 +603,6 @@
                 gameState.validMoves = [];
                 return;
             }
-
-            const piece = gameState.board[fromRow][fromCol];
 
             gameState.selectedSquare = null;
             gameState.validMoves = [];
@@ -795,6 +813,10 @@
 
         document.getElementById('resign-btn').addEventListener('click', () => {
             const currentColorIdx = gameState.activePlayers[gameState.currentTurn];
+            // Only allow the current player to resign
+            if (gameState.playerIndex !== currentColorIdx) {
+                return;
+            }
             eliminatePlayer(currentColorIdx);
             advanceTurn();
             renderBoard();

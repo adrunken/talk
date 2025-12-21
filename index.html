@@ -3200,7 +3200,7 @@ function ready() {
                         pieceEl.addEventListener('dragstart', function(e) { onPieceDragStart4P(e, y, x); });
                         pieceEl.addEventListener('click', function(e) {
                             e.stopPropagation();
-                            if (isCurrentPlayerPiece4P(piece)) {
+                            if (isPlayerOwnPiece4P(piece)) {
                                 onPieceClick4P(y, x);
                             }
                         });
@@ -3233,8 +3233,18 @@ function ready() {
         return piece.color === currentColor && gameState4P.activePlayers.includes(COLORS_4PLAYER.indexOf(piece.color));
     }
 
+    function isPlayerOwnPiece4P(piece) {
+        const playerColor = COLORS_4PLAYER[gameState4P.playerIndex];
+        return piece.color === playerColor;
+    }
+
     function onPieceClick4P(row, col) {
         clearValidMoves4P();
+        const piece = gameState4P.board[row][col];
+        // Only allow selecting pieces that belong to this player (not dependent on turn)
+        if (!piece || !isPlayerOwnPiece4P(piece)) {
+            return;
+        }
         const currentSelectedRow = gameState4P.selectedSquare?.row;
         const currentSelectedCol = gameState4P.selectedSquare?.col;
 
@@ -3262,7 +3272,7 @@ function ready() {
         if (!move) {
             if (gameState4P.board[toRow] && gameState4P.board[toRow][toCol]) {
                 const piece = gameState4P.board[toRow][toCol];
-                if (isCurrentPlayerPiece4P(piece)) {
+                if (isPlayerOwnPiece4P(piece)) {
                     onPieceClick4P(toRow, toCol);
                 }
             }
@@ -3294,6 +3304,12 @@ function ready() {
     }
 
     function onPieceDragStart4P(e, row, col) {
+        const piece = gameState4P.board[row][col];
+        // Only allow dragging pieces that are the current player's turn AND belong to this player
+        if (!piece || !isCurrentPlayerPiece4P(piece)) {
+            e.preventDefault();
+            return;
+        }
         gameState4P.selectedSquare = { row, col };
         gameState4P.validMoves = calculateValidMoves4P(row, col);
     }
@@ -3304,6 +3320,12 @@ function ready() {
 
         const fromRow = gameState4P.selectedSquare.row;
         const fromCol = gameState4P.selectedSquare.col;
+        const piece = gameState4P.board[fromRow][fromCol];
+        // Verify the piece belongs to this player AND it's their turn
+        if (!piece || !isPlayerOwnPiece4P(piece) || !isCurrentPlayerPiece4P(piece)) {
+            gameState4P.selectedSquare = null;
+            return;
+        }
         const move = gameState4P.validMoves.find(function(m) { return m.row === toRow && m.col === toCol; });
 
         if (!move) {
@@ -3311,7 +3333,6 @@ function ready() {
             return;
         }
 
-        const piece = gameState4P.board[fromRow][fromCol];
         gameState4P.selectedSquare = null;
         gameState4P.validMoves = [];
 
@@ -3572,6 +3593,10 @@ function ready() {
     $('#resign-btn').on('click', function() {
         if (!gameState4P) return;
         const currentColorIdx = gameState4P.activePlayers[gameState4P.currentTurn];
+        // Only allow the current player to resign
+        if (gameState4P.playerIndex !== currentColorIdx) {
+            return;
+        }
         eliminatePlayer4P(currentColorIdx);
         advanceTurn4P();
         renderBoard4P();
@@ -4073,7 +4098,7 @@ function ready() {
             flashStatus(data['message'] || 'Error');
         }
         else if (data['type'] === '4playerMoveUpdate') {
-            if (gameState4P && gameState4P.gameId) {
+            if (gameState4P && gameState4P.gameId && gameState4P.gameId === data.game_id) {
                 apply4PlayerMoveUpdate(data);
             }
         }

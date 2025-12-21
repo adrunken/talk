@@ -2333,6 +2333,7 @@ wss.on('connection', (ws, req) => {
       }
 
       // Apply move on server
+      console.log('[4p-chess] Applying move on server:', {from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}});
       game.board[toRow][toCol] = piece;
       game.board[fromRow][fromCol] = null;
       game.moveCount++;

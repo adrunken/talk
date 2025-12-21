@@ -3321,8 +3321,8 @@ function ready() {
         const fromRow = gameState4P.selectedSquare.row;
         const fromCol = gameState4P.selectedSquare.col;
         const piece = gameState4P.board[fromRow][fromCol];
-        // Verify the piece belongs to the current player before allowing the move
-        if (!piece || !isCurrentPlayerPiece4P(piece)) {
+        // Verify the piece belongs to this player AND it's their turn
+        if (!piece || !isPlayerOwnPiece4P(piece) || !isCurrentPlayerPiece4P(piece)) {
             gameState4P.selectedSquare = null;
             return;
         }

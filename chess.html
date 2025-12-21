@@ -570,6 +570,12 @@
         }
 
         function onPieceDragStart(e, row, col) {
+            const piece = gameState.board[row][col];
+            // Only allow dragging pieces that belong to the current player
+            if (!piece || !isCurrentPlayerPiece(piece)) {
+                e.preventDefault();
+                return;
+            }
             gameState.selectedSquare = { row, col };
             gameState.validMoves = calculateValidMoves(row, col);
         }
@@ -578,6 +584,13 @@
             if (!gameState.selectedSquare) return;
 
             const { row: fromRow, col: fromCol } = gameState.selectedSquare;
+            const piece = gameState.board[fromRow][fromCol];
+            // Verify the piece belongs to the current player before allowing the move
+            if (!piece || !isCurrentPlayerPiece(piece)) {
+                gameState.selectedSquare = null;
+                gameState.validMoves = [];
+                return;
+            }
             const move = gameState.validMoves.find(m => m.row === toRow && m.col === toCol);
 
             if (!move) {

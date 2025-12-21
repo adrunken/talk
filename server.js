@@ -1330,6 +1330,16 @@ function findOngoingGameByUsername(username) {
   return null;
 }
 
+function findOngoing4PlayerGameByUsername(username) {
+  // Find the first ongoing 4-player game where this username is a player
+  for (const [gid, g] of games.entries()) {
+    if (!g.over && g.is4player && g.players && Array.isArray(g.players) && g.players.includes(username)) {
+      return { gid, game: g };
+    }
+  }
+  return null;
+}
+
 // Cleanup stale users
 setInterval(() => {
   const t = now();

@@ -935,6 +935,28 @@
             return isLegal;
         }
 
+        function hasLegalMoves(colorIndex) {
+            const color = COLORS[colorIndex];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const piece = gameState.board[r][c];
+                    if (piece && piece.color === color) {
+                        const moves = calculateValidMoves(r, c);
+                        for (const move of moves) {
+                            if (isLegalMove(colorIndex, r, c, move.row, move.col)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function isCheckmate(colorIndex) {
+            return isKingInCheck(colorIndex) && !hasLegalMoves(colorIndex);
+        }
+
         function eliminatePlayer(colorIdx) {
             gameState.activePlayers = gameState.activePlayers.filter(p => p !== colorIdx);
             for (let r = 0; r < BOARD_SIZE; r++) {

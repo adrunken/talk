@@ -795,6 +795,10 @@
 
         document.getElementById('resign-btn').addEventListener('click', () => {
             const currentColorIdx = gameState.activePlayers[gameState.currentTurn];
+            // Only allow the current player to resign
+            if (gameState.playerIndex !== currentColorIdx) {
+                return;
+            }
             eliminatePlayer(currentColorIdx);
             advanceTurn();
             renderBoard();

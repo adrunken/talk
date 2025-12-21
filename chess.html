@@ -600,7 +600,12 @@
             gameState.validMoves = calculateValidMoves(row, col);
 
             // Highlight valid target squares if setting is enabled
-            const showLegalMoves = localStorage.getItem('chessSettings_showLegalMoves') !== 'false';
+            let showLegalMoves = true;
+            try {
+                showLegalMoves = localStorage.getItem('chessSettings_showLegalMoves') !== 'false';
+            } catch(e) {
+                showLegalMoves = true;
+            }
             if (showLegalMoves) {
                 gameState.validMoves.forEach(move => {
                     const sq = document.querySelector(`[data-x="${move.col}"][data-y="${move.row}"]`);

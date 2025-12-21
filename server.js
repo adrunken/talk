@@ -1519,11 +1519,11 @@ wss.on('connection', (ws, req) => {
       sendUserList();
       deliverQueuedInvites(username);
 
-      // Check for ongoing games associated with this username
+      // Check for ongoing 2-player games associated with this username
       const ongoingGameInfo = findOngoingGameByUsername(username);
       if (ongoingGameInfo) {
         const { gid, game } = ongoingGameInfo;
-        console.log(`[chess] User ${username} reconnected, found ongoing game ${gid}`);
+        console.log(`[chess] User ${username} reconnected, found ongoing 2-player game ${gid}`);
         const payload = {
           type: 'chess_resume',
           game_id: gid,
@@ -1531,6 +1531,21 @@ wss.on('connection', (ws, req) => {
           black: game.black,
           fen: game.board.fen(),
           turn: game.board.turn() === 'w' ? 'white' : 'black'
+        };
+        send(ws, payload);
+      }
+
+      // Check for ongoing 4-player games associated with this username
+      const ongoing4PlayerGameInfo = findOngoing4PlayerGameByUsername(username);
+      if (ongoing4PlayerGameInfo) {
+        const { gid, game } = ongoing4PlayerGameInfo;
+        console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
+        const payload = {
+          type: '4player_resume',
+          game_id: gid,
+          players: game.players,
+          mode: game.mode,
+          timeControl: game.timeControl
         };
         send(ws, payload);
       }

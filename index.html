@@ -3918,6 +3918,8 @@ function ready() {
         updatePlayersDisplay4P(players);
         startGameTimer4P();
 
+        hide4PlayerRejoinPrompt(); // Hide the "game in progress" button when modal opens
+
         $('#four-player-chess-overlay').removeClass('hidden');
         console.log('[chess] 4-player game started:', gameId, 'players:', players.join(', '), 'board received:', !!boardData);
     }

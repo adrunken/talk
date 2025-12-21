@@ -3897,6 +3897,7 @@ function ready() {
         startGameTimer4P();
 
         $('#four-player-chess-overlay').removeClass('hidden');
+        hide4PlayerRejoinPrompt();
         console.log('[chess] 4-player game started:', gameId, 'players:', players.join(', '));
     }
 

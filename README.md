@@ -1,7 +1,7 @@
 TalkTalkTalk
 =============
 
-**TalkTalkTalk** is an easy-to-install single-page chat room. No login required, no complex layout. Just chat.
+**TalkTalkTalk** is an easy-to-install single-page chat room. No login required, no complex layout. Just chat
 dev command  python3 -m http.server 8000
 
 port http://localhost:8000

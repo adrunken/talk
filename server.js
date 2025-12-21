@@ -2249,7 +2249,10 @@ wss.on('connection', (ws, req) => {
       const game = fourPlayerGames.get(gid);
       const playerIndex = game.players.indexOf(username);
 
+      console.log('[4p-chess] Player validation:', {playerIndex, players: game.players, username});
+
       if (playerIndex === -1) {
+        console.warn('[4p-chess] Player not found in game:', {username, players: game.players});
         send(ws, { type: 'chess_error', message: 'Not a player in this game' });
         return;
       }

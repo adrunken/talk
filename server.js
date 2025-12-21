@@ -2226,7 +2226,15 @@ wss.on('connection', (ws, req) => {
         const colorIndex = COLORS_4PLAYER.indexOf(capturedPiece.color);
         if (colorIndex !== -1 && game.activePlayers.includes(colorIndex)) {
           eliminatedColor = colorIndex;
+          // Remove the eliminated player from activePlayers
+          const wasAtPos = game.activePlayers.indexOf(colorIndex);
           game.activePlayers = game.activePlayers.filter(p => p !== colorIndex);
+          // Adjust currentTurn if necessary (if we eliminated someone before current position)
+          if (wasAtPos < game.currentTurn && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn > 0 ? game.currentTurn - 1 : 0;
+          } else if (game.currentTurn >= game.activePlayers.length && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn % game.activePlayers.length;
+          }
         }
       }
 

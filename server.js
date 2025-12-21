@@ -2248,14 +2248,18 @@ wss.on('connection', (ws, req) => {
         moveCount: game.moveCount
       };
 
+      let broadcastCount = 0;
       for (const player of game.players) {
         const playerWs = getWsByUsername(player);
-        if (playerWs) {
+        if (playerWs && playerWs.readyState === 1) {
           send(playerWs, moveUpdate);
+          broadcastCount++;
+        } else {
+          console.warn('[4p-chess] Failed to send move to player:', player, 'ws:', playerWs ? 'found' : 'not found', 'ready:', playerWs ? playerWs.readyState : 'N/A');
         }
       }
 
-      console.log('[4p-chess] Move recorded:', {gid, player: username, from, to, moveCount: game.moveCount});
+      console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length});
     }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);

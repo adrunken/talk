@@ -3798,6 +3798,19 @@ function ready() {
         $('#rejoin-wrapper').remove();
     }
 
+    function show4PlayerRejoinPrompt() {
+        if (!$('#invites #rejoin-4player-game').length) {
+            var wrap = $('<div class="user-row" id="rejoin-4player-wrapper" />');
+            var btn = $('<button class="invite-user-btn" id="rejoin-4player-game">4P game in progress</button>');
+            wrap.append(btn);
+            $('#invites').append(wrap);
+        }
+    }
+
+    function hide4PlayerRejoinPrompt() {
+        $('#rejoin-4player-wrapper').remove();
+    }
+
     function showAdminDeleteUsersModal(users) {
         var usersList = $('#admin-users-list');
         usersList.empty();

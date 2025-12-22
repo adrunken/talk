@@ -642,6 +642,15 @@ html {
 .chess-settings-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.75rem; border: none; background: none; color: var(--text-primary); cursor: pointer; font-size: 0.875rem; text-align: left; transition: background 0.2s ease; }
 .chess-settings-button:hover { background: var(--accent-secondary); }
 
+/* Dev Tools Dropdown */
+.dev-tools-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.875rem; transition: color 0.2s ease, transform 0.2s ease; }
+.dev-tools-btn:hover { color: var(--accent-primary); transform: scale(1.1); }
+.dev-tools-dropdown { position: absolute; top: 100%; right: -0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 0.5rem 0; min-width: 180px; z-index: 100; margin-top: 0.5rem; }
+.dev-tools-dropdown.hidden { display: none; }
+.dev-tools-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem 0.75rem; border: none; background: none; color: var(--text-primary); cursor: pointer; font-size: 0.875rem; text-align: left; transition: background 0.2s ease; }
+.dev-tools-button:hover { background: var(--accent-secondary); }
+.dev-tools-button i { font-size: 1rem; color: var(--accent-primary); min-width: 1.25rem; }
+
 /* Board and Pieces Modal */
 .board-pieces-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .board-pieces-modal.hidden { display: none; }

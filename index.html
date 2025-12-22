@@ -4862,6 +4862,15 @@ function ready() {
                 chessGame.turn = data['turn'];
                 chessGame.inCheck = !!data['check'];
                 chessGame.lastMove = { from: data['from'], to: data['to'] };
+
+                // Update clock information from server
+                if (data['remainingSeconds']) {
+                    chessGame.remainingSeconds = data['remainingSeconds'];
+                }
+                if (data['serverTime']) {
+                    chessGame.serverTime = data['serverTime'];
+                }
+
                 // push history
                 chessGame.moveHistory = chessGame.moveHistory || [];
                 chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });

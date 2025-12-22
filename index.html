@@ -1573,6 +1573,177 @@ function __updateTitleBadge(){
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) { __unread = 0; __chessUnread = 0; __updateTitleBadge(); } });
 window.addEventListener('focus', function(){ __unread = 0; __chessUnread = 0; __updateTitleBadge(); });
 
+// Browser Logs functionality
+var browserLogs = [];
+var originalConsoleLog = console.log;
+var originalConsoleWarn = console.warn;
+var originalConsoleError = console.error;
+var originalConsoleDebug = console.debug;
+var originalConsoleInfo = console.info;
+
+function formatLogValue(value) {
+    if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch(e) {
+            return String(value);
+        }
+    }
+    return String(value);
+}
+
+function addLog(level, args) {
+    var timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var message = Array.from(args).map(arg => formatLogValue(arg)).join(' ');
+    browserLogs.push({
+        level: level,
+        message: message,
+        timestamp: timestamp,
+        time: Date.now()
+    });
+    updateBrowserLogsDisplay();
+    originalConsoleLog.apply(console, args);
+}
+
+console.log = function() {
+    addLog('log', arguments);
+};
+
+console.warn = function() {
+    addLog('warn', arguments);
+};
+
+console.error = function() {
+    addLog('error', arguments);
+};
+
+console.debug = function() {
+    addLog('debug', arguments);
+};
+
+console.info = function() {
+    addLog('info', arguments);
+};
+
+function updateBrowserLogsDisplay() {
+    var content = document.getElementById('browser-logs-content');
+    if (!content) return;
+
+    if (browserLogs.length === 0) {
+        content.innerHTML = '<div class="browser-logs-empty">No logs yet</div>';
+        return;
+    }
+
+    content.innerHTML = '';
+    browserLogs.forEach(function(log) {
+        var logEntry = document.createElement('div');
+        logEntry.className = 'log-entry log-' + log.level;
+        logEntry.innerHTML = '<span class="log-timestamp">[' + log.timestamp + ']</span> ' + log.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        content.appendChild(logEntry);
+    });
+
+    content.scrollTop = content.scrollHeight;
+}
+
+function openBrowserLogsModal() {
+    var modal = document.getElementById('browser-logs-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        updateBrowserLogsDisplay();
+    }
+}
+
+function closeBrowserLogsModal() {
+    var modal = document.getElementById('browser-logs-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Tool button and dropdown interactions
+document.addEventListener('DOMContentLoaded', function() {
+    var toolBtn = document.getElementById('tool-btn');
+    var browserLogsDropdown = document.getElementById('browser-logs-dropdown');
+    var openBrowserLogsBtn = document.getElementById('open-browser-logs-btn');
+    var browserLogsCloseBtn = document.getElementById('browser-logs-close');
+    var clearLogsBtn = document.getElementById('clear-logs-btn');
+    var copyLogsBtn = document.getElementById('copy-logs-btn');
+    var downloadLogsBtn = document.getElementById('download-logs-btn');
+
+    if (toolBtn) {
+        toolBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (browserLogsDropdown) {
+                browserLogsDropdown.classList.toggle('hidden');
+            }
+        });
+    }
+
+    if (openBrowserLogsBtn) {
+        openBrowserLogsBtn.addEventListener('click', function() {
+            if (browserLogsDropdown) {
+                browserLogsDropdown.classList.add('hidden');
+            }
+            openBrowserLogsModal();
+        });
+    }
+
+    if (browserLogsCloseBtn) {
+        browserLogsCloseBtn.addEventListener('click', function() {
+            closeBrowserLogsModal();
+        });
+    }
+
+    if (clearLogsBtn) {
+        clearLogsBtn.addEventListener('click', function() {
+            browserLogs = [];
+            updateBrowserLogsDisplay();
+        });
+    }
+
+    if (copyLogsBtn) {
+        copyLogsBtn.addEventListener('click', function() {
+            var logsText = browserLogs.map(function(log) {
+                return '[' + log.timestamp + '] [' + log.level.toUpperCase() + '] ' + log.message;
+            }).join('\n');
+            navigator.clipboard.writeText(logsText).then(function() {
+                originalConsoleLog('Logs copied to clipboard');
+                copyLogsBtn.textContent = '✓ Copied!';
+                setTimeout(function() {
+                    copyLogsBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            }).catch(function(err) {
+                originalConsoleError('Failed to copy logs:', err);
+            });
+        });
+    }
+
+    if (downloadLogsBtn) {
+        downloadLogsBtn.addEventListener('click', function() {
+            var logsText = browserLogs.map(function(log) {
+                return '[' + log.timestamp + '] [' + log.level.toUpperCase() + '] ' + log.message;
+            }).join('\n');
+            var blob = new Blob([logsText], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'browser-logs-' + new Date().getTime() + '.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        var toolBtn = document.getElementById('tool-btn');
+        var browserLogsDropdown = document.getElementById('browser-logs-dropdown');
+        if (toolBtn && browserLogsDropdown && !toolBtn.contains(e.target) && !browserLogsDropdown.contains(e.target)) {
+            browserLogsDropdown.classList.add('hidden');
+        }
+    });
+});
+
 // Chess state
 var chessGame = null; // {id, white, black, color, fen, turn, lastMove}
 var selectedSquare = null;

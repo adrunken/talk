@@ -2021,12 +2021,15 @@ wss.on('connection', (ws, req) => {
             gameStartTime: Date.now()
           });
 
+          const gameObj = fourPlayerGames.get(gid);
           const payload = {
             type: '4player_game_start',
             game_id: gid,
             players: playersArray,
             mode: session.mode,
-            timeControl: session.timeControl
+            timeControl: session.timeControl,
+            remainingSeconds: gameObj.remainingSeconds,
+            serverTime: Date.now()
           };
 
           console.log('[4p-chess] Game started:', {gid, players: playersArray});

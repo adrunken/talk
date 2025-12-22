@@ -1176,13 +1176,23 @@ const users = new Map(); // ws -> username
 const pings = new Map(); // ws -> timestamp
 const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
-const games = new Map(); // gid -> {board: Chess, white, black, over}
+const games = new Map(); // gid -> {board: Chess, white, black, over, ...}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
+const gameTimers = new Map(); // gid -> {white: {remainingMs, intervalId}, black: {remainingMs, intervalId}, ...}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
+
+function timeControlToMs(timeControl) {
+  if (!timeControl || timeControl === 'unlimited') return null;
+  const match = String(timeControl).match(/^(\d+)m?$/);
+  if (match) {
+    return parseInt(match[1], 10) * 60 * 1000;
+  }
+  return null;
+}
 
 function send(ws, payload) {
   if (ws && ws.readyState === 1) {
@@ -1633,6 +1643,17 @@ wss.on('connection', (ws, req) => {
             timeControl: session.timeControl
           });
 
+          // Initialize timers for each player
+          const timeMs = timeControlToMs(session.timeControl);
+          if (timeMs !== null) {
+            const timersObj = {};
+            const colorToPlayer = { blue: playersArray[0], yellow: playersArray[1], green: playersArray[2], red: playersArray[3] };
+            for (const color in colorToPlayer) {
+              timersObj[color] = { remainingMs: timeMs, activePlayer: color === 'blue' };
+            }
+            gameTimers.set(gid, timersObj);
+          }
+
           const payload = {
             type: '4player_game_start',
             game_id: gid,
@@ -1660,12 +1681,25 @@ wss.on('connection', (ws, req) => {
         if (!invites.has(key)) {
           send(ws, { type: 'chess_error', message: 'Invite not found' });
         } else {
+          const inviteData = invites.get(key) || {};
+          const timeControl = inviteData.timeControl || '5m';
           const gid = nextGameId++;
           const board = new ChessCtor();
           let white, black;
           if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
-          games.set(gid, { board, white, black, over: false, isAiGame: false });
-          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+          const game = { board, white, black, over: false, isAiGame: false, is4player: false, timeControl };
+          games.set(gid, game);
+
+          // Initialize timers
+          const timeMs = timeControlToMs(timeControl);
+          if (timeMs !== null) {
+            gameTimers.set(gid, {
+              white: { remainingMs: timeMs, activePlayer: true },
+              black: { remainingMs: timeMs, activePlayer: false }
+            });
+          }
+
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', timeControl };
           sendToUsername(white, payload); sendToUsername(black, payload);
           invites.delete(key);
         }

@@ -1807,13 +1807,30 @@ wss.on('connection', (ws, req) => {
       if (ongoingGameInfo) {
         const { gid, game } = ongoingGameInfo;
         console.log(`[chess] User ${username} reconnected, found ongoing 2-player game ${gid}`);
+
+        // Recalculate remaining times after reconnect by deducting elapsed time
+        const now = Date.now();
+        let resumeRemainingSeconds = [...(game.remainingSeconds || [game.timeControlSeconds || 0, game.timeControlSeconds || 0])];
+
+        if (game.timeControlSeconds && game.timeControlSeconds > 0) {
+          const elapsedMs = now - (game.lastMoveAt || now);
+          const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+          // Deduct elapsed time from current player (whose turn it is)
+          const currentPlayerIndex = game.board.turn() === 'w' ? 0 : 1;
+          resumeRemainingSeconds[currentPlayerIndex] = Math.max(0, resumeRemainingSeconds[currentPlayerIndex] - elapsedSeconds);
+        }
+
         const payload = {
           type: 'chess_resume',
           game_id: gid,
           white: game.white,
           black: game.black,
           fen: game.board.fen(),
-          turn: game.board.turn() === 'w' ? 'white' : 'black'
+          turn: game.board.turn() === 'w' ? 'white' : 'black',
+          timeControl: game.timeControl,
+          remainingSeconds: resumeRemainingSeconds,
+          serverTime: now
         };
         send(ws, payload);
       }

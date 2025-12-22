@@ -4807,7 +4807,11 @@ function ready() {
                 fen: data['fen'],
                 turn: data['turn'],
                 lastMove: null,
-                over: false
+                over: false,
+                timeControl: data['timeControl'] || '5m',
+                remainingSeconds: data['remainingSeconds'] || [300, 300],
+                serverTime: data['serverTime'] || Date.now(),
+                startTime: Date.now()
             };
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
             $('#chess-white').text(chessGame.white);

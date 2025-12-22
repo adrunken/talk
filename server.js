@@ -1825,6 +1825,18 @@ wss.on('connection', (ws, req) => {
         const gameState = fourPlayerGames.get(gid);
         if (gameState) {
           console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
+          // Recalculate remaining times after reconnect by deducting elapsed time
+          const now = Date.now();
+          const elapsedMs = now - (gameState.lastMoveAt || now);
+          const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+          // Deduct elapsed time from current player if time control is enabled
+          let resumeRemainingSeconds = [...gameState.remainingSeconds];
+          if (gameState.timeControlSeconds && gameState.timeControlSeconds > 0 && gameState.activePlayers.length > 0) {
+            const currentPlayerIndex = gameState.activePlayers[gameState.currentTurn % gameState.activePlayers.length];
+            resumeRemainingSeconds[currentPlayerIndex] = Math.max(0, resumeRemainingSeconds[currentPlayerIndex] - elapsedSeconds);
+          }
+
           const payload = {
             type: '4player_resume',
             game_id: gid,
@@ -1834,7 +1846,9 @@ wss.on('connection', (ws, req) => {
             board: gameState.board,
             currentTurn: gameState.currentTurn,
             activePlayers: gameState.activePlayers,
-            moveCount: gameState.moveCount
+            moveCount: gameState.moveCount,
+            remainingSeconds: resumeRemainingSeconds,
+            serverTime: now
           };
           send(ws, payload);
         }

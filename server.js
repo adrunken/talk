@@ -2573,6 +2573,55 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      // Handle chess clock: deduct elapsed time from current player
+      const now = Date.now();
+      const elapsedMs = now - (game.lastMoveAt || now);
+      const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+      // Deduct elapsed time from current player's clock (only if time control is enabled)
+      if (game.timeControlSeconds && game.timeControlSeconds > 0) {
+        game.remainingSeconds[playerIndex] = Math.max(0, game.remainingSeconds[playerIndex] - elapsedSeconds);
+
+        // Check if current player has run out of time
+        if (game.remainingSeconds[playerIndex] <= 0) {
+          console.log('[4p-chess] Player timeout:', {gid, username, playerIndex, color: COLORS_4PLAYER[playerIndex]});
+
+          // Remove the timeout player from activePlayers
+          const timeoutColorIndex = playerIndex;
+          const wasAtPos = game.activePlayers.indexOf(timeoutColorIndex);
+          game.activePlayers = game.activePlayers.filter(p => p !== timeoutColorIndex);
+
+          // Adjust currentTurn if necessary
+          if (wasAtPos < game.currentTurn && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn > 0 ? game.currentTurn - 1 : 0;
+          } else if (game.currentTurn >= game.activePlayers.length && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn % game.activePlayers.length;
+          }
+
+          // Broadcast timeout elimination to all players
+          const timeoutUpdate = {
+            type: '4playerMoveUpdate',
+            game_id: gid,
+            timeout: true,
+            eliminatedColor: timeoutColorIndex,
+            nextTurn: game.currentTurn,
+            activePlayers: game.activePlayers,
+            remainingSeconds: game.remainingSeconds,
+            serverTime: now
+          };
+
+          for (const player of game.players) {
+            const playerWs = getWsByUsername(player);
+            if (playerWs && playerWs.readyState === 1) {
+              send(playerWs, timeoutUpdate);
+            }
+          }
+          return;
+        }
+      }
+
+      game.lastMoveAt = now;
+
       const { from, to, piece } = msg;
 
       if (!from || !to || !piece) {

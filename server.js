@@ -1176,13 +1176,23 @@ const users = new Map(); // ws -> username
 const pings = new Map(); // ws -> timestamp
 const usernameToWs = new Map(); // username -> ws
 const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
-const games = new Map(); // gid -> {board: Chess, white, black, over}
+const games = new Map(); // gid -> {board: Chess, white, black, over, ...}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
+const gameTimers = new Map(); // gid -> {white: {remainingMs, intervalId}, black: {remainingMs, intervalId}, ...}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
+
+function timeControlToMs(timeControl) {
+  if (!timeControl || timeControl === 'unlimited') return null;
+  const match = String(timeControl).match(/^(\d+)m?$/);
+  if (match) {
+    return parseInt(match[1], 10) * 60 * 1000;
+  }
+  return null;
+}
 
 function send(ws, payload) {
   if (ws && ws.readyState === 1) {

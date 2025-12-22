@@ -2736,7 +2736,9 @@ wss.on('connection', (ws, req) => {
         nextTurn: game.currentTurn,
         activePlayers: game.activePlayers,
         moveCount: game.moveCount,
-        checkmatedPlayers: checkmatedPlayers.length > 0 ? checkmatedPlayers : undefined
+        checkmatedPlayers: checkmatedPlayers.length > 0 ? checkmatedPlayers : undefined,
+        remainingSeconds: game.remainingSeconds,
+        serverTime: now
       };
 
       let broadcastCount = 0;

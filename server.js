@@ -1643,6 +1643,17 @@ wss.on('connection', (ws, req) => {
             timeControl: session.timeControl
           });
 
+          // Initialize timers for each player
+          const timeMs = timeControlToMs(session.timeControl);
+          if (timeMs !== null) {
+            const timersObj = {};
+            const colorToPlayer = { blue: playersArray[0], yellow: playersArray[1], green: playersArray[2], red: playersArray[3] };
+            for (const color in colorToPlayer) {
+              timersObj[color] = { remainingMs: timeMs, activePlayer: color === 'blue' };
+            }
+            gameTimers.set(gid, timersObj);
+          }
+
           const payload = {
             type: '4player_game_start',
             game_id: gid,

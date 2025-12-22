@@ -4535,11 +4535,52 @@ function ready() {
                 clearInterval(gameTimer4P);
                 return;
             }
+
+            // Display total game elapsed time
             var elapsed = Math.floor((Date.now() - gameState4P.startTime) / 1000);
             var mins = Math.floor(elapsed / 60);
             var secs = elapsed % 60;
             $('#game-time').text(mins + ':' + (secs < 10 ? '0' : '') + secs);
-        }, 1000);
+
+            // Display per-player clock countdowns
+            if (gameState4P.remainingSeconds && gameState4P.serverTime) {
+                var COLORS_4P = ['blue', 'yellow', 'green', 'red'];
+                var timeSinceSync = Math.floor((Date.now() - gameState4P.serverTime) / 1000);
+
+                for (var i = 0; i < COLORS_4P.length; i++) {
+                    var color = COLORS_4P[i];
+                    var remaining = gameState4P.remainingSeconds[i];
+
+                    // For the current player, subtract elapsed time since server sync
+                    if (gameState4P.activePlayers && gameState4P.activePlayers.length > 0) {
+                        var currentPlayerIndex = gameState4P.activePlayers[gameState4P.currentTurn % gameState4P.activePlayers.length];
+                        if (currentPlayerIndex === i) {
+                            remaining = Math.max(0, remaining - timeSinceSync);
+                        }
+                    }
+
+                    // Format and display the clock
+                    var clockMins = Math.floor(remaining / 60);
+                    var clockSecs = remaining % 60;
+                    var clockDisplay = clockMins + ':' + (clockSecs < 10 ? '0' : '') + clockSecs;
+
+                    // Update the timer element for this color
+                    var timerId = '#time-' + color;
+                    $(timerId).text(clockDisplay);
+
+                    // Highlight current player's timer
+                    var timerElementId = '#timer-' + color;
+                    if (gameState4P.activePlayers && gameState4P.activePlayers.length > 0) {
+                        var currentIdx = gameState4P.activePlayers[gameState4P.currentTurn % gameState4P.activePlayers.length];
+                        if (currentIdx === i) {
+                            $(timerElementId).addClass('active-timer');
+                        } else {
+                            $(timerElementId).removeClass('active-timer');
+                        }
+                    }
+                }
+            }
+        }, 250);
     }
 
     function startChessGame(data) {

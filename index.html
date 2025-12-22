@@ -93,7 +93,7 @@ html {
 #input-container {
     position: fixed;
     bottom: 0;
-    left: 280px;
+    left: 0;
     right: 280px;
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-light);
@@ -167,8 +167,8 @@ html {
 
 /* Main Chat Area */
 #wrapper {
-    width: calc(100% - 280px - 280px);
-    margin: 1rem 280px 6rem 280px;
+    width: calc(100% - 280px);
+    margin: 1rem 280px 6rem 0;
     word-wrap: break-word;
     padding: 0 1rem;
 }
@@ -277,6 +277,7 @@ html {
 
 /* Sidebar */
 #left {
+    display: none;
     width: 280px;
     top: 0;
     left: 0;
@@ -288,7 +289,6 @@ html {
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-light);
     box-shadow: var(--shadow-md);
-    display: flex;
     flex-direction: column;
     gap: 1rem;
 }
@@ -334,8 +334,8 @@ html {
 }
 
 .page-container {
-    width: calc(100% - 280px - 280px);
-    margin: 0 280px 0 280px;
+    width: calc(100% - 280px);
+    margin: 0 280px 0 0;
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -418,6 +418,207 @@ html {
 
 .control-btn i {
     font-size: 0.875rem;
+}
+
+.tool-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+    position: relative;
+}
+
+.tool-btn:hover {
+    color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.tool-btn i {
+    font-size: 0.875rem;
+}
+
+.browser-logs-dropdown {
+    position: absolute;
+    top: 100%;
+    right: -0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 0.5rem 0;
+    min-width: 180px;
+    z-index: 100;
+    margin-top: 0.5rem;
+}
+
+.browser-logs-dropdown.hidden {
+    display: none;
+}
+
+.browser-logs-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-align: left;
+    transition: background 0.2s ease;
+}
+
+.browser-logs-btn:hover {
+    background: var(--accent-secondary);
+}
+
+.browser-logs-btn i {
+    font-size: 1rem;
+    color: var(--accent-primary);
+    min-width: 1.25rem;
+}
+
+/* Browser Logs Modal */
+.browser-logs-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.browser-logs-modal.hidden {
+    display: none;
+}
+
+.browser-logs-panel {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.browser-logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.browser-logs-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.browser-logs-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.browser-logs-close:hover {
+    color: var(--accent-primary);
+}
+
+.browser-logs-toolbar {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-tertiary);
+}
+
+.browser-logs-toolbar button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.browser-logs-toolbar button:hover {
+    background: var(--accent-secondary);
+    color: var(--accent-primary);
+}
+
+.browser-logs-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    background: #1e293b;
+}
+
+.log-entry {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.log-entry.log-default {
+    color: #cbd5e1;
+}
+
+.log-entry.log-info {
+    color: #60a5fa;
+}
+
+.log-entry.log-warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.log-entry.log-error {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+}
+
+.log-entry.log-debug {
+    color: #a78bfa;
+}
+
+.log-timestamp {
+    color: #64748b;
+    margin-right: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.browser-logs-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
 }
 
 #username { 
@@ -562,11 +763,16 @@ html {
     }
     #sidebar-toggle:hover { background: var(--accent-hover); }
 
+    #input-container {
+        left: 0;
+        right: 0;
+    }
+
     #wrapper {
         width: 95%;
         margin: 1rem auto 6rem auto;
     }
-    
+
     #input-wrapper {
         max-width: 95%;
     }
@@ -1009,6 +1215,14 @@ html {
                     <i class="fas fa-chess"></i> Board & Pieces
                 </button>
             </div>
+            <button class="control-btn tool-btn" id="tool-btn" title="Tools">
+                <i class="fas fa-tools"></i>
+            </button>
+            <div class="browser-logs-dropdown hidden" id="browser-logs-dropdown">
+                <button class="browser-logs-btn" id="open-browser-logs-btn" title="Open browser logs">
+                    <i class="fas fa-terminal"></i> Browser Logs
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1289,6 +1503,32 @@ html {
   </div>
 </div>
 
+<!-- Browser Logs Modal -->
+<div id="browser-logs-modal" class="browser-logs-modal hidden">
+  <div class="browser-logs-panel">
+    <div class="browser-logs-header">
+      <h2>Browser Logs</h2>
+      <button class="browser-logs-close" id="browser-logs-close" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="browser-logs-toolbar">
+      <button id="clear-logs-btn" title="Clear all logs">
+        <i class="fas fa-trash"></i> Clear
+      </button>
+      <button id="copy-logs-btn" title="Copy all logs to clipboard">
+        <i class="fas fa-copy"></i> Copy
+      </button>
+      <button id="download-logs-btn" title="Download logs as text file">
+        <i class="fas fa-download"></i> Download
+      </button>
+    </div>
+    <div class="browser-logs-content" id="browser-logs-content">
+      <div class="browser-logs-empty">No logs yet</div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies
@@ -1337,6 +1577,177 @@ function __updateTitleBadge(){
 }
 document.addEventListener('visibilitychange', function(){ if (!document.hidden) { __unread = 0; __chessUnread = 0; __updateTitleBadge(); } });
 window.addEventListener('focus', function(){ __unread = 0; __chessUnread = 0; __updateTitleBadge(); });
+
+// Browser Logs functionality
+var browserLogs = [];
+var originalConsoleLog = console.log;
+var originalConsoleWarn = console.warn;
+var originalConsoleError = console.error;
+var originalConsoleDebug = console.debug;
+var originalConsoleInfo = console.info;
+
+function formatLogValue(value) {
+    if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value, null, 2);
+        } catch(e) {
+            return String(value);
+        }
+    }
+    return String(value);
+}
+
+function addLog(level, args) {
+    var timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var message = Array.from(args).map(arg => formatLogValue(arg)).join(' ');
+    browserLogs.push({
+        level: level,
+        message: message,
+        timestamp: timestamp,
+        time: Date.now()
+    });
+    updateBrowserLogsDisplay();
+    originalConsoleLog.apply(console, args);
+}
+
+console.log = function() {
+    addLog('log', arguments);
+};
+
+console.warn = function() {
+    addLog('warn', arguments);
+};
+
+console.error = function() {
+    addLog('error', arguments);
+};
+
+console.debug = function() {
+    addLog('debug', arguments);
+};
+
+console.info = function() {
+    addLog('info', arguments);
+};
+
+function updateBrowserLogsDisplay() {
+    var content = document.getElementById('browser-logs-content');
+    if (!content) return;
+
+    if (browserLogs.length === 0) {
+        content.innerHTML = '<div class="browser-logs-empty">No logs yet</div>';
+        return;
+    }
+
+    content.innerHTML = '';
+    browserLogs.forEach(function(log) {
+        var logEntry = document.createElement('div');
+        logEntry.className = 'log-entry log-' + log.level;
+        logEntry.innerHTML = '<span class="log-timestamp">[' + log.timestamp + ']</span> ' + log.message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        content.appendChild(logEntry);
+    });
+
+    content.scrollTop = content.scrollHeight;
+}
+
+function openBrowserLogsModal() {
+    var modal = document.getElementById('browser-logs-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        updateBrowserLogsDisplay();
+    }
+}
+
+function closeBrowserLogsModal() {
+    var modal = document.getElementById('browser-logs-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Tool button and dropdown interactions
+document.addEventListener('DOMContentLoaded', function() {
+    var toolBtn = document.getElementById('tool-btn');
+    var browserLogsDropdown = document.getElementById('browser-logs-dropdown');
+    var openBrowserLogsBtn = document.getElementById('open-browser-logs-btn');
+    var browserLogsCloseBtn = document.getElementById('browser-logs-close');
+    var clearLogsBtn = document.getElementById('clear-logs-btn');
+    var copyLogsBtn = document.getElementById('copy-logs-btn');
+    var downloadLogsBtn = document.getElementById('download-logs-btn');
+
+    if (toolBtn) {
+        toolBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (browserLogsDropdown) {
+                browserLogsDropdown.classList.toggle('hidden');
+            }
+        });
+    }
+
+    if (openBrowserLogsBtn) {
+        openBrowserLogsBtn.addEventListener('click', function() {
+            if (browserLogsDropdown) {
+                browserLogsDropdown.classList.add('hidden');
+            }
+            openBrowserLogsModal();
+        });
+    }
+
+    if (browserLogsCloseBtn) {
+        browserLogsCloseBtn.addEventListener('click', function() {
+            closeBrowserLogsModal();
+        });
+    }
+
+    if (clearLogsBtn) {
+        clearLogsBtn.addEventListener('click', function() {
+            browserLogs = [];
+            updateBrowserLogsDisplay();
+        });
+    }
+
+    if (copyLogsBtn) {
+        copyLogsBtn.addEventListener('click', function() {
+            var logsText = browserLogs.map(function(log) {
+                return '[' + log.timestamp + '] [' + log.level.toUpperCase() + '] ' + log.message;
+            }).join('\n');
+            navigator.clipboard.writeText(logsText).then(function() {
+                originalConsoleLog('Logs copied to clipboard');
+                copyLogsBtn.textContent = '✓ Copied!';
+                setTimeout(function() {
+                    copyLogsBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            }).catch(function(err) {
+                originalConsoleError('Failed to copy logs:', err);
+            });
+        });
+    }
+
+    if (downloadLogsBtn) {
+        downloadLogsBtn.addEventListener('click', function() {
+            var logsText = browserLogs.map(function(log) {
+                return '[' + log.timestamp + '] [' + log.level.toUpperCase() + '] ' + log.message;
+            }).join('\n');
+            var blob = new Blob([logsText], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'browser-logs-' + new Date().getTime() + '.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        var toolBtn = document.getElementById('tool-btn');
+        var browserLogsDropdown = document.getElementById('browser-logs-dropdown');
+        if (toolBtn && browserLogsDropdown && !toolBtn.contains(e.target) && !browserLogsDropdown.contains(e.target)) {
+            browserLogsDropdown.classList.add('hidden');
+        }
+    });
+});
 
 // Chess state
 var chessGame = null; // {id, white, black, color, fen, turn, lastMove}

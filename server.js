@@ -1364,6 +1364,27 @@ setInterval(() => {
 const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
 const BOARD_SIZE = 14;
 
+// Parse time control string (e.g., '1m', '3m', '5m', '10m', '30m', 'unlimited') to seconds
+function parseTimeControl(timeControl) {
+  if (!timeControl || timeControl === 'unlimited') {
+    return 0; // 0 means unlimited
+  }
+
+  const match = timeControl.match(/^(\d+)([msh])?$/i);
+  if (!match) {
+    return 300; // Default to 5 minutes if invalid format
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = (match[2] || 'm').toLowerCase();
+
+  if (unit === 'm') return value * 60;
+  if (unit === 'h') return value * 3600;
+  if (unit === 's') return value;
+
+  return value * 60; // Default to minutes
+}
+
 function isValidPos4P(row, col) {
   return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 }

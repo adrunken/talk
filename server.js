@@ -2069,8 +2069,25 @@ wss.on('connection', (ws, req) => {
           const board = new ChessCtor();
           let white, black;
           if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
-          games.set(gid, { board, white, black, over: false, isAiGame: false });
-          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+
+          // Parse time control from invite
+          const timeControl = msg.timeControl || '5m';
+          const timeControlSeconds = parseTimeControl(timeControl);
+          const remainingSeconds = [timeControlSeconds, timeControlSeconds]; // [white, black]
+
+          games.set(gid, {
+            board,
+            white,
+            black,
+            over: false,
+            isAiGame: false,
+            timeControl,
+            timeControlSeconds,
+            remainingSeconds,
+            lastMoveAt: Date.now(),
+            gameStartTime: Date.now()
+          });
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', timeControl, remainingSeconds, serverTime: Date.now() };
           sendToUsername(white, payload); sendToUsername(black, payload);
           invites.delete(key);
         }

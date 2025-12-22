@@ -4619,6 +4619,54 @@ function ready() {
         }, 250);
     }
 
+    function startChessTimer() {
+        if (gameTimer) clearInterval(gameTimer);
+        gameTimer = setInterval(function() {
+            if (!chessGame || chessGame.over) {
+                clearInterval(gameTimer);
+                return;
+            }
+
+            // Display per-player clock countdowns
+            if (chessGame.remainingSeconds && chessGame.serverTime) {
+                var timeSinceSync = Math.floor((Date.now() - chessGame.serverTime) / 1000);
+
+                // White's remaining time
+                var whiteRemaining = chessGame.remainingSeconds[0];
+                // Black's remaining time
+                var blackRemaining = chessGame.remainingSeconds[1];
+
+                // For the current player, subtract elapsed time since server sync
+                if (chessGame.turn === 'white') {
+                    whiteRemaining = Math.max(0, whiteRemaining - timeSinceSync);
+                } else {
+                    blackRemaining = Math.max(0, blackRemaining - timeSinceSync);
+                }
+
+                // Format and display white's timer
+                var whiteMins = Math.floor(whiteRemaining / 60);
+                var whiteSecs = whiteRemaining % 60;
+                var whiteDisplay = whiteMins + ':' + (whiteSecs < 10 ? '0' : '') + whiteSecs;
+                $('#chess-white-time').text(whiteDisplay);
+
+                // Format and display black's timer
+                var blackMins = Math.floor(blackRemaining / 60);
+                var blackSecs = blackRemaining % 60;
+                var blackDisplay = blackMins + ':' + (blackSecs < 10 ? '0' : '') + blackSecs;
+                $('#chess-black-time').text(blackDisplay);
+
+                // Highlight current player's timer
+                if (chessGame.turn === 'white') {
+                    $('#chess-white-time').css('color', '#3b82f6').css('text-shadow', '0 0 8px rgba(59, 130, 246, 0.6)');
+                    $('#chess-black-time').css('color', '#fff').css('text-shadow', 'none');
+                } else {
+                    $('#chess-black-time').css('color', '#3b82f6').css('text-shadow', '0 0 8px rgba(59, 130, 246, 0.6)');
+                    $('#chess-white-time').css('color', '#fff').css('text-shadow', 'none');
+                }
+            }
+        }, 250);
+    }
+
     function startChessGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var me = $('#username').text();

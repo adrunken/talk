@@ -4603,9 +4603,9 @@ function ready() {
                     if (gameState4P.activePlayers && gameState4P.activePlayers.length > 0) {
                         var currentIdx = gameState4P.activePlayers[gameState4P.currentTurn % gameState4P.activePlayers.length];
                         if (currentIdx === i) {
-                            $(timerElementId).addClass('active-timer');
+                            $(timerElementId).addClass('active');
                         } else {
-                            $(timerElementId).removeClass('active-timer');
+                            $(timerElementId).removeClass('active');
                         }
                     }
                 }

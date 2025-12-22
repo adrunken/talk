@@ -3090,6 +3090,122 @@ function ready() {
         }
     });
 
+    // Browser logs system
+    var browserLogsBuffer = [];
+    var originalConsoleLog = console.log;
+    var originalConsoleWarn = console.warn;
+    var originalConsoleError = console.error;
+    var originalConsoleInfo = console.info;
+
+    function captureLog(type, args) {
+        var timestamp = new Date().toLocaleTimeString();
+        var message = Array.from(args).map(function(arg) {
+            if (typeof arg === 'object') {
+                try { return JSON.stringify(arg); } catch(_) { return String(arg); }
+            }
+            return String(arg);
+        }).join(' ');
+        browserLogsBuffer.push({
+            type: type,
+            timestamp: timestamp,
+            message: message
+        });
+        // Keep only last 1000 logs
+        if (browserLogsBuffer.length > 1000) {
+            browserLogsBuffer.shift();
+        }
+    }
+
+    console.log = function() {
+        captureLog('log', arguments);
+        originalConsoleLog.apply(console, arguments);
+    };
+
+    console.warn = function() {
+        captureLog('warn', arguments);
+        originalConsoleWarn.apply(console, arguments);
+    };
+
+    console.error = function() {
+        captureLog('error', arguments);
+        originalConsoleError.apply(console, arguments);
+    };
+
+    console.info = function() {
+        captureLog('info', arguments);
+        originalConsoleInfo.apply(console, arguments);
+    };
+
+    window.addEventListener('error', function(event) {
+        captureLog('error', [event.message + ' (' + event.filename + ':' + event.lineno + ')']);
+    });
+
+    function displayBrowserLogs() {
+        var content = $('#browser-logs-content');
+        if (browserLogsBuffer.length === 0) {
+            content.html('<div style="color: var(--text-muted);">No logs captured yet.</div>');
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < browserLogsBuffer.length; i++) {
+            var log = browserLogsBuffer[i];
+            var typeClass = 'log-' + log.type;
+            var typeColor = log.type === 'error' ? '#ef4444' : log.type === 'warn' ? '#eab308' : '#60a5fa';
+            html += '<div style="margin-bottom: 0.5rem; color: ' + typeColor + ';">';
+            html += '<span style="color: var(--text-muted);">[' + log.timestamp + ']</span> ';
+            html += '<span style="color: var(--text-muted);">(' + log.type.toUpperCase() + ')</span> ';
+            html += '<span style="word-break: break-word; white-space: pre-wrap;">' + log.message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>';
+            html += '</div>';
+        }
+        content.html(html);
+        content.scrollTop(content[0].scrollHeight);
+    }
+
+    // Dev tools dropdown toggle
+    $('#dev-tools-btn').on('click', function(e) {
+        e.stopPropagation();
+        $('#dev-tools-dropdown').toggleClass('hidden');
+    });
+
+    // Close dev tools dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#dev-tools-btn, #dev-tools-dropdown, .control-buttons').length) {
+            $('#dev-tools-dropdown').addClass('hidden');
+        }
+    });
+
+    // Browser logs button click
+    $('#browser-logs-btn').on('click', function(e) {
+        e.stopPropagation();
+        $('#dev-tools-dropdown').addClass('hidden');
+        $('#browser-logs-modal').css('display', 'flex').removeClass('hidden');
+        displayBrowserLogs();
+    });
+
+    // Browser logs modal close
+    $('#browser-logs-close').on('click', function() {
+        $('#browser-logs-modal').addClass('hidden').css('display', 'none');
+    });
+
+    // Browser logs clear
+    $('#browser-logs-clear').on('click', function() {
+        browserLogsBuffer = [];
+        displayBrowserLogs();
+    });
+
+    // Browser logs refresh
+    $('#browser-logs-refresh').on('click', function() {
+        displayBrowserLogs();
+    });
+
+    // Close browser logs modal when clicking outside
+    $(document).on('click', function(e) {
+        if ($(e.target).attr('id') === 'browser-logs-modal') {
+            $('#browser-logs-modal').addClass('hidden').css('display', 'none');
+        }
+    });
+
     // 4-Player Chess Game Logic
     const BOARD_SIZE = 14;
     const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];

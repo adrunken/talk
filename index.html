@@ -4772,6 +4772,14 @@ function ready() {
             gameState4P.activePlayers = data['activePlayers'] || gameState4P.activePlayers;
             gameState4P.moveCount = data['moveCount'] || gameState4P.moveCount;
 
+            // Restore clock state from server
+            if (data['remainingSeconds']) {
+                gameState4P.remainingSeconds = data['remainingSeconds'];
+            }
+            if (data['serverTime']) {
+                gameState4P.serverTime = data['serverTime'];
+            }
+
             // Calculate player index based on current username
             var currentUsername = $('#username').text();
             gameState4P.playerIndex = gameState4P.players.indexOf(currentUsername);

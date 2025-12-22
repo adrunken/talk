@@ -4241,6 +4241,10 @@ function ready() {
     $('#chess-close').on('click', function(){
         $('#chess-modal').addClass('hidden');
         $('#chess-settings-dropdown').addClass('hidden');
+        if (gameTimer) {
+            clearInterval(gameTimer);
+            gameTimer = null;
+        }
         if (stockfishGame) {
             stockfishGame = null;
             chessGame = null;

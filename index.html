@@ -1498,6 +1498,32 @@ html {
   </div>
 </div>
 
+<!-- Browser Logs Modal -->
+<div id="browser-logs-modal" class="browser-logs-modal hidden">
+  <div class="browser-logs-panel">
+    <div class="browser-logs-header">
+      <h2>Browser Logs</h2>
+      <button class="browser-logs-close" id="browser-logs-close" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="browser-logs-toolbar">
+      <button id="clear-logs-btn" title="Clear all logs">
+        <i class="fas fa-trash"></i> Clear
+      </button>
+      <button id="copy-logs-btn" title="Copy all logs to clipboard">
+        <i class="fas fa-copy"></i> Copy
+      </button>
+      <button id="download-logs-btn" title="Download logs as text file">
+        <i class="fas fa-download"></i> Download
+      </button>
+    </div>
+    <div class="browser-logs-content" id="browser-logs-content">
+      <div class="browser-logs-empty">No logs yet</div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies

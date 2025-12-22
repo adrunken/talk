@@ -420,6 +420,207 @@ html {
     font-size: 0.875rem;
 }
 
+.tool-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+    position: relative;
+}
+
+.tool-btn:hover {
+    color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.tool-btn i {
+    font-size: 0.875rem;
+}
+
+.browser-logs-dropdown {
+    position: absolute;
+    top: 100%;
+    right: -0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 0.5rem 0;
+    min-width: 180px;
+    z-index: 100;
+    margin-top: 0.5rem;
+}
+
+.browser-logs-dropdown.hidden {
+    display: none;
+}
+
+.browser-logs-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-align: left;
+    transition: background 0.2s ease;
+}
+
+.browser-logs-btn:hover {
+    background: var(--accent-secondary);
+}
+
+.browser-logs-btn i {
+    font-size: 1rem;
+    color: var(--accent-primary);
+    min-width: 1.25rem;
+}
+
+/* Browser Logs Modal */
+.browser-logs-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.browser-logs-modal.hidden {
+    display: none;
+}
+
+.browser-logs-panel {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.browser-logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.browser-logs-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.browser-logs-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.browser-logs-close:hover {
+    color: var(--accent-primary);
+}
+
+.browser-logs-toolbar {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-tertiary);
+}
+
+.browser-logs-toolbar button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.browser-logs-toolbar button:hover {
+    background: var(--accent-secondary);
+    color: var(--accent-primary);
+}
+
+.browser-logs-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    background: #1e293b;
+}
+
+.log-entry {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.log-entry.log-default {
+    color: #cbd5e1;
+}
+
+.log-entry.log-info {
+    color: #60a5fa;
+}
+
+.log-entry.log-warn {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.log-entry.log-error {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+}
+
+.log-entry.log-debug {
+    color: #a78bfa;
+}
+
+.log-timestamp {
+    color: #64748b;
+    margin-right: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.browser-logs-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
 #username { 
     padding: 0.5rem 0.75rem;
     background: var(--bg-tertiary);

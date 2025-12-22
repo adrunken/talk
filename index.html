@@ -4632,7 +4632,11 @@ function ready() {
             lastMove: null,
             over: false,
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
-            historyIndex: 0
+            historyIndex: 0,
+            timeControl: data['timeControl'] || '5m',
+            remainingSeconds: data['remainingSeconds'] || [300, 300],
+            serverTime: data['serverTime'] || Date.now(),
+            startTime: Date.now()
         };
         hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
         $('#chess-white').text(chessGame.white);
@@ -4642,6 +4646,7 @@ function ready() {
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
+        startChessTimer();
         $('#chess-modal').removeClass('hidden'); // Show the modal
         updateSettingUI('confirm-moves');
     }

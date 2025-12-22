@@ -2105,6 +2105,40 @@ wss.on('connection', (ws, req) => {
       if (g.over) { send(ws, { type: 'chess_error', message: 'Game over' }); return; }
       const expected = board.turn() === 'w' ? g.white : g.black;
       if (player !== expected) { send(ws, { type: 'chess_error', message: 'Not your turn' }); return; }
+
+      // Handle chess clock: deduct elapsed time from current player
+      const now = Date.now();
+      const playerColor = board.turn() === 'w' ? 'white' : 'black';
+      const playerIndex = playerColor === 'white' ? 0 : 1;
+
+      if (g.timeControlSeconds && g.timeControlSeconds > 0) {
+        const elapsedMs = now - (g.lastMoveAt || now);
+        const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+        g.remainingSeconds[playerIndex] = Math.max(0, g.remainingSeconds[playerIndex] - elapsedSeconds);
+
+        // Check if current player has run out of time
+        if (g.remainingSeconds[playerIndex] <= 0) {
+          console.log('[chess] Player timeout:', {gid, player, color: playerColor});
+          g.over = true;
+
+          // The player who ran out of time loses
+          const winner = playerColor === 'white' ? g.black : g.white;
+          const result = playerColor === 'white' ? '0-1' : '1-0';
+          const timeoutOver = {
+            type: 'chess_over',
+            game_id: gid,
+            result,
+            reason: 'timeout',
+            fen: board.fen()
+          };
+
+          sendToUsername(g.white, timeoutOver);
+          sendToUsername(g.black, timeoutOver);
+          return;
+        }
+      }
+
+      g.lastMoveAt = now;
       const moveSpec = { from: src, to: dst };
       if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
       const move = board.move(moveSpec);

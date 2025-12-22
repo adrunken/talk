@@ -2143,7 +2143,7 @@ wss.on('connection', (ws, req) => {
       if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
       const move = board.move(moveSpec);
       if (move) {
-        const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check() };
+        const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check(), remainingSeconds: g.remainingSeconds, serverTime: now };
         sendToUsername(g.white, payload); sendToUsername(g.black, payload);
         if (board.game_over()) {
           g.over = true;

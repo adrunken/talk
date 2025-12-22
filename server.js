@@ -1670,12 +1670,25 @@ wss.on('connection', (ws, req) => {
         if (!invites.has(key)) {
           send(ws, { type: 'chess_error', message: 'Invite not found' });
         } else {
+          const inviteData = invites.get(key) || {};
+          const timeControl = inviteData.timeControl || '5m';
           const gid = nextGameId++;
           const board = new ChessCtor();
           let white, black;
           if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
-          games.set(gid, { board, white, black, over: false, isAiGame: false });
-          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+          const game = { board, white, black, over: false, isAiGame: false, is4player: false, timeControl };
+          games.set(gid, game);
+
+          // Initialize timers
+          const timeMs = timeControlToMs(timeControl);
+          if (timeMs !== null) {
+            gameTimers.set(gid, {
+              white: { remainingMs: timeMs, activePlayer: true },
+              black: { remainingMs: timeMs, activePlayer: false }
+            });
+          }
+
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', timeControl };
           sendToUsername(white, payload); sendToUsername(black, payload);
           invites.delete(key);
         }

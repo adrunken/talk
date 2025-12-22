@@ -1338,8 +1338,14 @@ html {
         <div style="flex:1"></div>
       </div>
       <div class="chess-status" id="chess-status"></div>
-      <div>White: <span id="chess-white"></span></div>
-      <div>Black: <span id="chess-black"></span></div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div>White: <span id="chess-white"></span></div>
+        <div id="chess-white-time" style="font-weight: 600; color: #fff;">—:—</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div>Black: <span id="chess-black"></span></div>
+        <div id="chess-black-time" style="font-weight: 600; color: #fff;">—:—</div>
+      </div>
       <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>

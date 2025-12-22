@@ -3026,6 +3026,7 @@ function ready() {
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#chess-settings-btn, #chess-settings-dropdown, .control-buttons').length) {
             $('#chess-settings-dropdown').addClass('hidden');
+            $('#dev-tools-dropdown').addClass('hidden');
         }
     });
 

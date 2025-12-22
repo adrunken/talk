@@ -2002,12 +2002,23 @@ wss.on('connection', (ws, req) => {
           setPiece(emptyBoard, 'knight', 9, 0, 'red');
           setPiece(emptyBoard, 'rook', 10, 0, 'red');
 
+          // Parse time control to seconds
+          const timeControlSeconds = parseTimeControl(session.timeControl || '5m');
+
+          // Initialize per-player remaining times
+          const remainingSeconds = [timeControlSeconds, timeControlSeconds, timeControlSeconds, timeControlSeconds];
+
           fourPlayerGames.set(gid, {
             players: playersArray,
             board: emptyBoard,
             currentTurn: 0,
             activePlayers: [0, 3, 2, 1],
-            moveCount: 0
+            moveCount: 0,
+            timeControl: session.timeControl,
+            timeControlSeconds: timeControlSeconds,
+            remainingSeconds: remainingSeconds,
+            lastMoveAt: Date.now(),
+            gameStartTime: Date.now()
           });
 
           const payload = {

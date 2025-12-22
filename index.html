@@ -4519,6 +4519,14 @@ function ready() {
         gameState4P.timeControl = timeControl;
         gameState4P.startTime = Date.now();
 
+        // Initialize clock state from server
+        if (data['remainingSeconds']) {
+            gameState4P.remainingSeconds = data['remainingSeconds'];
+        }
+        if (data['serverTime']) {
+            gameState4P.serverTime = data['serverTime'];
+        }
+
         // Calculate initial rotation based on player's position
         var currentUsername = $('#username').text();
         var playerIndex = players.indexOf(currentUsername);

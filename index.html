@@ -4805,20 +4805,29 @@ function ready() {
         }
         else if (data['type'] === 'chess_resume') {
             var me = $('#username').text();
-            chessGame = {
-                id: data['game_id'],
-                white: data['white'],
-                black: data['black'],
-                color: (data['white'] === me) ? 'white' : 'black',
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false,
-                timeControl: data['timeControl'] || '5m',
-                remainingSeconds: data['remainingSeconds'] || [300, 300],
-                serverTime: data['serverTime'] || Date.now(),
-                startTime: Date.now()
-            };
+            // Preserve existing game state if already loaded, otherwise create new
+            if (!chessGame || chessGame.id !== data['game_id']) {
+                chessGame = {
+                    id: data['game_id'],
+                    white: data['white'],
+                    black: data['black'],
+                    color: (data['white'] === me) ? 'white' : 'black',
+                    fen: data['fen'],
+                    turn: data['turn'],
+                    lastMove: null,
+                    over: false,
+                    timeControl: data['timeControl'] || '5m',
+                    remainingSeconds: data['remainingSeconds'] || [300, 300],
+                    serverTime: data['serverTime'] || Date.now(),
+                    startTime: data['serverTime'] || Date.now()
+                };
+            } else {
+                // Resume existing game - update clock state but preserve startTime
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.remainingSeconds = data['remainingSeconds'] || chessGame.remainingSeconds;
+                chessGame.serverTime = data['serverTime'] || Date.now();
+            }
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
             $('#chess-white').text(chessGame.white);
             $('#chess-black').text(chessGame.black);

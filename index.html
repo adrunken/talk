@@ -4585,6 +4585,17 @@ function ready() {
                 return;
             }
 
+            // Ensure clock state is initialized
+            if (!gameState4P.remainingSeconds) {
+                gameState4P.remainingSeconds = [300, 300, 300, 300];
+            }
+            if (!gameState4P.serverTime) {
+                gameState4P.serverTime = Date.now();
+            }
+            if (!gameState4P.startTime) {
+                gameState4P.startTime = Date.now();
+            }
+
             // Display total game elapsed time
             var elapsed = Math.floor((Date.now() - gameState4P.startTime) / 1000);
             var mins = Math.floor(elapsed / 60);

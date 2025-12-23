@@ -4651,6 +4651,14 @@ function ready() {
                 return;
             }
 
+            // Ensure clock state is initialized
+            if (!chessGame.remainingSeconds) {
+                chessGame.remainingSeconds = [300, 300];
+            }
+            if (!chessGame.serverTime) {
+                chessGame.serverTime = Date.now();
+            }
+
             // Display per-player clock countdowns
             if (chessGame.remainingSeconds && chessGame.serverTime) {
                 var timeSinceSync = Math.floor((Date.now() - chessGame.serverTime) / 1000);

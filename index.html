@@ -4358,6 +4358,13 @@ function ready() {
         if (chessGame && !chessGame.over) {
             $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
+            // Ensure serverTime and remainingSeconds are initialized before starting timer
+            if (!chessGame.serverTime) {
+                chessGame.serverTime = Date.now();
+            }
+            if (!chessGame.remainingSeconds) {
+                chessGame.remainingSeconds = [300, 300];
+            }
             renderBoard();
             updateChessStatus();
             startChessTimer();

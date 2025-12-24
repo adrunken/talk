@@ -1364,6 +1364,27 @@ setInterval(() => {
 const COLORS_4PLAYER = ['blue', 'yellow', 'green', 'red'];
 const BOARD_SIZE = 14;
 
+// Parse time control string (e.g., '1m', '3m', '5m', '10m', '30m', 'unlimited') to seconds
+function parseTimeControl(timeControl) {
+  if (!timeControl || timeControl === 'unlimited') {
+    return 0; // 0 means unlimited
+  }
+
+  const match = timeControl.match(/^(\d+)([msh])?$/i);
+  if (!match) {
+    return 300; // Default to 5 minutes if invalid format
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = (match[2] || 'm').toLowerCase();
+
+  if (unit === 'm') return value * 60;
+  if (unit === 'h') return value * 3600;
+  if (unit === 's') return value;
+
+  return value * 60; // Default to minutes
+}
+
 function isValidPos4P(row, col) {
   return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 }
@@ -1786,13 +1807,30 @@ wss.on('connection', (ws, req) => {
       if (ongoingGameInfo) {
         const { gid, game } = ongoingGameInfo;
         console.log(`[chess] User ${username} reconnected, found ongoing 2-player game ${gid}`);
+
+        // Recalculate remaining times after reconnect by deducting elapsed time
+        const now = Date.now();
+        let resumeRemainingSeconds = [...(game.remainingSeconds || [game.timeControlSeconds || 0, game.timeControlSeconds || 0])];
+
+        if (game.timeControlSeconds && game.timeControlSeconds > 0) {
+          const elapsedMs = now - (game.lastMoveAt || now);
+          const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+          // Deduct elapsed time from current player (whose turn it is)
+          const currentPlayerIndex = game.board.turn() === 'w' ? 0 : 1;
+          resumeRemainingSeconds[currentPlayerIndex] = Math.max(0, resumeRemainingSeconds[currentPlayerIndex] - elapsedSeconds);
+        }
+
         const payload = {
           type: 'chess_resume',
           game_id: gid,
           white: game.white,
           black: game.black,
           fen: game.board.fen(),
-          turn: game.board.turn() === 'w' ? 'white' : 'black'
+          turn: game.board.turn() === 'w' ? 'white' : 'black',
+          timeControl: game.timeControl,
+          remainingSeconds: resumeRemainingSeconds,
+          serverTime: now
         };
         send(ws, payload);
       }
@@ -1804,6 +1842,18 @@ wss.on('connection', (ws, req) => {
         const gameState = fourPlayerGames.get(gid);
         if (gameState) {
           console.log(`[chess] User ${username} reconnected, found ongoing 4-player game ${gid}`);
+          // Recalculate remaining times after reconnect by deducting elapsed time
+          const now = Date.now();
+          const elapsedMs = now - (gameState.lastMoveAt || now);
+          const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+          // Deduct elapsed time from current player if time control is enabled
+          let resumeRemainingSeconds = [...gameState.remainingSeconds];
+          if (gameState.timeControlSeconds && gameState.timeControlSeconds > 0 && gameState.activePlayers.length > 0) {
+            const currentPlayerIndex = gameState.activePlayers[gameState.currentTurn % gameState.activePlayers.length];
+            resumeRemainingSeconds[currentPlayerIndex] = Math.max(0, resumeRemainingSeconds[currentPlayerIndex] - elapsedSeconds);
+          }
+
           const payload = {
             type: '4player_resume',
             game_id: gid,
@@ -1813,7 +1863,9 @@ wss.on('connection', (ws, req) => {
             board: gameState.board,
             currentTurn: gameState.currentTurn,
             activePlayers: gameState.activePlayers,
-            moveCount: gameState.moveCount
+            moveCount: gameState.moveCount,
+            remainingSeconds: resumeRemainingSeconds,
+            serverTime: now
           };
           send(ws, payload);
         }
@@ -1981,20 +2033,34 @@ wss.on('connection', (ws, req) => {
           setPiece(emptyBoard, 'knight', 9, 0, 'red');
           setPiece(emptyBoard, 'rook', 10, 0, 'red');
 
+          // Parse time control to seconds
+          const timeControlSeconds = parseTimeControl(session.timeControl || '5m');
+
+          // Initialize per-player remaining times
+          const remainingSeconds = [timeControlSeconds, timeControlSeconds, timeControlSeconds, timeControlSeconds];
+
           fourPlayerGames.set(gid, {
             players: playersArray,
             board: emptyBoard,
             currentTurn: 0,
             activePlayers: [0, 3, 2, 1],
-            moveCount: 0
+            moveCount: 0,
+            timeControl: session.timeControl,
+            timeControlSeconds: timeControlSeconds,
+            remainingSeconds: remainingSeconds,
+            lastMoveAt: Date.now(),
+            gameStartTime: Date.now()
           });
 
+          const gameObj = fourPlayerGames.get(gid);
           const payload = {
             type: '4player_game_start',
             game_id: gid,
             players: playersArray,
             mode: session.mode,
-            timeControl: session.timeControl
+            timeControl: session.timeControl,
+            remainingSeconds: gameObj.remainingSeconds,
+            serverTime: Date.now()
           };
 
           console.log('[4p-chess] Game started:', {gid, players: playersArray});
@@ -2020,8 +2086,25 @@ wss.on('connection', (ws, req) => {
           const board = new ChessCtor();
           let white, black;
           if (Math.random() < 0.5) { white = inviter; black = acceptor; } else { white = acceptor; black = inviter; }
-          games.set(gid, { board, white, black, over: false, isAiGame: false });
-          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white' };
+
+          // Parse time control from invite
+          const timeControl = msg.timeControl || '5m';
+          const timeControlSeconds = parseTimeControl(timeControl);
+          const remainingSeconds = [timeControlSeconds, timeControlSeconds]; // [white, black]
+
+          games.set(gid, {
+            board,
+            white,
+            black,
+            over: false,
+            isAiGame: false,
+            timeControl,
+            timeControlSeconds,
+            remainingSeconds,
+            lastMoveAt: Date.now(),
+            gameStartTime: Date.now()
+          });
+          const payload = { type: 'chess_start', game_id: gid, white, black, fen: board.fen(), turn: 'white', timeControl, remainingSeconds, serverTime: Date.now() };
           sendToUsername(white, payload); sendToUsername(black, payload);
           invites.delete(key);
         }
@@ -2039,11 +2122,45 @@ wss.on('connection', (ws, req) => {
       if (g.over) { send(ws, { type: 'chess_error', message: 'Game over' }); return; }
       const expected = board.turn() === 'w' ? g.white : g.black;
       if (player !== expected) { send(ws, { type: 'chess_error', message: 'Not your turn' }); return; }
+
+      // Handle chess clock: deduct elapsed time from current player
+      const now = Date.now();
+      const playerColor = board.turn() === 'w' ? 'white' : 'black';
+      const playerIndex = playerColor === 'white' ? 0 : 1;
+
+      if (g.timeControlSeconds && g.timeControlSeconds > 0) {
+        const elapsedMs = now - (g.lastMoveAt || now);
+        const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+        g.remainingSeconds[playerIndex] = Math.max(0, g.remainingSeconds[playerIndex] - elapsedSeconds);
+
+        // Check if current player has run out of time
+        if (g.remainingSeconds[playerIndex] <= 0) {
+          console.log('[chess] Player timeout:', {gid, player, color: playerColor});
+          g.over = true;
+
+          // The player who ran out of time loses
+          const winner = playerColor === 'white' ? g.black : g.white;
+          const result = playerColor === 'white' ? '0-1' : '1-0';
+          const timeoutOver = {
+            type: 'chess_over',
+            game_id: gid,
+            result,
+            reason: 'timeout',
+            fen: board.fen()
+          };
+
+          sendToUsername(g.white, timeoutOver);
+          sendToUsername(g.black, timeoutOver);
+          return;
+        }
+      }
+
+      g.lastMoveAt = now;
       const moveSpec = { from: src, to: dst };
       if (promo && ['q','r','b','n'].includes(promo)) moveSpec.promotion = promo;
       const move = board.move(moveSpec);
       if (move) {
-        const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check() };
+        const payload = { type: 'chess_move', game_id: gid, from: src, to: dst, promotion: move.promotion || null, san: move.san, fen: board.fen(), turn: board.turn() === 'w' ? 'white' : 'black', check: board.in_check(), remainingSeconds: g.remainingSeconds, serverTime: now };
         sendToUsername(g.white, payload); sendToUsername(g.black, payload);
         if (board.game_over()) {
           g.over = true;
@@ -2538,6 +2655,55 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      // Handle chess clock: deduct elapsed time from current player
+      const now = Date.now();
+      const elapsedMs = now - (game.lastMoveAt || now);
+      const elapsedSeconds = Math.ceil(elapsedMs / 1000);
+
+      // Deduct elapsed time from current player's clock (only if time control is enabled)
+      if (game.timeControlSeconds && game.timeControlSeconds > 0) {
+        game.remainingSeconds[playerIndex] = Math.max(0, game.remainingSeconds[playerIndex] - elapsedSeconds);
+
+        // Check if current player has run out of time
+        if (game.remainingSeconds[playerIndex] <= 0) {
+          console.log('[4p-chess] Player timeout:', {gid, username, playerIndex, color: COLORS_4PLAYER[playerIndex]});
+
+          // Remove the timeout player from activePlayers
+          const timeoutColorIndex = playerIndex;
+          const wasAtPos = game.activePlayers.indexOf(timeoutColorIndex);
+          game.activePlayers = game.activePlayers.filter(p => p !== timeoutColorIndex);
+
+          // Adjust currentTurn if necessary
+          if (wasAtPos < game.currentTurn && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn > 0 ? game.currentTurn - 1 : 0;
+          } else if (game.currentTurn >= game.activePlayers.length && game.activePlayers.length > 0) {
+            game.currentTurn = game.currentTurn % game.activePlayers.length;
+          }
+
+          // Broadcast timeout elimination to all players
+          const timeoutUpdate = {
+            type: '4playerMoveUpdate',
+            game_id: gid,
+            timeout: true,
+            eliminatedColor: timeoutColorIndex,
+            nextTurn: game.currentTurn,
+            activePlayers: game.activePlayers,
+            remainingSeconds: game.remainingSeconds,
+            serverTime: now
+          };
+
+          for (const player of game.players) {
+            const playerWs = getWsByUsername(player);
+            if (playerWs && playerWs.readyState === 1) {
+              send(playerWs, timeoutUpdate);
+            }
+          }
+          return;
+        }
+      }
+
+      game.lastMoveAt = now;
+
       const { from, to, piece } = msg;
 
       if (!from || !to || !piece) {
@@ -2652,7 +2818,9 @@ wss.on('connection', (ws, req) => {
         nextTurn: game.currentTurn,
         activePlayers: game.activePlayers,
         moveCount: game.moveCount,
-        checkmatedPlayers: checkmatedPlayers.length > 0 ? checkmatedPlayers : undefined
+        checkmatedPlayers: checkmatedPlayers.length > 0 ? checkmatedPlayers : undefined,
+        remainingSeconds: game.remainingSeconds,
+        serverTime: now
       };
 
       let broadcastCount = 0;

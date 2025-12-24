@@ -1338,8 +1338,14 @@ html {
         <div style="flex:1"></div>
       </div>
       <div class="chess-status" id="chess-status"></div>
-      <div>White: <span id="chess-white"></span></div>
-      <div>Black: <span id="chess-black"></span></div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div>White: <span id="chess-white"></span></div>
+        <div id="chess-white-time" style="font-weight: 600; color: #fff;">—:—</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+        <div>Black: <span id="chess-black"></span></div>
+        <div id="chess-black-time" style="font-weight: 600; color: #fff;">—:—</div>
+      </div>
       <div id="chess-elo-change" class="chess-elo-change" style="display:none;padding:0.5rem;background:var(--accent-secondary);border-radius:var(--radius-md);text-align:center;font-weight:600;color:var(--accent-primary);margin-bottom:0.5rem;">ELO Change: <span id="chess-elo-change-value">+0</span></div>
       <div class="chess-actions">
         <button class="chess-button confirm-move-button" id="chess-confirm-move" disabled>Confirm move</button>
@@ -3541,6 +3547,7 @@ function ready() {
 
     var gameState4P = null;
     var gameTimer4P = null;
+    var gameTimer = null;
 
     function isInactive4P(x, y) {
         return (
@@ -4087,32 +4094,54 @@ function ready() {
     }
 
     function apply4PlayerMoveUpdate(data) {
-        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount, checkmatedPlayers } = data;
+        const { from, to, piece, eliminatedColor, nextTurn, activePlayers, moveCount, checkmatedPlayers, remainingSeconds, serverTime, timeout } = data;
 
-        gameState4P.board[to.row][to.col] = piece;
-        gameState4P.board[from.row][from.col] = null;
+        // Handle timeout elimination
+        if (timeout && eliminatedColor !== undefined && eliminatedColor !== null) {
+            const timeoutColor = COLORS_4PLAYER[eliminatedColor];
+            console.log('[4p-chess] Player timeout:', timeoutColor);
+            const messageDiv = document.createElement('div');
+            messageDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; color: #fff; padding: 2rem; border-radius: 8px; z-index: 9999; text-align: center; font-size: 1.5rem;';
+            messageDiv.textContent = timeoutColor.toUpperCase() + ' ran out of time and was eliminated!';
+            document.body.appendChild(messageDiv);
+            setTimeout(function() {
+                messageDiv.remove();
+            }, 3000);
+        } else {
+            // Normal move (not a timeout)
+            gameState4P.board[to.row][to.col] = piece;
+            gameState4P.board[from.row][from.col] = null;
 
-        // If a player was eliminated, clear their pieces from the board
-        if (eliminatedColor !== undefined && eliminatedColor !== null) {
-            const eliminatedColor_str = COLORS_4PLAYER[eliminatedColor];
-            for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    if (gameState4P.board[r][c] && gameState4P.board[r][c].color === eliminatedColor_str) {
-                        gameState4P.board[r][c] = null;
+            // If a player was eliminated, clear their pieces from the board
+            if (eliminatedColor !== undefined && eliminatedColor !== null) {
+                const eliminatedColor_str = COLORS_4PLAYER[eliminatedColor];
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        if (gameState4P.board[r][c] && gameState4P.board[r][c].color === eliminatedColor_str) {
+                            gameState4P.board[r][c] = null;
+                        }
                     }
                 }
-            }
 
-            // Show checkmate message if a player was eliminated by checkmate
-            if (checkmatedPlayers && checkmatedPlayers.length > 0) {
-                const checkmatedColor = COLORS_4PLAYER[eliminatedColor];
-                console.log('[4p-chess] Player eliminated by checkmate:', checkmatedColor);
+                // Show checkmate message if a player was eliminated by checkmate
+                if (checkmatedPlayers && checkmatedPlayers.length > 0) {
+                    const checkmatedColor = COLORS_4PLAYER[eliminatedColor];
+                    console.log('[4p-chess] Player eliminated by checkmate:', checkmatedColor);
+                }
             }
         }
 
         gameState4P.moveCount = moveCount;
         gameState4P.currentTurn = nextTurn;
         gameState4P.activePlayers = activePlayers;
+
+        // Update clock information from server
+        if (remainingSeconds) {
+            gameState4P.remainingSeconds = remainingSeconds;
+        }
+        if (serverTime) {
+            gameState4P.serverTime = serverTime;
+        }
 
         renderBoard4P();
         updateUI4P();
@@ -4213,6 +4242,10 @@ function ready() {
     $('#chess-close').on('click', function(){
         $('#chess-modal').addClass('hidden');
         $('#chess-settings-dropdown').addClass('hidden');
+        if (gameTimer) {
+            clearInterval(gameTimer);
+            gameTimer = null;
+        }
         if (stockfishGame) {
             stockfishGame = null;
             chessGame = null;
@@ -4325,8 +4358,16 @@ function ready() {
         if (chessGame && !chessGame.over) {
             $('#chess-modal').removeClass('hidden');
             __chessUnread = 0; __updateTitleBadge();
+            // Ensure serverTime and remainingSeconds are initialized before starting timer
+            if (!chessGame.serverTime) {
+                chessGame.serverTime = Date.now();
+            }
+            if (!chessGame.remainingSeconds) {
+                chessGame.remainingSeconds = [300, 300];
+            }
             renderBoard();
             updateChessStatus();
+            startChessTimer();
             updateSettingUI('confirm-moves');
         }
     });
@@ -4497,6 +4538,14 @@ function ready() {
         gameState4P.timeControl = timeControl;
         gameState4P.startTime = Date.now();
 
+        // Initialize clock state from server
+        if (data['remainingSeconds']) {
+            gameState4P.remainingSeconds = data['remainingSeconds'];
+        }
+        if (data['serverTime']) {
+            gameState4P.serverTime = data['serverTime'];
+        }
+
         // Calculate initial rotation based on player's position
         var currentUsername = $('#username').text();
         var playerIndex = players.indexOf(currentUsername);
@@ -4535,11 +4584,119 @@ function ready() {
                 clearInterval(gameTimer4P);
                 return;
             }
+
+            // Ensure clock state is initialized
+            if (!gameState4P.remainingSeconds) {
+                gameState4P.remainingSeconds = [300, 300, 300, 300];
+            }
+            if (!gameState4P.serverTime) {
+                gameState4P.serverTime = Date.now();
+            }
+            if (!gameState4P.startTime) {
+                gameState4P.startTime = Date.now();
+            }
+
+            // Display total game elapsed time
             var elapsed = Math.floor((Date.now() - gameState4P.startTime) / 1000);
             var mins = Math.floor(elapsed / 60);
             var secs = elapsed % 60;
             $('#game-time').text(mins + ':' + (secs < 10 ? '0' : '') + secs);
-        }, 1000);
+
+            // Display per-player clock countdowns
+            if (gameState4P.remainingSeconds && gameState4P.serverTime) {
+                var COLORS_4P = ['blue', 'yellow', 'green', 'red'];
+                var timeSinceSync = Math.floor((Date.now() - gameState4P.serverTime) / 1000);
+
+                for (var i = 0; i < COLORS_4P.length; i++) {
+                    var color = COLORS_4P[i];
+                    var remaining = gameState4P.remainingSeconds[i];
+
+                    // For the current player, subtract elapsed time since server sync
+                    if (gameState4P.activePlayers && gameState4P.activePlayers.length > 0) {
+                        var currentPlayerIndex = gameState4P.activePlayers[gameState4P.currentTurn % gameState4P.activePlayers.length];
+                        if (currentPlayerIndex === i) {
+                            remaining = Math.max(0, remaining - timeSinceSync);
+                        }
+                    }
+
+                    // Format and display the clock
+                    var clockMins = Math.floor(remaining / 60);
+                    var clockSecs = remaining % 60;
+                    var clockDisplay = clockMins + ':' + (clockSecs < 10 ? '0' : '') + clockSecs;
+
+                    // Update the timer element for this color
+                    var timerId = '#time-' + color;
+                    $(timerId).text(clockDisplay);
+
+                    // Highlight current player's timer
+                    var timerElementId = '#timer-' + color;
+                    if (gameState4P.activePlayers && gameState4P.activePlayers.length > 0) {
+                        var currentIdx = gameState4P.activePlayers[gameState4P.currentTurn % gameState4P.activePlayers.length];
+                        if (currentIdx === i) {
+                            $(timerElementId).addClass('active');
+                        } else {
+                            $(timerElementId).removeClass('active');
+                        }
+                    }
+                }
+            }
+        }, 250);
+    }
+
+    function startChessTimer() {
+        if (gameTimer) clearInterval(gameTimer);
+        gameTimer = setInterval(function() {
+            if (!chessGame || chessGame.over) {
+                clearInterval(gameTimer);
+                return;
+            }
+
+            // Ensure clock state is initialized
+            if (!chessGame.remainingSeconds) {
+                chessGame.remainingSeconds = [300, 300];
+            }
+            if (!chessGame.serverTime) {
+                chessGame.serverTime = Date.now();
+            }
+
+            // Display per-player clock countdowns
+            if (chessGame.remainingSeconds && chessGame.serverTime) {
+                var timeSinceSync = Math.floor((Date.now() - chessGame.serverTime) / 1000);
+
+                // White's remaining time
+                var whiteRemaining = chessGame.remainingSeconds[0];
+                // Black's remaining time
+                var blackRemaining = chessGame.remainingSeconds[1];
+
+                // For the current player, subtract elapsed time since server sync
+                if (chessGame.turn === 'white') {
+                    whiteRemaining = Math.max(0, whiteRemaining - timeSinceSync);
+                } else {
+                    blackRemaining = Math.max(0, blackRemaining - timeSinceSync);
+                }
+
+                // Format and display white's timer
+                var whiteMins = Math.floor(whiteRemaining / 60);
+                var whiteSecs = whiteRemaining % 60;
+                var whiteDisplay = whiteMins + ':' + (whiteSecs < 10 ? '0' : '') + whiteSecs;
+                $('#chess-white-time').text(whiteDisplay);
+
+                // Format and display black's timer
+                var blackMins = Math.floor(blackRemaining / 60);
+                var blackSecs = blackRemaining % 60;
+                var blackDisplay = blackMins + ':' + (blackSecs < 10 ? '0' : '') + blackSecs;
+                $('#chess-black-time').text(blackDisplay);
+
+                // Highlight current player's timer
+                if (chessGame.turn === 'white') {
+                    $('#chess-white-time').css('color', '#3b82f6').css('text-shadow', '0 0 8px rgba(59, 130, 246, 0.6)');
+                    $('#chess-black-time').css('color', '#fff').css('text-shadow', 'none');
+                } else {
+                    $('#chess-black-time').css('color', '#3b82f6').css('text-shadow', '0 0 8px rgba(59, 130, 246, 0.6)');
+                    $('#chess-white-time').css('color', '#fff').css('text-shadow', 'none');
+                }
+            }
+        }, 250);
     }
 
     function startChessGame(data) {
@@ -4555,7 +4712,11 @@ function ready() {
             lastMove: null,
             over: false,
             moveHistory: [{ fen: data['fen'], from: null, to: null }],
-            historyIndex: 0
+            historyIndex: 0,
+            timeControl: data['timeControl'] || '5m',
+            remainingSeconds: data['remainingSeconds'] || [300, 300],
+            serverTime: data['serverTime'] || Date.now(),
+            startTime: Date.now()
         };
         hideRejoinPrompt(); // Hide the "game in progress" button when modal opens
         $('#chess-white').text(chessGame.white);
@@ -4565,6 +4726,7 @@ function ready() {
 
         renderBoard();
         updateHistoryControls && updateHistoryControls();
+        startChessTimer();
         $('#chess-modal').removeClass('hidden'); // Show the modal
         updateSettingUI('confirm-moves');
     }
@@ -4669,16 +4831,29 @@ function ready() {
         }
         else if (data['type'] === 'chess_resume') {
             var me = $('#username').text();
-            chessGame = {
-                id: data['game_id'],
-                white: data['white'],
-                black: data['black'],
-                color: (data['white'] === me) ? 'white' : 'black',
-                fen: data['fen'],
-                turn: data['turn'],
-                lastMove: null,
-                over: false
-            };
+            // Preserve existing game state if already loaded, otherwise create new
+            if (!chessGame || chessGame.id !== data['game_id']) {
+                chessGame = {
+                    id: data['game_id'],
+                    white: data['white'],
+                    black: data['black'],
+                    color: (data['white'] === me) ? 'white' : 'black',
+                    fen: data['fen'],
+                    turn: data['turn'],
+                    lastMove: null,
+                    over: false,
+                    timeControl: data['timeControl'] || '5m',
+                    remainingSeconds: data['remainingSeconds'] || [300, 300],
+                    serverTime: data['serverTime'] || Date.now(),
+                    startTime: data['serverTime'] || Date.now()
+                };
+            } else {
+                // Resume existing game - update clock state but preserve startTime
+                chessGame.fen = data['fen'];
+                chessGame.turn = data['turn'];
+                chessGame.remainingSeconds = data['remainingSeconds'] || chessGame.remainingSeconds;
+                chessGame.serverTime = data['serverTime'] || Date.now();
+            }
             try { localStorage.setItem('active_game', JSON.stringify({ id: chessGame.id, white: chessGame.white, black: chessGame.black })); } catch(e){}
             $('#chess-white').text(chessGame.white);
             $('#chess-black').text(chessGame.black);
@@ -4700,6 +4875,18 @@ function ready() {
             gameState4P.currentTurn = data['currentTurn'] !== undefined ? data['currentTurn'] : gameState4P.currentTurn;
             gameState4P.activePlayers = data['activePlayers'] || gameState4P.activePlayers;
             gameState4P.moveCount = data['moveCount'] || gameState4P.moveCount;
+
+            // Restore clock state from server - CRITICAL for proper timer display
+            if (data['remainingSeconds']) {
+                gameState4P.remainingSeconds = data['remainingSeconds'];
+            }
+            if (data['serverTime']) {
+                gameState4P.serverTime = data['serverTime'];
+            }
+            // Ensure startTime is preserved (don't reset it on resume)
+            if (!gameState4P.startTime) {
+                gameState4P.startTime = data['serverTime'] || Date.now();
+            }
 
             // Calculate player index based on current username
             var currentUsername = $('#username').text();
@@ -4724,6 +4911,15 @@ function ready() {
                 chessGame.turn = data['turn'];
                 chessGame.inCheck = !!data['check'];
                 chessGame.lastMove = { from: data['from'], to: data['to'] };
+
+                // Update clock information from server
+                if (data['remainingSeconds']) {
+                    chessGame.remainingSeconds = data['remainingSeconds'];
+                }
+                if (data['serverTime']) {
+                    chessGame.serverTime = data['serverTime'];
+                }
+
                 // push history
                 chessGame.moveHistory = chessGame.moveHistory || [];
                 chessGame.moveHistory.push({ fen: data['fen'], from: data['from'], to: data['to'] });

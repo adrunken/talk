@@ -315,6 +315,107 @@ function getBannedIps() {
   return result;
 }
 
+// Chat Timeout System
+const TIMEOUTS_FILE = path.join(DATA_DIR, 'chat-timeouts.json');
+const TIMEOUT_DURATIONS = {
+  '30s': 30 * 1000,
+  '1m': 60 * 1000,
+  '5m': 5 * 60 * 1000,
+  '10m': 10 * 60 * 1000,
+  '30m': 30 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1m': 30 * 24 * 60 * 60 * 1000
+};
+
+let userTimeouts = {}; // username -> { expiresAt: number, duration: string, reason: string, timedOutBy: string }
+
+function loadUserTimeouts() {
+  try {
+    if (fs.existsSync(TIMEOUTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TIMEOUTS_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        userTimeouts = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistUserTimeouts() {
+  try { fs.writeFile(TIMEOUTS_FILE, JSON.stringify(userTimeouts, null, 2), () => {}); } catch(_) {}
+}
+
+function isUserTimedOut(username) {
+  if (!username || typeof username !== 'string') return false;
+  const timeout = userTimeouts[username];
+  if (!timeout) return false;
+  if (timeout.expiresAt && timeout.expiresAt < Date.now()) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    return false;
+  }
+  return true;
+}
+
+function timeoutUser(username, duration, reason = 'No reason specified', adminName = 'System') {
+  if (!username || typeof username !== 'string') return false;
+  if (!TIMEOUT_DURATIONS[duration]) return false;
+  const expiresAt = Date.now() + TIMEOUT_DURATIONS[duration];
+  userTimeouts[username] = {
+    expiresAt,
+    duration,
+    reason: String(reason || '').slice(0, 500),
+    timedOutBy: String(adminName || 'System').slice(0, 50)
+  };
+  persistUserTimeouts();
+  console.log(`[timeout] User ${username} timed out for ${duration} by ${adminName}: ${reason}`);
+  return true;
+}
+
+function removeUserTimeout(username) {
+  if (!username || typeof username !== 'string') return false;
+  if (userTimeouts[username]) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    console.log(`[timeout] Timeout removed for user ${username}`);
+    return true;
+  }
+  return false;
+}
+
+function getActiveTimeouts() {
+  const now = Date.now();
+  const result = {};
+  for (const [username, timeout] of Object.entries(userTimeouts)) {
+    if (timeout.expiresAt && timeout.expiresAt < now) {
+      delete userTimeouts[username];
+    } else {
+      result[username] = timeout;
+    }
+  }
+  if (Object.keys(result).length !== Object.keys(userTimeouts).length) {
+    persistUserTimeouts();
+  }
+  return result;
+}
+
+function getTimeoutRemaining(username) {
+  const timeout = userTimeouts[username];
+  if (!timeout || !timeout.expiresAt) return null;
+  const remaining = Math.max(0, timeout.expiresAt - Date.now());
+  if (remaining <= 0) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    return null;
+  }
+  const hours = Math.floor(remaining / (60 * 60 * 1000));
+  const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+  const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+  return { remaining, hours, minutes, seconds };
+}
+
 
 loadMessages();
 loadKnownUsers();
@@ -322,6 +423,7 @@ loadUserSettings();
 loadUserElos();
 loadOnlineHistory();
 loadIpBans();
+loadUserTimeouts();
 
 // Server
 const app = express();

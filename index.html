@@ -4136,6 +4136,7 @@ function ready() {
     }
 
     function showAdminTimeoutModal(users) {
+        console.log('[timeout] showAdminTimeoutModal called with', users.length, 'users');
         var userSelect = $('#admin-timeout-user-select');
         userSelect.find('option:not(:first)').remove();
 
@@ -4149,7 +4150,10 @@ function ready() {
 
         $('#admin-timeout-duration-select').val('');
         $('#admin-timeout-reason-input').val('');
-        $('#admin-timeout-modal').addClass('show');
+        const $modal = $('#admin-timeout-modal');
+        console.log('[timeout] Modal element found:', $modal.length > 0, ', Adding show class');
+        $modal.addClass('show');
+        console.log('[timeout] Modal show class added, element display is now:', $modal.css('display'));
     }
 
     function hideAdminTimeoutModal() {

@@ -3009,6 +3009,33 @@ function ready() {
         });
     });
 
+    // Admin timeout modal handlers
+    $('#admin-timeout-cancel').on('click', function() {
+        hideAdminTimeoutModal();
+    });
+
+    $('#admin-timeout-submit').on('click', function() {
+        var user = $('#admin-timeout-user-select').val().trim();
+        var duration = $('#admin-timeout-duration-select').val().trim();
+        var reason = $('#admin-timeout-reason-input').val().trim();
+
+        if (!user || !duration) {
+            alert('Please select both a user and duration');
+            return;
+        }
+
+        if (!ws || ws.readyState !== 1) return;
+
+        ws.send(JSON.stringify({
+            type: 'admin_timeout_user',
+            user: user,
+            duration: duration,
+            reason: reason || 'No reason specified'
+        }));
+
+        hideAdminTimeoutModal();
+    });
+
     // Delegated handlers for invites and users
     $('#right').on('click', '.invite-user-btn', function() {
         var toUser = $(this).data('user');

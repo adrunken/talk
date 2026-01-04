@@ -1851,8 +1851,10 @@ wss.on('connection', (ws, req) => {
             idx += 1;
           } else {
             const userList = Array.from(knownUsers).sort();
+            console.log('[timeout] Admin', username, 'opened timeout modal with', userList.length, 'users');
             send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
           }
+          return;
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
           const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();

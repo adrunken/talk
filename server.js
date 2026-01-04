@@ -1780,6 +1780,23 @@ wss.on('connection', (ws, req) => {
         deliverQueuedInvites(username);
       }
       if (message) {
+        // Check if user is timed out from sending messages
+        if (isUserTimedOut(username)) {
+          const timeoutInfo = userTimeouts[username];
+          const remaining = getTimeoutRemaining(username);
+          if (remaining) {
+            const durationText = remaining.hours > 0
+              ? `${remaining.hours}h ${remaining.minutes}m`
+              : remaining.minutes > 0
+              ? `${remaining.minutes}m ${remaining.seconds}s`
+              : `${remaining.seconds}s`;
+            const obj = { type: 'message', message: `You are timed out from sending messages for ${durationText}. Reason: ${timeoutInfo.reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+            return;
+          }
+        }
+
         if (message.toLowerCase() === '/online history') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {

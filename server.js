@@ -327,7 +327,7 @@ const TIMEOUT_DURATIONS = {
   '6h': 6 * 60 * 60 * 1000,
   '1d': 24 * 60 * 60 * 1000,
   '1w': 7 * 24 * 60 * 60 * 1000,
-  '1m': 30 * 24 * 60 * 60 * 1000
+  '1month': 30 * 24 * 60 * 60 * 1000
 };
 
 let userTimeouts = {}; // username -> { expiresAt: number, duration: string, reason: string, timedOutBy: string }

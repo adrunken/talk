@@ -1919,6 +1919,30 @@ function ready() {
         $('#admin-bans-list').empty();
     }
 
+    function showAdminTimeoutModal(users) {
+        var userSelect = $('#admin-timeout-user-select');
+        userSelect.find('option:not(:first)').remove();
+
+        if (!users || users.length === 0) {
+            userSelect.append('<option value="">No users available</option>');
+        } else {
+            users.forEach(function(user) {
+                userSelect.append('<option value="' + user + '">' + user + '</option>');
+            });
+        }
+
+        $('#admin-timeout-duration-select').val('');
+        $('#admin-timeout-reason-input').val('');
+        $('#admin-timeout-modal').addClass('show');
+    }
+
+    function hideAdminTimeoutModal() {
+        $('#admin-timeout-modal').removeClass('show');
+        $('#admin-timeout-user-select').val('');
+        $('#admin-timeout-duration-select').val('');
+        $('#admin-timeout-reason-input').val('');
+    }
+
     function showStockfishRejoinPrompt() {
         if (!$('#invites #rejoin-stockfish-game').length) {
             var wrap = $('<div class="user-row" id="rejoin-stockfish-wrapper" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border-light);" />');

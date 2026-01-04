@@ -700,6 +700,45 @@ html {
   </div>
 </div>
 
+<!-- Admin Timeout modal -->
+<div id="admin-timeout-modal" class="first-login-overlay">
+  <div class="first-login-panel" style="min-width: 450px;">
+    <div class="first-login-title">Timeout User</div>
+    <div style="margin: 1rem 0; display: flex; flex-direction: column; gap: 1rem;">
+      <div>
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary);">Select User:</label>
+        <select id="admin-timeout-user-select" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);">
+          <option value="">-- Select a user --</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary);">Duration:</label>
+        <select id="admin-timeout-duration-select" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary);">
+          <option value="">-- Select duration --</option>
+          <option value="30s">30 seconds</option>
+          <option value="1m">1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="10m">10 minutes</option>
+          <option value="30m">30 minutes</option>
+          <option value="1h">1 hour</option>
+          <option value="6h">6 hours</option>
+          <option value="1d">1 day</option>
+          <option value="1w">1 week</option>
+          <option value="1month">1 month</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary);">Reason (optional):</label>
+        <textarea id="admin-timeout-reason-input" placeholder="Why are you timing out this user?" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; resize: vertical; min-height: 80px;"></textarea>
+      </div>
+    </div>
+    <div class="first-login-actions">
+      <button id="admin-timeout-cancel" class="first-login-save" style="background: var(--bg-tertiary); color: var(--text-primary);">Cancel</button>
+      <button id="admin-timeout-submit" class="first-login-save">Timeout User</button>
+    </div>
+  </div>
+</div>
+
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
     <div class="chess-board" id="chess-board"></div>

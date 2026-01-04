@@ -1843,47 +1843,15 @@ wss.on('connection', (ws, req) => {
             const bans = getBannedIps();
             send(ws, JSON.stringify({ type: 'admin_ip_bans_modal', bans: bans }));
           }
-        } else if (message.toLowerCase().startsWith('/timeout ')) {
+        } else if (message.toLowerCase() === '/timeout') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
             const obj = { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System', id: idx, datetime: Math.floor(now()) };
             send(ws, JSON.stringify(obj));
             idx += 1;
           } else {
-            const parts = message.slice(9).trim().split(' ');
-            const targetUser = parts[0];
-            const duration = parts[1];
-            const reason = parts.slice(2).join(' ') || 'No reason specified';
-
-            if (!targetUser || !duration) {
-              const availableDurations = Object.keys(TIMEOUT_DURATIONS).join(', ');
-              const obj = { type: 'message', message: `Usage: /timeout <username> <duration> [reason]\nAvailable durations: ${availableDurations}`, username: 'System', id: idx, datetime: Math.floor(now()) };
-              send(ws, JSON.stringify(obj));
-              idx += 1;
-            } else if (!TIMEOUT_DURATIONS[duration]) {
-              const availableDurations = Object.keys(TIMEOUT_DURATIONS).join(', ');
-              const obj = { type: 'message', message: `Invalid duration. Available durations: ${availableDurations}`, username: 'System', id: idx, datetime: Math.floor(now()) };
-              send(ws, JSON.stringify(obj));
-              idx += 1;
-            } else if (!knownUsers.has(targetUser)) {
-              const obj = { type: 'message', message: `User not found: ${targetUser}`, username: 'System', id: idx, datetime: Math.floor(now()) };
-              send(ws, JSON.stringify(obj));
-              idx += 1;
-            } else {
-              const success = timeoutUser(targetUser, duration, reason, username);
-              if (success) {
-                const systemMsg = { type: 'message', message: `${targetUser} has been timed out for ${duration}. Reason: ${reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
-                messages.push(systemMsg);
-                appendMessage(systemMsg);
-                idx += 1;
-                const msgStr = JSON.stringify(systemMsg);
-                for (const [u] of users) send(u, msgStr);
-              } else {
-                const obj = { type: 'message', message: 'Failed to timeout user.', username: 'System', id: idx, datetime: Math.floor(now()) };
-                send(ws, JSON.stringify(obj));
-                idx += 1;
-              }
-            }
+            const userList = Array.from(knownUsers).sort();
+            send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
           }
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';

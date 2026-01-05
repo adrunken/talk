@@ -1779,7 +1779,7 @@ function updateSnakeGameOnServer(gid) {
     const newHead = newHeads[username];
 
     // Check boundaries
-    if (newHead[0] < 0 || newHead[0] >= 50 || newHead[1] < 0 || newHead[1] >= 50) {
+    if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;

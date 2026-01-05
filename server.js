@@ -3087,12 +3087,13 @@ wss.on('connection', (ws, req) => {
         const playersArray = Array.from(snakeLobby.players);
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
-        const startPositions = [
-          [[20, 20]],
-          [[30, 30]],
-          [[20, 30]],
-          [[30, 20]]
-        ];
+
+        // Generate random spawn positions in center area
+        const startPositions = playersArray.map(() => {
+          const x = 15 + Math.floor(Math.random() * 20);
+          const y = 15 + Math.floor(Math.random() * 20);
+          return [[x, y]];
+        });
 
         const gameState = {
           gameId: gid,

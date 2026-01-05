@@ -2845,6 +2845,305 @@ wss.on('connection', (ws, req) => {
 
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
+    else if (msg.type === 'geoguessr_invite') {
+      const inviter = users.get(ws);
+      const targets = Array.isArray(msg.to) ? msg.to : (msg.to ? [String(msg.to)] : []);
+      const mode = msg.mode || 'singleplayer'; // 'singleplayer' or 'multiplayer'
+      const numRounds = msg.numRounds || 3;
+
+      if (!inviter) {
+        send(ws, { type: 'geoguessr_error', message: 'Not authenticated' });
+        return;
+      }
+
+      // Singleplayer: start game immediately
+      if (mode === 'singleplayer') {
+        const gid = nextGameId++;
+        const locations = [];
+        for (let i = 0; i < numRounds; i++) {
+          locations.push(getRandomLocation());
+        }
+        geoguessrGames.set(gid, {
+          players: [inviter],
+          currentRound: 0,
+          totalRounds: numRounds,
+          locations: locations,
+          roundStates: locations.map(() => ({
+            guesses: {}
+          })),
+          gameOver: false,
+          isSingleplayer: true,
+          startTime: Date.now()
+        });
+        const payload = {
+          type: 'geoguessr_game_start',
+          game_id: gid,
+          players: [inviter],
+          mode: 'singleplayer',
+          numRounds: numRounds,
+          currentRound: 0,
+          location: locations[0]
+        };
+        send(ws, payload);
+      } else if (mode === 'multiplayer') {
+        // Multiplayer: create session and invite players
+        const sessionKey = inviter + '::geoguessr::' + numRounds;
+        let session = null;
+
+        for (const [sid, s] of geoguessrSessions) {
+          if (s.sessionKey === sessionKey) {
+            session = s;
+            break;
+          }
+        }
+
+        if (!session) {
+          const sessionId = nextSessionId++;
+          session = {
+            sessionId: sessionId,
+            sessionKey: sessionKey,
+            initiator: inviter,
+            players: new Set([inviter]),
+            acceptedPlayers: new Set([inviter]),
+            mode: mode,
+            numRounds: numRounds,
+            createdAt: Date.now()
+          };
+          geoguessrSessions.set(sessionId, session);
+          console.log('[geoguessr] Multiplayer session created:', {sessionId, initiator: inviter});
+        }
+
+        for (const target of targets) {
+          if (!target || inviter === target) continue;
+          if (!session.players.has(target)) {
+            session.players.add(target);
+          }
+
+          const invitePayload = {
+            type: 'geoguessr_invite',
+            from: inviter,
+            mode: 'multiplayer',
+            numRounds: numRounds,
+            sessionId: session.sessionId,
+            maxPlayers: 4
+          };
+          sendToUsername(target, invitePayload);
+        }
+
+        send(ws, {
+          type: 'geoguessr_info',
+          message: 'Invitation sent to ' + targets.length + ' player(s)',
+          sessionId: session.sessionId
+        });
+      }
+    }
+    else if (msg.type === 'geoguessr_invite_accept') {
+      const acceptor = users.get(ws);
+      const inviter = String(msg.from || '');
+      const sessionId = msg.sessionId;
+
+      if (!inviter || !acceptor) {
+        send(ws, { type: 'geoguessr_error', message: 'Invalid invite' });
+        return;
+      }
+
+      if (!geoguessrSessions.has(sessionId)) {
+        send(ws, { type: 'geoguessr_error', message: 'Session not found' });
+        return;
+      }
+
+      const session = geoguessrSessions.get(sessionId);
+
+      if (!session.acceptedPlayers.has(acceptor)) {
+        session.acceptedPlayers.add(acceptor);
+      }
+
+      const playersArray = Array.from(session.players);
+      const acceptedArray = Array.from(session.acceptedPlayers);
+
+      // Start game when all players have accepted or after 30 seconds
+      if (acceptedArray.length === playersArray.length && playersArray.length >= 2) {
+        const gid = nextGameId++;
+        const locations = [];
+        for (let i = 0; i < session.numRounds; i++) {
+          locations.push(getRandomLocation());
+        }
+
+        geoguessrGames.set(gid, {
+          players: playersArray,
+          currentRound: 0,
+          totalRounds: session.numRounds,
+          locations: locations,
+          roundStates: locations.map(() => ({
+            guesses: {},
+            roundStartTime: Date.now()
+          })),
+          gameOver: false,
+          isSingleplayer: false,
+          startTime: Date.now()
+        });
+
+        const payload = {
+          type: 'geoguessr_game_start',
+          game_id: gid,
+          players: playersArray,
+          mode: 'multiplayer',
+          numRounds: session.numRounds,
+          currentRound: 0,
+          location: locations[0]
+        };
+
+        for (const player of playersArray) {
+          sendToUsername(player, payload);
+        }
+
+        geoguessrSessions.delete(sessionId);
+        console.log('[geoguessr] Multiplayer game started:', {gid, players: playersArray, rounds: session.numRounds});
+      } else {
+        // Notify acceptor of waiting status
+        send(ws, {
+          type: 'geoguessr_info',
+          message: 'Waiting for ' + (playersArray.length - acceptedArray.length) + ' more player(s)',
+          accepted: acceptedArray.length,
+          total: playersArray.length
+        });
+      }
+    }
+    else if (msg.type === 'geoguessr_guess') {
+      const gid = msg.game_id;
+      const player = users.get(ws);
+      const guess = msg.guess; // {lat, lng}
+
+      if (!geoguessrGames.has(gid)) {
+        send(ws, { type: 'geoguessr_error', message: 'Game not found' });
+        return;
+      }
+
+      const game = geoguessrGames.get(gid);
+      if (game.gameOver) {
+        send(ws, { type: 'geoguessr_error', message: 'Game is over' });
+        return;
+      }
+
+      const roundIndex = game.currentRound;
+      if (roundIndex >= game.locations.length) {
+        send(ws, { type: 'geoguessr_error', message: 'Round out of bounds' });
+        return;
+      }
+
+      const round = game.roundStates[roundIndex];
+      const actualLocation = game.locations[roundIndex];
+
+      // Calculate distance using Haversine formula
+      const distance = calculateDistance(guess.lat, guess.lng, actualLocation.lat, actualLocation.lng);
+      const distanceKm = distance / 1000;
+
+      // Calculate score: 0 points at 5000km, 5000 points at 20 meters
+      let score = 0;
+      if (distanceKm <= 5000) {
+        score = Math.max(0, 5000 - (distanceKm / 5000) * 5000);
+      }
+      score = Math.round(score);
+
+      // Record guess
+      round.guesses[player] = {
+        lat: guess.lat,
+        lng: guess.lng,
+        distance: distance,
+        distanceKm: distanceKm,
+        score: score,
+        timestamp: Date.now()
+      };
+
+      console.log('[geoguessr] Guess recorded:', {gid, player, score, distance: distanceKm.toFixed(2) + 'km'});
+
+      // If multiplayer, broadcast update to all players
+      if (!game.isSingleplayer) {
+        const guessUpdate = {
+          type: 'geoguessr_guess_update',
+          game_id: gid,
+          player: player,
+          guessCount: Object.keys(round.guesses).length,
+          totalPlayers: game.players.length
+        };
+
+        for (const p of game.players) {
+          sendToUsername(p, guessUpdate);
+        }
+      }
+
+      // Send detailed result to the guesser
+      send(ws, {
+        type: 'geoguessr_guess_result',
+        game_id: gid,
+        score: score,
+        distance: distance,
+        distanceKm: distanceKm,
+        actualLocation: actualLocation,
+        guess: guess
+      });
+    }
+    else if (msg.type === 'geoguessr_next_round') {
+      const gid = msg.game_id;
+      const player = users.get(ws);
+
+      if (!geoguessrGames.has(gid)) {
+        send(ws, { type: 'geoguessr_error', message: 'Game not found' });
+        return;
+      }
+
+      const game = geoguessrGames.get(gid);
+      game.currentRound += 1;
+
+      if (game.currentRound >= game.totalRounds) {
+        // Game is over, calculate final scores
+        const scores = {};
+        for (const p of game.players) {
+          scores[p] = 0;
+          for (const roundState of game.roundStates) {
+            if (roundState.guesses[p]) {
+              scores[p] += roundState.guesses[p].score || 0;
+            }
+          }
+        }
+
+        game.gameOver = true;
+        const rankings = Object.entries(scores)
+          .sort((a, b) => b[1] - a[1])
+          .map((entry, index) => ({
+            rank: index + 1,
+            player: entry[0],
+            score: entry[1]
+          }));
+
+        const finalPayload = {
+          type: 'geoguessr_game_over',
+          game_id: gid,
+          rankings: rankings,
+          totalRounds: game.totalRounds
+        };
+
+        for (const p of game.players) {
+          sendToUsername(p, finalPayload);
+        }
+
+        console.log('[geoguessr] Game over:', {gid, rankings});
+      } else {
+        // Start next round
+        const nextLocation = game.locations[game.currentRound];
+        const roundPayload = {
+          type: 'geoguessr_round_start',
+          game_id: gid,
+          currentRound: game.currentRound,
+          totalRounds: game.totalRounds,
+          location: nextLocation
+        };
+
+        for (const p of game.players) {
+          sendToUsername(p, roundPayload);
+        }
+      }
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

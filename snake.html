@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="theme-color" content="#309090">
+  <link rel="icon" href="/client/img/icon.png">
+  <link rel="stylesheet" type="text/css" href="/client/style.css">
+  <title>Snake Multiplayer Game</title>
+</head>
+<body onmousemove="mouseMove(event);" onclick="mouseClick(event);" id="body">
+  <p style="font-size:large; color:#808000; margin-top:-4px;">Control Snake with Left Hand: <b>S E D F</b>  -or- Right Hand: <b>J I K L</b></p>
+  <canvas tabindex="1" id="ctx" width="800" height="400" style="border: 2px solid #000000;"></canvas>
+  <div id="menuTextDiv" class="noselect" style="height: 0px;">
+    [Change your name]
+  </div>
+  <table id="winners" onclick="rgb();"><tbody><tr><th>Winners</th></tr><tr><td id="winnerTD" style="color: hsl(100, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(90, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(80, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(70, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(60, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(50, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(40, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(30, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(20, 100%, 30%)">Guest</td></tr><tr><td id="winnerTD" style="color: hsl(10, 100%, 30%)">Guest</td></tr></tbody></table>
+  <div id="uiDiv" class="noselect" style="height: 55px;">
+    Enter nickname (1..4 letters)<input id="nameInput" value="Worm" maxlength="4" pattern="[A-Za-z]" required="" onkeydown="nameInputKeydown(event)">
+    <button id="setName" onclick="changeName()" class="shadow">Set name</button>
+  </div>
+  <script src="/client/socket.io.js"></script>
+  <script src="/client/cookies.js"></script>
+  <script src="/client/game.js"></script>
+</body>
+</html>

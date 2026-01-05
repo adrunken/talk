@@ -3004,6 +3004,38 @@ wss.on('connection', (ws, req) => {
         send(ws, { type: 'message', message: 'IP not found in ban list.', username: 'System' });
       }
     }
+    else if (msg.type === 'admin_timeout_user') {
+      const adminName = users.get(ws);
+      const targetUser = String(msg.user || '').trim();
+      const duration = Number(msg.duration || 0); // duration in milliseconds
+      const unameStr = String(adminName || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System' });
+        return;
+      }
+
+      if (!targetUser || !knownUsers.has(targetUser)) {
+        send(ws, { type: 'message', message: 'User not found: ' + targetUser, username: 'System' });
+        return;
+      }
+
+      if (duration <= 0) {
+        send(ws, { type: 'message', message: 'Invalid timeout duration.', username: 'System' });
+        return;
+      }
+
+      const reason = `Timed out by ${adminName}`;
+      timeoutUser(targetUser, duration, reason);
+
+      const durationSeconds = Math.floor(duration / 1000);
+      const systemMsg = { type: 'message', message: `User ${targetUser} timed out for ${durationSeconds}s`, username: 'System', id: idx, datetime: Math.floor(now()) };
+      messages.push(systemMsg);
+      appendMessage(systemMsg);
+      idx += 1;
+      const msgStr = JSON.stringify(systemMsg);
+      for (const [u] of users) send(u, msgStr);
+    }
   });
 
   ws.on('close', () => {

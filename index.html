@@ -3182,11 +3182,11 @@ function ready() {
     function handleSnakeKeydown(e) {
         if (!snakeGameState.isRunning) return;
 
-        var key = e.key.toLowerCase();
-        if (key === 'arrowleft') {
+        var key = e.key;
+        if (key === 'ArrowLeft') {
             e.preventDefault();
             snakeKeyQueue.push('left');
-        } else if (key === 'arrowright') {
+        } else if (key === 'ArrowRight') {
             e.preventDefault();
             snakeKeyQueue.push('right');
         }

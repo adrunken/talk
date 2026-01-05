@@ -1739,13 +1739,23 @@ function updateSnakeGameOnServer(gid) {
     'right': [1, 0]
   };
 
+  const opposites = {
+    'up': 'down',
+    'down': 'up',
+    'left': 'right',
+    'right': 'left'
+  };
+
   const playerList = Array.from(gameState.activePlayers);
+  const newHeads = {}; // Track new head positions for collision detection
+
+  // Phase 1: Update directions and calculate new positions
   for (const username of playerList) {
     const player = gameState.playerStates[username];
     if (!player || !player.alive) continue;
 
-    // Apply direction change
-    if (player.nextDirection && player.nextDirection !== getOppositeDirection(player.direction)) {
+    // Apply direction change (prevent 180-degree turns)
+    if (player.nextDirection && opposites[player.direction] !== player.nextDirection) {
       player.direction = player.nextDirection;
     }
 
@@ -1753,6 +1763,16 @@ function updateSnakeGameOnServer(gid) {
     const dir = directions[player.direction] || [1, 0];
     const head = player.positions[player.positions.length - 1];
     const newHead = [head[0] + dir[0], head[1] + dir[1]];
+
+    newHeads[username] = newHead;
+  }
+
+  // Phase 2: Check collisions and apply moves
+  for (const username of playerList) {
+    const player = gameState.playerStates[username];
+    if (!player || !player.alive) continue;
+
+    const newHead = newHeads[username];
 
     // Check boundaries
     if (newHead[0] < 0 || newHead[0] >= 50 || newHead[1] < 0 || newHead[1] >= 50) {
@@ -1776,7 +1796,25 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
+    // Check collision with other player heads
+    let hitHead = false;
+    for (const otherUsername of playerList) {
+      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherNewHead = newHeads[otherUsername];
+      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
+        hitHead = true;
+        break;
+      }
+    }
+
+    if (hitHead) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
     // Add current head position to trails
+    const head = player.positions[player.positions.length - 1];
     gameState.trails.push({x: head[0], y: head[1], owner: username});
     player.positions.push(newHead);
   }

@@ -4911,6 +4911,9 @@ function ready() {
         else if (data['type'] === 'admin_ip_bans_modal') {
             showAdminIpBansModal(data['bans'] || {});
         }
+        else if (data['type'] === 'admin_timeout_modal') {
+            showAdminTimeoutModal(data['users'] || []);
+        }
         else if (data['type'] === 'chess_resume') {
             var me = $('#username').text();
             // Preserve existing game state if already loaded, otherwise create new

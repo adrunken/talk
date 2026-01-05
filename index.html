@@ -5402,9 +5402,11 @@ function ready() {
             snakeGameState.players = data['players'];
             snakeGameState.playerStates = data['playerStates'];
             snakeGameState.isRunning = true;
+            var currentUser = $('#username').text().trim();
             console.log('[snake] Game state updated, isRunning:', snakeGameState.isRunning);
             console.log('[snake] Player states:', Object.keys(snakeGameState.playerStates));
-            console.log('[snake] Current user:', displayeduser);
+            console.log('[snake] Current user:', currentUser);
+            console.log('[snake] Current user data:', snakeGameState.playerStates[currentUser]);
             $('#snake-game-status').text('Game in progress...');
             updateSnakePlayersList(data['players']);
             if (!snakeGameLoop) {

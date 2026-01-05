@@ -976,6 +976,16 @@ html {
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
 
+.admin-timeout-user-item { display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s ease; }
+.admin-timeout-user-item:last-child { border-bottom: none; }
+.admin-timeout-user-item:hover { background: var(--bg-tertiary); }
+.admin-timeout-user-item.selected { background: var(--accent-secondary); border-left: 3px solid var(--accent-primary); }
+.admin-timeout-user-name { flex: 1; font-weight: 500; color: var(--text-primary); }
+
+.admin-timeout-duration-btn { padding: 0.75rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-tertiary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+.admin-timeout-duration-btn:hover { border-color: var(--accent-primary); background: var(--accent-secondary); }
+.admin-timeout-duration-btn.selected { border-color: var(--accent-primary); background: var(--accent-primary); color: white; font-weight: 600; }
+
 /* Chess Game Setup Modal */
 .chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
 .chess-setup-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
@@ -1317,6 +1327,35 @@ html {
     </div>
     <div class="first-login-actions">
       <button id="admin-ip-bans-close" class="first-login-save">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Timeout modal -->
+<div id="admin-timeout-modal" class="first-login-overlay">
+  <div class="first-login-panel" style="min-width: 450px; max-height: 80vh; overflow-y: auto;">
+    <div class="first-login-title">Timeout User</div>
+    <div style="margin: 1rem 0;">
+      <h4 style="margin-bottom: 0.5rem;">Select User</h4>
+      <div id="admin-timeout-users-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem;">
+      </div>
+    </div>
+    <div style="margin: 1rem 0;">
+      <h4 style="margin-bottom: 0.5rem;">Select Duration</h4>
+      <div id="admin-timeout-duration-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+        <button class="admin-timeout-duration-btn" data-duration="30000">30 seconds</button>
+        <button class="admin-timeout-duration-btn" data-duration="60000">1 minute</button>
+        <button class="admin-timeout-duration-btn" data-duration="300000">5 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="600000">10 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="1800000">30 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="3600000">1 hour</button>
+        <button class="admin-timeout-duration-btn" data-duration="10800000">3 hours</button>
+        <button class="admin-timeout-duration-btn" data-duration="21600000">6 hours</button>
+        <button class="admin-timeout-duration-btn" data-duration="43200000">12 hours</button>
+      </div>
+    </div>
+    <div class="first-login-actions">
+      <button id="admin-timeout-close" class="first-login-save">Close</button>
     </div>
   </div>
 </div>
@@ -3088,6 +3127,14 @@ function ready() {
             }
             return;
         }
+        if (message === '/timeout') {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'message', username: $('#username').text(), message: message }));
+                $('#writing').val('');
+                updateSendButton();
+            }
+            return;
+        }
         if (message !== '' && ws && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'message', username: $('#username').text(), message: message }));
             $('#writing').val('');
@@ -3385,6 +3432,40 @@ function ready() {
         $(this).closest('.admin-ban-item').fadeOut(400, function() {
             $(this).remove();
         });
+    });
+
+    // Admin timeout modal handlers
+    $('#admin-timeout-close').on('click', function() {
+        hideAdminTimeoutModal();
+    });
+
+    $(document).on('click', '.admin-timeout-duration-btn', function() {
+        var duration = $(this).data('duration');
+        if (!duration || selectedTimeoutUser === null) return;
+
+        if (!selectedTimeoutDuration || selectedTimeoutDuration !== duration) {
+            $('.admin-timeout-duration-btn').removeClass('selected');
+            $(this).addClass('selected');
+            selectedTimeoutDuration = duration;
+
+            // Auto-confirm if both user and duration are selected
+            if (selectedTimeoutUser && selectedTimeoutDuration && ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({
+                    type: 'admin_timeout_user',
+                    user: selectedTimeoutUser,
+                    duration: selectedTimeoutDuration
+                }));
+                hideAdminTimeoutModal();
+                flashStatus('User ' + selectedTimeoutUser + ' has been timed out');
+            }
+        }
+    });
+
+    // Close modal when clicking outside
+    $('#admin-timeout-modal').on('click', function(e) {
+        if (e.target.id === 'admin-timeout-modal') {
+            hideAdminTimeoutModal();
+        }
     });
 
     // Delegated handlers for invites and users
@@ -4521,6 +4602,41 @@ function ready() {
         $('#admin-bans-list').empty();
     }
 
+    var selectedTimeoutUser = null;
+    var selectedTimeoutDuration = null;
+
+    function showAdminTimeoutModal(users) {
+        var usersList = $('#admin-timeout-users-list');
+        usersList.empty();
+        selectedTimeoutUser = null;
+        selectedTimeoutDuration = null;
+
+        if (!users || users.length === 0) {
+            usersList.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No users found</div>');
+        } else {
+            users.forEach(function(user) {
+                var item = $('<div class="admin-timeout-user-item" />').attr('data-user', user);
+                var nameSpan = $('<span class="admin-timeout-user-name" />').text(user);
+                item.append(nameSpan);
+                item.on('click', function() {
+                    usersList.find('.admin-timeout-user-item').removeClass('selected');
+                    $(this).addClass('selected');
+                    selectedTimeoutUser = user;
+                });
+                usersList.append(item);
+            });
+        }
+
+        $('#admin-timeout-modal').addClass('show');
+    }
+
+    function hideAdminTimeoutModal() {
+        $('#admin-timeout-modal').removeClass('show');
+        $('#admin-timeout-users-list').empty();
+        selectedTimeoutUser = null;
+        selectedTimeoutDuration = null;
+    }
+
     function start4PlayerGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var gameId = data['game_id'];
@@ -4828,6 +4944,10 @@ function ready() {
         }
         else if (data['type'] === 'admin_ip_bans_modal') {
             showAdminIpBansModal(data['bans'] || {});
+        }
+        else if (data['type'] === 'admin_timeout_modal') {
+            console.log('[timeout] Received admin_timeout_modal with users:', data['users']);
+            showAdminTimeoutModal(data['users'] || []);
         }
         else if (data['type'] === 'chess_resume') {
             var me = $('#username').text();

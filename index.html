@@ -3324,6 +3324,20 @@ function ready() {
         }
     });
 
+    // Snake leave button
+    $('#snake-leave-btn').on('click', function(e) {
+        e.preventDefault();
+        hideSnakeModal();
+        if (snakeGameState.gameId && ws && ws.readyState === 1) {
+            var username = $('#username').text().trim();
+            ws.send(JSON.stringify({
+                type: 'snake_leave',
+                game_id: snakeGameState.gameId,
+                username: username
+            }));
+        }
+    });
+
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
         var $input = $('#first-username-input');

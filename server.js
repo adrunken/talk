@@ -1699,6 +1699,115 @@ function isCheckmate4P(board, colorIndex) {
   return isKingInCheck4P(board, colorIndex) && !hasLegalMoves4P(board, colorIndex);
 }
 
+function updateSnakeGameOnServer(gid) {
+  if (!snakeGames.has(gid)) return;
+
+  const gameState = snakeGames.get(gid);
+  if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
+    // Game over
+    if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+
+    let winner = null;
+    if (gameState.activePlayers.size === 1) {
+      winner = Array.from(gameState.activePlayers)[0];
+    }
+
+    // Notify all players
+    const gameOverPayload = {
+      type: 'snake_game_over',
+      game_id: gid,
+      winner: winner
+    };
+
+    for (const player of gameState.players) {
+      const pws = snakeLobby.playerWs.get(player);
+      if (pws && pws.readyState === 1) {
+        send(pws, gameOverPayload);
+      }
+    }
+
+    snakeGames.delete(gid);
+    snakeLobby = { players: new Set(), playerWs: new Map() };
+    return;
+  }
+
+  // Update positions based on directions
+  const directions = {
+    'up': [0, -1],
+    'down': [0, 1],
+    'left': [-1, 0],
+    'right': [1, 0]
+  };
+
+  const playerList = Array.from(gameState.activePlayers);
+  for (const username of playerList) {
+    const player = gameState.playerStates[username];
+    if (!player || !player.alive) continue;
+
+    // Apply direction change
+    if (player.nextDirection && player.nextDirection !== getOppositeDirection(player.direction)) {
+      player.direction = player.nextDirection;
+    }
+
+    // Calculate new head position
+    const dir = directions[player.direction] || [1, 0];
+    const head = player.positions[player.positions.length - 1];
+    const newHead = [head[0] + dir[0], head[1] + dir[1]];
+
+    // Check boundaries
+    if (newHead[0] < 0 || newHead[0] >= 50 || newHead[1] < 0 || newHead[1] >= 50) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
+    // Check collision with trails
+    let hitTrail = false;
+    for (let i = 0; i < gameState.trails.length; i++) {
+      if (gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+        hitTrail = true;
+        break;
+      }
+    }
+
+    if (hitTrail) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
+    // Add current head position to trails
+    gameState.trails.push({x: head[0], y: head[1], owner: username});
+    player.positions.push(newHead);
+  }
+
+  // Broadcast game state
+  const updatePayload = {
+    type: 'snake_game_update',
+    game_id: gid,
+    playerStates: gameState.playerStates,
+    trails: gameState.trails,
+    activePlayers: Array.from(gameState.activePlayers)
+  };
+
+  for (const player of gameState.players) {
+    const pws = snakeLobby.playerWs.get(player);
+    if (pws && pws.readyState === 1) {
+      send(pws, updatePayload);
+    }
+  }
+}
+
+function getOppositeDirection(dir) {
+  const opposites = {
+    'up': 'down',
+    'down': 'up',
+    'left': 'right',
+    'right': 'left'
+  };
+  return opposites[dir] || dir;
+}
+
 wss.on('connection', (ws, req) => {
   if (req.url && !req.url.startsWith('/ws')) {
     ws.close();

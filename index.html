@@ -3284,8 +3284,9 @@ function ready() {
     $('#snake-setup-btn').on('click', function(e) {
         e.preventDefault();
         $('#games-dropdown-menu').addClass('hidden');
-        // Load the new multiplayer snake game in a new window
-        window.open('./snake.html', 'snake_game', 'width=1000,height=600');
+        // Show the snake modal and join the game
+        showSnakeModal();
+        joinSnakeGame();
     });
 
     // Snake close button

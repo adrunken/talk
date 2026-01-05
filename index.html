@@ -3127,6 +3127,14 @@ function ready() {
             }
             return;
         }
+        if (message === '/timeout') {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({ type: 'message', username: $('#username').text(), message: message }));
+                $('#writing').val('');
+                updateSendButton();
+            }
+            return;
+        }
         if (message !== '' && ws && ws.readyState === 1) {
             ws.send(JSON.stringify({ type: 'message', username: $('#username').text(), message: message }));
             $('#writing').val('');

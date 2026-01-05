@@ -3367,6 +3367,26 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// Socket.IO handlers for Snake game
+io.on('connection', (socket) => {
+  console.log('[socket.io] Client connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('[socket.io] Client disconnected:', socket.id);
+  });
+
+  socket.on('changeName', (data) => {
+    console.log('[socket.io] changeName:', data);
+    socket.emit('changeName', { success: true });
+  });
+
+  socket.on('keyPress', (data) => {
+    console.log('[socket.io] keyPress:', data);
+    // Broadcast to all clients
+    io.emit('keyPress', data);
+  });
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`Server listening on http://${HOST}:${PORT}`);
   console.log(`Chat available at http://localhost:${PORT}`);

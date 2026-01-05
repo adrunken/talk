@@ -3090,8 +3090,8 @@ wss.on('connection', (ws, req) => {
 
         // Generate random spawn positions in center area
         const startPositions = playersArray.map(() => {
-          const x = 15 + Math.floor(Math.random() * 20);
-          const y = 15 + Math.floor(Math.random() * 20);
+          const x = 30 + Math.floor(Math.random() * 40);
+          const y = 30 + Math.floor(Math.random() * 40);
           return [[x, y]];
         });
 

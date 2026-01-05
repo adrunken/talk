@@ -4283,9 +4283,19 @@ function ready() {
         $('#connected').html(html);
     }
 
-    function addInvite(fromUser, mode, timeControl, sessionId) {
-        console.log('[4p-chess-client] Creating invite item:', {from: fromUser, mode: mode, timeControl: timeControl, sessionId: sessionId});
-        var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-mode', mode || '').attr('data-time-control', timeControl || '').attr('data-session-id', sessionId || '').text('Invite from ' + fromUser);
+    function addInvite(fromUser, mode, timeControl, sessionId, isGeoguessr) {
+        console.log('[invite] Creating invite item:', {from: fromUser, mode: mode, timeControl: timeControl, sessionId: sessionId, game: isGeoguessr ? 'geoguessr' : 'chess'});
+
+        var gameType = isGeoguessr ? 'geoguessr' : 'chess';
+        var displayText = isGeoguessr ? ('GeoGuessr from ' + fromUser) : ('Invite from ' + fromUser);
+
+        var item = $('<div class="invite-item" />')
+            .attr('data-from', fromUser)
+            .attr('data-mode', mode || '')
+            .attr('data-time-control', timeControl || '')
+            .attr('data-session-id', sessionId || '')
+            .attr('data-game-type', gameType)
+            .text(displayText);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');
         actions.append('<button class="invite-btn invite-decline">Decline</button>');

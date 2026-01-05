@@ -3056,9 +3056,9 @@ wss.on('connection', (ws, req) => {
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
         const startPositions = [
-          [[5, 5]],
-          [[40, 40]],
-          [[5, 40]],
+          [[5, 10]],
+          [[45, 40]],
+          [[10, 45]],
           [[40, 5]]
         ];
 

@@ -1836,16 +1836,6 @@ function updateSnakeGameOnServer(gid) {
   }
 }
 
-function getOppositeDirection(dir) {
-  const opposites = {
-    'up': 'down',
-    'down': 'up',
-    'left': 'right',
-    'right': 'left'
-  };
-  return opposites[dir] || dir;
-}
-
 wss.on('connection', (ws, req) => {
   if (req.url && !req.url.startsWith('/ws')) {
     ws.close();

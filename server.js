@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const WebSocket = require('ws');
+const SocketIO = require('socket.io');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');

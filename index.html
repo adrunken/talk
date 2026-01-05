@@ -5375,6 +5375,13 @@ function ready() {
             if (snakeGameLoop) clearInterval(snakeGameLoop);
             var msg = data['winner'] ? 'Game Over! Winner: ' + data['winner'] : 'Game Over!';
             $('#snake-game-status').text(msg);
+
+            // Auto-restart after 5 seconds
+            setTimeout(function() {
+                if (snakeGameState.isRunning) return; // Game already restarted
+                $('#snake-game-status').text('Waiting for players...');
+                joinSnakeGame();
+            }, 5000);
         }
     }
 

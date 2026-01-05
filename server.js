@@ -1281,9 +1281,50 @@ const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
 const fourPlayerGames = new Map(); // game_id -> {players: [p0, p1, p2, p3], board: [...], currentTurn: 0, activePlayers: [0,1,2,3], moveCount: 0, playerWs: Map<playerName -> ws>}
+const geoguessrSessions = new Map(); // sessionId -> {initiator, players: Set, acceptedPlayers: Set, mode, numRounds, createdAt}
+const geoguessrGames = new Map(); // game_id -> {players: [p0, ...], currentRound: 0, totalRounds: 3, locations: [{lat, lng}, ...], roundStates: [{location, guesses: {player: {lat, lng, score}}, roundStartTime}], gameOver: false}
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
+
+// Predefined locations for GeoGuessr game (worldwide sampling)
+const GEOGUESSR_LOCATIONS = [
+  {lat: 48.8566, lng: 2.3522, name: "Paris, France"},
+  {lat: 51.5074, lng: -0.1278, name: "London, England"},
+  {lat: 40.7128, lng: -74.0060, name: "New York, USA"},
+  {lat: 35.6762, lng: 139.6503, name: "Tokyo, Japan"},
+  {lat: -33.8688, lng: 151.2093, name: "Sydney, Australia"},
+  {lat: 1.3521, lng: 103.8198, name: "Singapore"},
+  {lat: 22.3193, lng: 114.1694, name: "Hong Kong"},
+  {lat: 48.2082, lng: 16.3738, name: "Vienna, Austria"},
+  {lat: -23.5505, lng: -46.6333, name: "São Paulo, Brazil"},
+  {lat: 39.9526, lng: 116.4074, name: "Beijing, China"},
+  {lat: 55.7558, lng: 37.6173, name: "Moscow, Russia"},
+  {lat: 37.7749, lng: -122.4194, name: "San Francisco, USA"},
+  {lat: 34.0522, lng: -118.2437, name: "Los Angeles, USA"},
+  {lat: 41.8781, lng: -87.6298, name: "Chicago, USA"},
+  {lat: 25.2048, lng: 55.2708, name: "Dubai, UAE"},
+  {lat: 19.0760, lng: 72.8777, name: "Mumbai, India"},
+  {lat: 28.6139, lng: 77.2090, name: "Delhi, India"},
+  {lat: 13.6929, lng: 100.9253, name: "Bangkok, Thailand"},
+  {lat: 1.5271, lng: 110.3592, name: "Kuching, Malaysia"},
+  {lat: 37.9838, lng: 23.7275, name: "Athens, Greece"},
+  {lat: -34.6037, lng: -58.3816, name: "Buenos Aires, Argentina"},
+  {lat: 52.5200, lng: 13.4050, name: "Berlin, Germany"},
+  {lat: 48.1351, lng: 11.5820, name: "Munich, Germany"},
+  {lat: 43.2965, lng: 5.3698, name: "Marseille, France"},
+  {lat: 41.3874, lng: 2.1686, name: "Barcelona, Spain"},
+  {lat: 40.4168, lng: -3.7038, name: "Madrid, Spain"},
+  {lat: 41.9028, lng: 12.4964, name: "Rome, Italy"},
+  {lat: 45.4642, lng: 9.1900, name: "Milan, Italy"},
+  {lat: 43.7102, lng: 7.2620, name: "Nice, France"},
+  {lat: 38.7223, lng: -9.1393, name: "Lisbon, Portugal"}
+];
+
+function getRandomLocation() {
+  const location = GEOGUESSR_LOCATIONS[Math.floor(Math.random() * GEOGUESSR_LOCATIONS.length)];
+  return { ...location };
+}
 
 function now() { return Date.now() / 1000; }
 

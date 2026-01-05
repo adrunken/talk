@@ -1823,6 +1823,7 @@ wss.on('connection', (ws, req) => {
             send(ws, s);
             idx += 1;
           }
+          return;
         } else if (message.toLowerCase() === '/delete users') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {

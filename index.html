@@ -5334,6 +5334,34 @@ function ready() {
         else if (data['type'] === 'displayeduser') {
             displayeduser = data['username'];
         }
+        else if (data['type'] === 'snake_lobby_update') {
+            $('#snake-game-status').text('Waiting for ' + data['playersNeeded'] + ' more player(s)...');
+            $('#snake-player-count').text(data['players'].length);
+            updateSnakePlayersList(data['players']);
+        }
+        else if (data['type'] === 'snake_game_start') {
+            snakeGameState.gameId = data['game_id'];
+            snakeGameState.players = data['players'];
+            snakeGameState.playerStates = data['playerStates'];
+            snakeGameState.isRunning = true;
+            $('#snake-game-status').text('Game in progress...');
+            updateSnakePlayersList(data['players']);
+            if (!snakeGameLoop) {
+                snakeGameLoop = setInterval(updateSnakeGame, 100);
+            }
+        }
+        else if (data['type'] === 'snake_game_update') {
+            snakeGameState.playerStates = data['playerStates'];
+            snakeGameState.trails = data['trails'];
+            $('#snake-player-count').text(data['activePlayers'].length);
+            drawSnakeGame();
+        }
+        else if (data['type'] === 'snake_game_over') {
+            snakeGameState.isRunning = false;
+            if (snakeGameLoop) clearInterval(snakeGameLoop);
+            var msg = data['winner'] ? 'Game Over! Winner: ' + data['winner'] : 'Game Over!';
+            $('#snake-game-status').text(msg);
+        }
     }
 
     // Attach onmessage when connection is established

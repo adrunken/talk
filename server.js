@@ -1800,12 +1800,15 @@ wss.on('connection', (ws, req) => {
             send(ws, JSON.stringify({ type: 'admin_ip_bans_modal', bans: bans }));
           }
         } else if (message.toLowerCase() === '/timeout') {
+          console.log('[timeout] /timeout command received from user:', username);
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
+            console.log('[timeout] Permission denied for user:', username);
             const obj = { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System', id: idx, datetime: Math.floor(now()) };
             send(ws, JSON.stringify(obj));
             idx += 1;
           } else {
+            console.log('[timeout] Sending admin_timeout_modal to user:', username);
             const userList = Array.from(knownUsers).sort();
             send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
           }

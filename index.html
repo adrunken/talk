@@ -3103,8 +3103,25 @@ function ready() {
         var ctx = snakeCanvasCtx;
         var cellSize = snakeGameState.cellSize || 10;
 
-        ctx.fillStyle = '#d2b48c';
+        // Draw background
+        ctx.fillStyle = '#fffef5';
         ctx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+        // Draw grid lines
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        for (var g = 0; g <= snakeGameState.width; g++) {
+            // Vertical lines
+            ctx.beginPath();
+            ctx.moveTo(g * cellSize, 0);
+            ctx.lineTo(g * cellSize, snakeCanvas.height);
+            ctx.stroke();
+            // Horizontal lines
+            ctx.beginPath();
+            ctx.moveTo(0, g * cellSize);
+            ctx.lineTo(snakeCanvas.width, g * cellSize);
+            ctx.stroke();
+        }
 
         var colors = ['#0f0', '#00f', '#ff0', '#f00'];
         var usernames = Object.keys(snakeGameState.playerStates);
@@ -3119,7 +3136,7 @@ function ready() {
             ctx.globalAlpha = 1.0;
         }
 
-        // Draw player heads
+        // Draw player heads and names
         for (var j = 0; j < usernames.length; j++) {
             var username = usernames[j];
             var player = snakeGameState.playerStates[username];
@@ -3127,6 +3144,14 @@ function ready() {
                 var head = player.positions[player.positions.length - 1];
                 ctx.fillStyle = colors[j % colors.length];
                 ctx.fillRect(head[0] * cellSize, head[1] * cellSize, cellSize, cellSize);
+
+                // Draw player name above head
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                var nameX = (head[0] + 0.5) * cellSize;
+                var nameY = head[1] * cellSize - 5;
+                ctx.fillText(username, nameX, nameY);
             }
         }
     }

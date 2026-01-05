@@ -1799,6 +1799,16 @@ wss.on('connection', (ws, req) => {
             const bans = getBannedIps();
             send(ws, JSON.stringify({ type: 'admin_ip_bans_modal', bans: bans }));
           }
+        } else if (message.toLowerCase() === '/timeout') {
+          const uname = String(username || '').toLowerCase();
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            const obj = { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+          } else {
+            const userList = Array.from(knownUsers).sort();
+            send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
+          }
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
           const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();

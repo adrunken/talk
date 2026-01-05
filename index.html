@@ -3213,6 +3213,16 @@ function ready() {
         }));
     }
 
+    function updateSnakePlayersList(players) {
+        var $list = $('#snake-players-list');
+        $list.empty();
+        var colors = ['#0f0', '#00f', '#ff0', '#f00'];
+        players.forEach(function(player, idx) {
+            var $badge = $('<span style="padding: 0.25rem 0.5rem; border-radius: 999px; background: ' + (colors[idx % colors.length]) + '20; color: ' + colors[idx % colors.length] + '; font-size: 0.875rem; font-weight: 500;">' + player + '</span>');
+            $list.append($badge);
+        });
+    }
+
     // Games dropdown menu toggle
     $('#games-menu-btn').on('click', function(e) {
         e.preventDefault();

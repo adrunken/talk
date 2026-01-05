@@ -3295,6 +3295,21 @@ wss.on('connection', (ws, req) => {
     pings.delete(ws);
     userMessageTimes.delete(ws);
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
+
+    // Clean up snake game lobby
+    if (uname && snakeLobby.players.has(uname)) {
+      snakeLobby.players.delete(uname);
+      snakeLobby.playerWs.delete(uname);
+    }
+
+    // Clean up snake games
+    for (const [gid, gameState] of snakeGames.entries()) {
+      if (uname && gameState.playerStates[uname]) {
+        gameState.playerStates[uname].alive = false;
+        gameState.activePlayers.delete(uname);
+      }
+    }
+
     sendUserList();
   });
 });

@@ -4568,6 +4568,41 @@ function ready() {
         $('#admin-bans-list').empty();
     }
 
+    var selectedTimeoutUser = null;
+    var selectedTimeoutDuration = null;
+
+    function showAdminTimeoutModal(users) {
+        var usersList = $('#admin-timeout-users-list');
+        usersList.empty();
+        selectedTimeoutUser = null;
+        selectedTimeoutDuration = null;
+
+        if (!users || users.length === 0) {
+            usersList.html('<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No users found</div>');
+        } else {
+            users.forEach(function(user) {
+                var item = $('<div class="admin-timeout-user-item" />').attr('data-user', user);
+                var nameSpan = $('<span class="admin-timeout-user-name" />').text(user);
+                item.append(nameSpan);
+                item.on('click', function() {
+                    usersList.find('.admin-timeout-user-item').removeClass('selected');
+                    $(this).addClass('selected');
+                    selectedTimeoutUser = user;
+                });
+                usersList.append(item);
+            });
+        }
+
+        $('#admin-timeout-modal').addClass('show');
+    }
+
+    function hideAdminTimeoutModal() {
+        $('#admin-timeout-modal').removeClass('show');
+        $('#admin-timeout-users-list').empty();
+        selectedTimeoutUser = null;
+        selectedTimeoutDuration = null;
+    }
+
     function start4PlayerGame(data) {
         __chessUnread = 0; __updateTitleBadge();
         var gameId = data['game_id'];

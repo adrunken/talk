@@ -3183,7 +3183,8 @@ function ready() {
 
     function handleSnakeKeydown(e) {
         // Log for debugging
-        console.log('[snake] Key pressed:', e.key, 'Game running:', snakeGameState.isRunning, 'Player:', displayeduser);
+        var currentUser = $('#username').text().trim();
+        console.log('[snake] Key pressed:', e.key, 'Game running:', snakeGameState.isRunning, 'Player:', currentUser);
 
         if (!snakeGameState.isRunning) {
             console.log('[snake] Game not running, ignoring key');
@@ -3191,7 +3192,7 @@ function ready() {
         }
 
         var key = e.key;
-        var me = displayeduser;
+        var me = currentUser;
         var myPlayer = snakeGameState.playerStates[me];
 
         if (!myPlayer) {

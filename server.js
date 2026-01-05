@@ -1810,6 +1810,14 @@ wss.on('connection', (ws, req) => {
             send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
           }
         } else {
+          // Check if user is timed out
+          if (isUserTimedOut(username)) {
+            const remaining = Math.ceil(getTimeoutRemaining(username) / 1000);
+            const obj = { type: 'message', message: `You are timed out. Time remaining: ${remaining}s`, username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+            return;
+          }
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
           const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
           const obj = { type: 'message', message: safeMessage, username, id: idx, datetime: Math.floor(now()) };

@@ -3213,7 +3213,33 @@ function ready() {
     function updateSnakeGame() {
         if (!snakeGameState.isRunning) return;
 
-        // Redraw game state (direction changes are sent directly from keydown handler)
+        // Process queued key inputs
+        var currentUser = $('#username').text().trim();
+        var myPlayer = snakeGameState.playerStates[currentUser];
+
+        if (myPlayer && snakeKeyQueue.length > 0) {
+            var newDir = snakeKeyQueue.shift();
+            var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
+
+            // Only apply if it's not a 180-degree turn
+            if (opposites[myPlayer.direction] !== newDir) {
+                myPlayer.direction = newDir;
+                console.log('[snake] Applying queued direction:', newDir, 'Queue remaining:', snakeKeyQueue.length);
+
+                // Send direction update to server
+                if (ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'snake_move',
+                        game_id: snakeGameState.gameId,
+                        direction: newDir
+                    }));
+                }
+            } else {
+                console.log('[snake] Cannot turn 180 degrees, skipping:', newDir);
+            }
+        }
+
+        // Redraw game state
         drawSnakeGame();
     }
 

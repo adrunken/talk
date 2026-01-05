@@ -3183,12 +3183,39 @@ function ready() {
         if (!snakeGameState.isRunning) return;
 
         var key = e.key;
-        if (key === 'ArrowLeft') {
+        var me = displayeduser;
+        var myPlayer = snakeGameState.playerStates[me];
+        if (!myPlayer) return;
+
+        var newDir = null;
+        if (key === 'ArrowUp') {
             e.preventDefault();
-            snakeKeyQueue.push('left');
+            newDir = 'up';
+        } else if (key === 'ArrowDown') {
+            e.preventDefault();
+            newDir = 'down';
+        } else if (key === 'ArrowLeft') {
+            e.preventDefault();
+            newDir = 'left';
         } else if (key === 'ArrowRight') {
             e.preventDefault();
-            snakeKeyQueue.push('right');
+            newDir = 'right';
+        }
+
+        if (newDir) {
+            // Prevent 180-degree turns on client side
+            var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
+            if (opposites[myPlayer.direction] !== newDir) {
+                myPlayer.direction = newDir;
+                // Send direction update to server
+                if (ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'snake_move',
+                        game_id: snakeGameState.gameId,
+                        direction: newDir
+                    }));
+                }
+            }
         }
     }
 

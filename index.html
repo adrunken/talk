@@ -3079,9 +3079,8 @@ function ready() {
     $('#snake-setup-btn').on('click', function(e) {
         e.preventDefault();
         $('#games-dropdown-menu').addClass('hidden');
-        // Show the snake modal and join the game
+        // Show the snake modal (iframe handles game logic)
         showSnakeModal();
-        joinSnakeGame();
     });
 
     // Snake close button

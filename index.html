@@ -3065,8 +3065,8 @@ function ready() {
         gameId: null,
         isRunning: false,
         players: [],
-        width: 50,
-        height: 50,
+        width: 100,
+        height: 100,
         playerStates: {}, // username -> {color, direction, positions: [[x, y], ...]}
         trails: [], // All trail positions: {x, y, owner}
         gameStartTime: null
@@ -3103,8 +3103,25 @@ function ready() {
         var ctx = snakeCanvasCtx;
         var cellSize = snakeGameState.cellSize || 10;
 
-        ctx.fillStyle = '#d2b48c';
+        // Draw background
+        ctx.fillStyle = '#fffef5';
         ctx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+        // Draw grid lines
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        for (var g = 0; g <= snakeGameState.width; g++) {
+            // Vertical lines
+            ctx.beginPath();
+            ctx.moveTo(g * cellSize, 0);
+            ctx.lineTo(g * cellSize, snakeCanvas.height);
+            ctx.stroke();
+            // Horizontal lines
+            ctx.beginPath();
+            ctx.moveTo(0, g * cellSize);
+            ctx.lineTo(snakeCanvas.width, g * cellSize);
+            ctx.stroke();
+        }
 
         var colors = ['#0f0', '#00f', '#ff0', '#f00'];
         var usernames = Object.keys(snakeGameState.playerStates);
@@ -3119,7 +3136,7 @@ function ready() {
             ctx.globalAlpha = 1.0;
         }
 
-        // Draw player heads
+        // Draw player heads and names
         for (var j = 0; j < usernames.length; j++) {
             var username = usernames[j];
             var player = snakeGameState.playerStates[username];
@@ -3127,6 +3144,14 @@ function ready() {
                 var head = player.positions[player.positions.length - 1];
                 ctx.fillStyle = colors[j % colors.length];
                 ctx.fillRect(head[0] * cellSize, head[1] * cellSize, cellSize, cellSize);
+
+                // Draw player name above head
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                var nameX = (head[0] + 0.5) * cellSize;
+                var nameY = head[1] * cellSize - 5;
+                ctx.fillText(username, nameX, nameY);
             }
         }
     }
@@ -3136,6 +3161,9 @@ function ready() {
         initSnakeCanvas();
         drawSnakeGame();
         $(document).on('keydown.snake', handleSnakeKeydown);
+        console.log('[snake] Modal shown, keydown listener attached');
+        // Focus the board to ensure it receives key events
+        $('#snake-game-board').focus();
     }
 
     function hideSnakeModal() {
@@ -3146,8 +3174,8 @@ function ready() {
             gameId: null,
             isRunning: false,
             players: [],
-            width: 50,
-            height: 50,
+            width: 100,
+            height: 100,
             playerStates: {},
             trails: [],
             gameStartTime: null
@@ -3155,53 +3183,63 @@ function ready() {
     }
 
     function handleSnakeKeydown(e) {
-        if (!snakeGameState.isRunning) return;
+        if (!snakeGameState.isRunning) {
+            return;
+        }
 
-        var key = e.key.toLowerCase();
-        if (key === 'arrowleft') {
+        var key = e.key;
+        var newDir = null;
+        if (key === 'ArrowUp') {
             e.preventDefault();
-            snakeKeyQueue.push('left');
-        } else if (key === 'arrowright') {
+            newDir = 'up';
+        } else if (key === 'ArrowDown') {
             e.preventDefault();
-            snakeKeyQueue.push('right');
+            newDir = 'down';
+        } else if (key === 'ArrowLeft') {
+            e.preventDefault();
+            newDir = 'left';
+        } else if (key === 'ArrowRight') {
+            e.preventDefault();
+            newDir = 'right';
+        }
+
+        if (newDir) {
+            // Queue the direction for processing
+            snakeKeyQueue.push(newDir);
+            console.log('[snake] Queued direction:', newDir, 'Queue length:', snakeKeyQueue.length);
         }
     }
 
     function updateSnakeGame() {
         if (!snakeGameState.isRunning) return;
 
-        var me = displayeduser;
-        var myPlayer = snakeGameState.playerStates[me];
-        if (!myPlayer || myPlayer.positions.length === 0) return;
+        // Process ALL queued key inputs
+        var currentUser = $('#username').text().trim();
+        var myPlayer = snakeGameState.playerStates[currentUser];
+        var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
 
-        // Process key input
-        if (snakeKeyQueue.length > 0) {
-            var turn = snakeKeyQueue.shift();
-            var currentDir = myPlayer.direction;
-            var newDir = currentDir;
+        while (myPlayer && snakeKeyQueue.length > 0) {
+            var newDir = snakeKeyQueue.shift();
 
-            if (turn === 'left') {
-                var directions = ['up', 'right', 'down', 'left'];
-                var currentIdx = directions.indexOf(currentDir);
-                newDir = directions[(currentIdx + 1) % 4]; // Counter-clockwise
-            } else if (turn === 'right') {
-                var directions = ['up', 'right', 'down', 'left'];
-                var currentIdx = directions.indexOf(currentDir);
-                newDir = directions[(currentIdx + 3) % 4]; // Clockwise
-            }
+            // Only apply if it's not a 180-degree turn
+            if (opposites[myPlayer.direction] !== newDir) {
+                myPlayer.direction = newDir;
+                console.log('[snake] Applied queued direction:', newDir, 'Current direction:', myPlayer.direction, 'Queue remaining:', snakeKeyQueue.length);
 
-            myPlayer.direction = newDir;
-
-            // Send direction update to server
-            if (ws && ws.readyState === 1) {
-                ws.send(JSON.stringify({
-                    type: 'snake_move',
-                    game_id: snakeGameState.gameId,
-                    direction: newDir
-                }));
+                // Send EACH direction change to server immediately
+                if (ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'snake_move',
+                        game_id: snakeGameState.gameId,
+                        direction: newDir
+                    }));
+                }
+            } else {
+                console.log('[snake] Cannot turn 180 degrees, skipping:', newDir);
             }
         }
 
+        // Redraw game state
         drawSnakeGame();
     }
 
@@ -3211,9 +3249,11 @@ function ready() {
             return;
         }
 
+        var username = $('#username').text().trim();
+        console.log('[snake] Joining game as:', username);
         ws.send(JSON.stringify({
             type: 'snake_join',
-            username: displayeduser
+            username: username
         }));
     }
 
@@ -3253,10 +3293,11 @@ function ready() {
         e.preventDefault();
         hideSnakeModal();
         if (snakeGameState.gameId && ws && ws.readyState === 1) {
+            var username = $('#username').text().trim();
             ws.send(JSON.stringify({
                 type: 'snake_leave',
                 game_id: snakeGameState.gameId,
-                username: displayeduser
+                username: username
             }));
         }
     });
@@ -5354,10 +5395,16 @@ function ready() {
             updateSnakePlayersList(data['players']);
         }
         else if (data['type'] === 'snake_game_start') {
+            console.log('[snake] Game started:', data);
             snakeGameState.gameId = data['game_id'];
             snakeGameState.players = data['players'];
             snakeGameState.playerStates = data['playerStates'];
             snakeGameState.isRunning = true;
+            var currentUser = $('#username').text().trim();
+            console.log('[snake] Game state updated, isRunning:', snakeGameState.isRunning);
+            console.log('[snake] Player states:', Object.keys(snakeGameState.playerStates));
+            console.log('[snake] Current user:', currentUser);
+            console.log('[snake] Current user data:', snakeGameState.playerStates[currentUser]);
             $('#snake-game-status').text('Game in progress...');
             updateSnakePlayersList(data['players']);
             if (!snakeGameLoop) {

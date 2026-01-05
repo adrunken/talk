@@ -1779,7 +1779,7 @@ function updateSnakeGameOnServer(gid) {
     const newHead = newHeads[username];
 
     // Check boundaries
-    if (newHead[0] < 0 || newHead[0] >= 50 || newHead[1] < 0 || newHead[1] >= 50) {
+    if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;
@@ -1868,19 +1868,22 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Flood control (track non-ping messages)
-    const arr = userMessageTimes.get(ws) || [];
-    arr.push(Date.now());
-    while (arr.length > 10) arr.shift();
-    userMessageTimes.set(ws, arr);
-    if (arr.length === 10 && (arr[arr.length - 1] - arr[0]) < 5000) {
-      send(ws, { type: 'flood' });
-      try { ws.close(); } catch(_){ }
-      return;
-    }
-
     let msg;
     try { msg = JSON.parse(msgStr); } catch (_) { return; }
+
+    // Flood control (track only chat messages, exclude game messages)
+    const gameMessageTypes = ['snake_move', 'snake_join', 'snake_leave', 'chess_move', 'chess_resign', 'chess_draw'];
+    if (!gameMessageTypes.includes(msg.type)) {
+      const arr = userMessageTimes.get(ws) || [];
+      arr.push(Date.now());
+      while (arr.length > 10) arr.shift();
+      userMessageTimes.set(ws, arr);
+      if (arr.length === 10 && (arr[arr.length - 1] - arr[0]) < 5000) {
+        send(ws, { type: 'flood' });
+        try { ws.close(); } catch(_){ }
+        return;
+      }
+    }
 
     if (msg.type === 'message') {
       let message = String(msg.message || '').trim();
@@ -3087,12 +3090,13 @@ wss.on('connection', (ws, req) => {
         const playersArray = Array.from(snakeLobby.players);
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
-        const startPositions = [
-          [[5, 10]],
-          [[45, 40]],
-          [[10, 45]],
-          [[40, 5]]
-        ];
+
+        // Generate random spawn positions in center area
+        const startPositions = playersArray.map(() => {
+          const x = 30 + Math.floor(Math.random() * 40);
+          const y = 30 + Math.floor(Math.random() * 40);
+          return [[x, y]];
+        });
 
         const gameState = {
           gameId: gid,
@@ -3157,12 +3161,20 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       const direction = msg.direction;
 
-      if (!snakeGames.has(gid) || !username) return;
+      console.log('[snake_move] Received:', {username, gid, direction, gameExists: snakeGames.has(gid)});
+
+      if (!snakeGames.has(gid) || !username) {
+        console.log('[snake_move] Rejected: game does not exist or no username');
+        return;
+      }
 
       const gameState = snakeGames.get(gid);
       const player = gameState.playerStates[username];
       if (player) {
         player.nextDirection = direction;
+        console.log('[snake_move] Direction updated for', username, ':', direction);
+      } else {
+        console.log('[snake_move] Player not found in game:', username);
       }
     }
     else if (msg.type === 'snake_leave') {

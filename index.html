@@ -3213,30 +3213,32 @@ function ready() {
     function updateSnakeGame() {
         if (!snakeGameState.isRunning) return;
 
-        // Process queued key inputs
+        // Process ALL queued key inputs
         var currentUser = $('#username').text().trim();
         var myPlayer = snakeGameState.playerStates[currentUser];
+        var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
+        var lastValidDir = null;
 
-        if (myPlayer && snakeKeyQueue.length > 0) {
+        while (myPlayer && snakeKeyQueue.length > 0) {
             var newDir = snakeKeyQueue.shift();
-            var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
 
             // Only apply if it's not a 180-degree turn
             if (opposites[myPlayer.direction] !== newDir) {
                 myPlayer.direction = newDir;
-                console.log('[snake] Applying queued direction:', newDir, 'Queue remaining:', snakeKeyQueue.length);
-
-                // Send direction update to server
-                if (ws && ws.readyState === 1) {
-                    ws.send(JSON.stringify({
-                        type: 'snake_move',
-                        game_id: snakeGameState.gameId,
-                        direction: newDir
-                    }));
-                }
+                lastValidDir = newDir;
+                console.log('[snake] Applied queued direction:', newDir, 'Current direction:', myPlayer.direction, 'Queue remaining:', snakeKeyQueue.length);
             } else {
                 console.log('[snake] Cannot turn 180 degrees, skipping:', newDir);
             }
+        }
+
+        // Send direction update to server if we made a valid turn
+        if (lastValidDir && ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'snake_move',
+                game_id: snakeGameState.gameId,
+                direction: lastValidDir
+            }));
         }
 
         // Redraw game state

@@ -4723,6 +4723,12 @@ function ready() {
         else if (data['type'] === 'displayeduser') {
             displayeduser = data['username'];
         }
+        // GeoGuessr messages
+        else if (data['type'] && data['type'].indexOf('geoguessr') === 0) {
+            if (window.handleGeoguessrMessage) {
+                window.handleGeoguessrMessage(data);
+            }
+        }
     }
 
     // Attach onmessage when connection is established

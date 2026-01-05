@@ -1248,9 +1248,19 @@ html {
     </div>
 
     <div>
-        <button id="chess-setup-btn" class="chess-setup-button" title="Create a new chess game">
-            <i class="fas fa-chess-king"></i> Chess
-        </button>
+        <div style="position: relative;">
+          <button id="games-menu-btn" class="chess-setup-button" title="Open games menu">
+              <i class="fas fa-gamepad"></i> Games <i class="fas fa-caret-down"></i>
+          </button>
+          <div id="games-dropdown-menu" class="games-dropdown hidden">
+            <button id="chess-setup-btn" class="games-menu-item" title="Create a new chess game">
+              <i class="fas fa-chess-king"></i> Chess
+            </button>
+            <button id="snake-setup-btn" class="games-menu-item" title="Join or create a snake game">
+              <i class="fas fa-snake"></i> Snake
+            </button>
+          </div>
+        </div>
         <h3>Users</h3>
         <div id="connected"></div>
     </div>

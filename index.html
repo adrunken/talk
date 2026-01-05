@@ -3079,18 +3079,22 @@ function ready() {
     function initSnakeCanvas() {
         var $board = $('#snake-game-board');
         $board.empty();
+
+        // Create canvas with proper dimensions
+        var boardWidth = Math.min($board.width(), 600);
+        var boardHeight = boardWidth; // Square board
+
         snakeCanvas = document.createElement('canvas');
-        snakeCanvas.width = $board.width();
-        snakeCanvas.height = $board.height();
+        snakeCanvas.width = boardWidth;
+        snakeCanvas.height = boardHeight;
         snakeCanvas.style.display = 'block';
         snakeCanvas.style.cursor = 'none';
+        snakeCanvas.style.margin = '0 auto';
         $board.append(snakeCanvas);
         snakeCanvasCtx = snakeCanvas.getContext('2d');
 
         // Calculate grid cell size based on canvas size
-        var cellWidth = snakeCanvas.width / snakeGameState.width;
-        var cellHeight = snakeCanvas.height / snakeGameState.height;
-        snakeGameState.cellSize = Math.min(cellWidth, cellHeight);
+        snakeGameState.cellSize = boardWidth / snakeGameState.width;
     }
 
     function drawSnakeGame() {

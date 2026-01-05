@@ -1654,6 +1654,19 @@ var chessSetupState = {
     allUsers: [] // List of all available users (excluding current user)
 };
 
+// GeoGuessr state
+var geoguessrGame = null; // {id, players, currentRound, totalRounds, locations, roundStates}
+var geoguessrGuess = null; // {lat, lng}
+var geoguessrRoundTime = 60; // seconds
+var geoguessrRoundInterval = null;
+var geoguessrMapApi = null; // Will hold map rendering logic
+var geoguessrSetupState = {
+    mode: null, // 'singleplayer' or 'multiplayer'
+    numRounds: 3,
+    selectedUsers: [],
+    allUsers: []
+};
+
 // Load boards and pieces data from local file
 function loadBoardPiecesData() {
     return fetch('board-pieces-data.json?t=' + Date.now())

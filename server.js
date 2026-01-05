@@ -2913,6 +2913,135 @@ wss.on('connection', (ws, req) => {
 
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
+    else if (msg.type === 'snake_join') {
+      const username = users.get(ws);
+      if (!username) {
+        send(ws, { type: 'snake_error', message: 'Not authenticated' });
+        return;
+      }
+
+      // Add player to lobby or create a game if 2+ players
+      snakeLobby.players.add(username);
+      snakeLobby.playerWs.set(username, ws);
+
+      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.players.length});
+
+      // Send game state to joining player
+      if (snakeLobby.gameId) {
+        // Game is already running
+        const gameState = snakeGames.get(snakeLobby.gameId);
+        if (gameState) {
+          send(ws, {
+            type: 'snake_game_state',
+            game_id: snakeLobby.gameId,
+            players: Array.from(snakeLobby.players),
+            board: gameState.board,
+            playerStates: gameState.playerStates,
+            trails: gameState.trails
+          });
+        }
+      } else if (snakeLobby.players.size >= 2) {
+        // Start new game
+        const gid = nextGameId++;
+        const playersArray = Array.from(snakeLobby.players);
+        const colors = ['green', 'blue', 'yellow', 'red'];
+        const directions = ['right', 'down', 'left', 'up'];
+        const startPositions = [
+          [[5, 5]],
+          [[40, 40]],
+          [[5, 40]],
+          [[40, 5]]
+        ];
+
+        const gameState = {
+          gameId: gid,
+          players: playersArray,
+          playerStates: {},
+          trails: [],
+          gameStartTime: Date.now(),
+          activePlayers: new Set(playersArray),
+          gameRunning: true
+        };
+
+        for (let i = 0; i < playersArray.length; i++) {
+          gameState.playerStates[playersArray[i]] = {
+            color: colors[i % colors.length],
+            direction: directions[i % directions.length],
+            nextDirection: directions[i % directions.length],
+            positions: startPositions[i % startPositions.length].slice(),
+            alive: true
+          };
+        }
+
+        snakeGames.set(gid, gameState);
+        snakeLobby.gameId = gid;
+
+        // Notify all players game started
+        const startPayload = {
+          type: 'snake_game_start',
+          game_id: gid,
+          players: playersArray,
+          playerStates: gameState.playerStates
+        };
+
+        for (const player of playersArray) {
+          const pws = snakeLobby.playerWs.get(player);
+          if (pws && pws.readyState === 1) {
+            send(pws, startPayload);
+          }
+        }
+
+        console.log('[snake] Game started:', {gid, players: playersArray});
+
+        // Start game loop
+        if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+        snakeLobby.gameLoop = setInterval(() => {
+          updateSnakeGameOnServer(gid);
+        }, 100); // 10 ticks per second
+      } else {
+        // Broadcast lobby update
+        const lobbyPayload = {
+          type: 'snake_lobby_update',
+          players: Array.from(snakeLobby.players),
+          playersNeeded: Math.max(0, 2 - snakeLobby.players.size)
+        };
+
+        for (const pws of snakeLobby.playerWs.values()) {
+          if (pws.readyState === 1) send(pws, lobbyPayload);
+        }
+      }
+    }
+    else if (msg.type === 'snake_move') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+      const direction = msg.direction;
+
+      if (!snakeGames.has(gid) || !username) return;
+
+      const gameState = snakeGames.get(gid);
+      const player = gameState.playerStates[username];
+      if (player) {
+        player.nextDirection = direction;
+      }
+    }
+    else if (msg.type === 'snake_leave') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (snakeLobby.players.has(username)) {
+        snakeLobby.players.delete(username);
+        snakeLobby.playerWs.delete(username);
+        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.players.size});
+      }
+
+      if (snakeGames.has(gid)) {
+        const gameState = snakeGames.get(gid);
+        if (username && gameState.playerStates[username]) {
+          gameState.playerStates[username].alive = false;
+          gameState.activePlayers.delete(username);
+        }
+      }
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();

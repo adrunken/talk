@@ -1511,6 +1511,35 @@ html {
   </div>
 </div>
 
+<!-- Snake Game Modal -->
+<div id="snake-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+  <div id="snake-modal" style="position: relative; width: 95vw; max-width: 900px; height: 90vh; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
+    <!-- Game Board Area -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1rem; overflow: auto;">
+      <h2 id="snake-game-status" style="margin: 0; font-size: 1.25rem; color: var(--text-primary);">Waiting for players...</h2>
+      <div id="snake-game-board" style="width: 100%; max-width: 600px; aspect-ratio: 1; background: #000; border: 2px solid var(--accent-primary); border-radius: var(--radius-lg); position: relative; overflow: hidden;">
+        <!-- Game canvas will be rendered here -->
+      </div>
+      <div style="font-size: 0.875rem; color: var(--text-secondary); text-align: center;">
+        <p>Arrow keys: Turn left/right • Players: <span id="snake-player-count">0</span> alive</p>
+      </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div style="width: 100%; padding: 1rem; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+      <div style="flex: 1;">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Players</h3>
+        <div id="snake-players-list" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="snake-close" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; font-size: 0.875rem;" title="Close">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Chess Game Setup Modal -->
 <div id="chess-setup-overlay" class="chess-setup-overlay">
   <div class="chess-setup-modal">

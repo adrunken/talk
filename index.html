@@ -3147,28 +3147,12 @@ function ready() {
 
     function showSnakeModal() {
         $('#snake-overlay').removeClass('hidden');
-        initSnakeCanvas();
-        drawSnakeGame();
-        $(document).on('keydown.snake', handleSnakeKeydown);
-        console.log('[snake] Modal shown, keydown listener attached');
-        // Focus the board to ensure it receives key events
-        $('#snake-game-board').focus();
+        console.log('[snake] Modal shown');
     }
 
     function hideSnakeModal() {
         $('#snake-overlay').addClass('hidden');
-        $(document).off('keydown.snake');
-        if (snakeGameLoop) clearInterval(snakeGameLoop);
-        snakeGameState = {
-            gameId: null,
-            isRunning: false,
-            players: [],
-            width: 100,
-            height: 100,
-            playerStates: {},
-            trails: [],
-            gameStartTime: null
-        };
+        console.log('[snake] Modal closed');
     }
 
     function handleSnakeKeydown(e) {

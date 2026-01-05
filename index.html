@@ -976,6 +976,16 @@ html {
 .admin-unban-btn { padding: 0.5rem 0.75rem; border: 1px solid #ef4444; border-radius: var(--radius-md); background: transparent; color: #ef4444; cursor: pointer; font-size: 0.875rem; }
 .admin-unban-btn:hover { background: #ef4444; color: white; }
 
+.admin-timeout-user-item { display: flex; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.2s ease; }
+.admin-timeout-user-item:last-child { border-bottom: none; }
+.admin-timeout-user-item:hover { background: var(--bg-tertiary); }
+.admin-timeout-user-item.selected { background: var(--accent-secondary); border-left: 3px solid var(--accent-primary); }
+.admin-timeout-user-name { flex: 1; font-weight: 500; color: var(--text-primary); }
+
+.admin-timeout-duration-btn { padding: 0.75rem; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-tertiary); color: var(--text-primary); cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+.admin-timeout-duration-btn:hover { border-color: var(--accent-primary); background: var(--accent-secondary); }
+.admin-timeout-duration-btn.selected { border-color: var(--accent-primary); background: var(--accent-primary); color: white; font-weight: 600; }
+
 /* Chess Game Setup Modal */
 .chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
 .chess-setup-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }

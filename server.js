@@ -3158,12 +3158,20 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       const direction = msg.direction;
 
-      if (!snakeGames.has(gid) || !username) return;
+      console.log('[snake_move] Received:', {username, gid, direction, gameExists: snakeGames.has(gid)});
+
+      if (!snakeGames.has(gid) || !username) {
+        console.log('[snake_move] Rejected: game does not exist or no username');
+        return;
+      }
 
       const gameState = snakeGames.get(gid);
       const player = gameState.playerStates[username];
       if (player) {
         player.nextDirection = direction;
+        console.log('[snake_move] Direction updated for', username, ':', direction);
+      } else {
+        console.log('[snake_move] Player not found in game:', username);
       }
     }
     else if (msg.type === 'snake_leave') {

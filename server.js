@@ -315,6 +315,107 @@ function getBannedIps() {
   return result;
 }
 
+// Chat Timeout System
+const TIMEOUTS_FILE = path.join(DATA_DIR, 'chat-timeouts.json');
+const TIMEOUT_DURATIONS = {
+  '30s': 30 * 1000,
+  '1m': 60 * 1000,
+  '5m': 5 * 60 * 1000,
+  '10m': 10 * 60 * 1000,
+  '30m': 30 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1month': 30 * 24 * 60 * 60 * 1000
+};
+
+let userTimeouts = {}; // username -> { expiresAt: number, duration: string, reason: string, timedOutBy: string }
+
+function loadUserTimeouts() {
+  try {
+    if (fs.existsSync(TIMEOUTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TIMEOUTS_FILE, 'utf8'));
+      if (typeof data === 'object' && data !== null) {
+        userTimeouts = data;
+      }
+    }
+  } catch (_) {}
+}
+
+function persistUserTimeouts() {
+  try { fs.writeFile(TIMEOUTS_FILE, JSON.stringify(userTimeouts, null, 2), () => {}); } catch(_) {}
+}
+
+function isUserTimedOut(username) {
+  if (!username || typeof username !== 'string') return false;
+  const timeout = userTimeouts[username];
+  if (!timeout) return false;
+  if (timeout.expiresAt && timeout.expiresAt < Date.now()) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    return false;
+  }
+  return true;
+}
+
+function timeoutUser(username, duration, reason = 'No reason specified', adminName = 'System') {
+  if (!username || typeof username !== 'string') return false;
+  if (!TIMEOUT_DURATIONS[duration]) return false;
+  const expiresAt = Date.now() + TIMEOUT_DURATIONS[duration];
+  userTimeouts[username] = {
+    expiresAt,
+    duration,
+    reason: String(reason || '').slice(0, 500),
+    timedOutBy: String(adminName || 'System').slice(0, 50)
+  };
+  persistUserTimeouts();
+  console.log(`[timeout] User ${username} timed out for ${duration} by ${adminName}: ${reason}`);
+  return true;
+}
+
+function removeUserTimeout(username) {
+  if (!username || typeof username !== 'string') return false;
+  if (userTimeouts[username]) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    console.log(`[timeout] Timeout removed for user ${username}`);
+    return true;
+  }
+  return false;
+}
+
+function getActiveTimeouts() {
+  const now = Date.now();
+  const result = {};
+  for (const [username, timeout] of Object.entries(userTimeouts)) {
+    if (timeout.expiresAt && timeout.expiresAt < now) {
+      delete userTimeouts[username];
+    } else {
+      result[username] = timeout;
+    }
+  }
+  if (Object.keys(result).length !== Object.keys(userTimeouts).length) {
+    persistUserTimeouts();
+  }
+  return result;
+}
+
+function getTimeoutRemaining(username) {
+  const timeout = userTimeouts[username];
+  if (!timeout || !timeout.expiresAt) return null;
+  const remaining = Math.max(0, timeout.expiresAt - Date.now());
+  if (remaining <= 0) {
+    delete userTimeouts[username];
+    persistUserTimeouts();
+    return null;
+  }
+  const hours = Math.floor(remaining / (60 * 60 * 1000));
+  const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+  const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+  return { remaining, hours, minutes, seconds };
+}
+
 
 loadMessages();
 loadKnownUsers();
@@ -322,6 +423,7 @@ loadUserSettings();
 loadUserElos();
 loadOnlineHistory();
 loadIpBans();
+loadUserTimeouts();
 
 // Server
 const app = express();
@@ -1678,6 +1780,23 @@ wss.on('connection', (ws, req) => {
         deliverQueuedInvites(username);
       }
       if (message) {
+        // Check if user is timed out from sending messages
+        if (isUserTimedOut(username)) {
+          const timeoutInfo = userTimeouts[username];
+          const remaining = getTimeoutRemaining(username);
+          if (remaining) {
+            const durationText = remaining.hours > 0
+              ? `${remaining.hours}h ${remaining.minutes}m`
+              : remaining.minutes > 0
+              ? `${remaining.minutes}m ${remaining.seconds}s`
+              : `${remaining.seconds}s`;
+            const obj = { type: 'message', message: `You are timed out from sending messages for ${durationText}. Reason: ${timeoutInfo.reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+            return;
+          }
+        }
+
         if (message.toLowerCase() === '/online history') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
@@ -1704,6 +1823,7 @@ wss.on('connection', (ws, req) => {
             send(ws, s);
             idx += 1;
           }
+          return;
         } else if (message.toLowerCase() === '/delete users') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
@@ -1714,6 +1834,7 @@ wss.on('connection', (ws, req) => {
             const userList = Array.from(knownUsers).sort();
             send(ws, JSON.stringify({ type: 'admin_delete_users_modal', users: userList }));
           }
+          return;
         } else if (message.toLowerCase() === '/ip bans') {
           const uname = String(username || '').toLowerCase();
           if (uname !== 'zahir' && uname !== ADMINNAME) {
@@ -1724,6 +1845,21 @@ wss.on('connection', (ws, req) => {
             const bans = getBannedIps();
             send(ws, JSON.stringify({ type: 'admin_ip_bans_modal', bans: bans }));
           }
+          return;
+        } else if (message.toLowerCase() === '/timeout') {
+          console.log('[timeout] /timeout command received from', username, ', message:', message);
+          const uname = String(username || '').toLowerCase();
+          console.log('[timeout] Checking admin privileges: uname =', uname, ', zahir =', 'zahir', ', ADMINNAME =', ADMINNAME);
+          if (uname !== 'zahir' && uname !== ADMINNAME) {
+            const obj = { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System', id: idx, datetime: Math.floor(now()) };
+            send(ws, JSON.stringify(obj));
+            idx += 1;
+          } else {
+            const userList = Array.from(knownUsers).sort();
+            console.log('[timeout] Admin', username, 'opened timeout modal with', userList.length, 'users');
+            send(ws, JSON.stringify({ type: 'admin_timeout_modal', users: userList }));
+          }
+          return;
         } else {
           if (message.length > 1000) message = message.slice(0, 1000) + '...';
           const safeMessage = sanitizeHtml(message, { allowedTags: [], allowedAttributes: {} }).trim();
@@ -2770,6 +2906,41 @@ wss.on('connection', (ws, req) => {
         for (const [u] of users) send(u, msgStr);
       } else {
         send(ws, { type: 'message', message: 'IP not found in ban list.', username: 'System' });
+      }
+    }
+    else if (msg.type === 'admin_timeout_user') {
+      const uname = users.get(ws);
+      const targetUser = String(msg.user || '').trim();
+      const duration = String(msg.duration || '').trim();
+      const reason = String(msg.reason || 'No reason specified').trim();
+      const unameStr = String(uname || '').toLowerCase();
+
+      if (unameStr !== 'zahir' && unameStr !== ADMINNAME) {
+        send(ws, { type: 'message', message: 'Permission denied. Only admin can timeout users.', username: 'System' });
+        return;
+      }
+
+      if (!targetUser || !knownUsers.has(targetUser)) {
+        send(ws, { type: 'message', message: 'User not found: ' + targetUser, username: 'System' });
+        return;
+      }
+
+      if (!duration || !TIMEOUT_DURATIONS[duration]) {
+        const availableDurations = Object.keys(TIMEOUT_DURATIONS).join(', ');
+        send(ws, { type: 'message', message: 'Invalid duration. Available durations: ' + availableDurations, username: 'System' });
+        return;
+      }
+
+      const success = timeoutUser(targetUser, duration, reason, uname);
+      if (success) {
+        const systemMsg = { type: 'message', message: `${targetUser} has been timed out for ${duration}. Reason: ${reason}`, username: 'System', id: idx, datetime: Math.floor(now()) };
+        messages.push(systemMsg);
+        appendMessage(systemMsg);
+        idx += 1;
+        const msgStr = JSON.stringify(systemMsg);
+        for (const [u] of users) send(u, msgStr);
+      } else {
+        send(ws, { type: 'message', message: 'Failed to timeout user.', username: 'System' });
       }
     }
   });

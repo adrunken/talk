@@ -315,6 +315,60 @@ function getBannedIps() {
   return result;
 }
 
+// User Timeout System
+let userTimeouts = {}; // username -> { until: timestamp, reason?: string }
+
+function isUserTimedOut(username) {
+  if (!username || typeof username !== 'string') return false;
+  const timeout = userTimeouts[username];
+  if (!timeout) return false;
+  if (timeout.until && timeout.until < Date.now()) {
+    delete userTimeouts[username];
+    return false;
+  }
+  return true;
+}
+
+function getTimeoutRemaining(username) {
+  if (!username || typeof username !== 'string') return 0;
+  const timeout = userTimeouts[username];
+  if (!timeout || !timeout.until) return 0;
+  const remaining = timeout.until - Date.now();
+  return remaining > 0 ? remaining : 0;
+}
+
+function timeoutUser(username, durationMs, reason = 'Timed out by admin') {
+  if (!username || typeof username !== 'string') return false;
+  userTimeouts[username] = {
+    until: Date.now() + durationMs,
+    reason: String(reason || 'No reason').slice(0, 200)
+  };
+  console.log(`[timeout] User ${username} timed out for ${durationMs}ms: ${reason}`);
+  return true;
+}
+
+function clearUserTimeout(username) {
+  if (!username || typeof username !== 'string') return false;
+  if (userTimeouts[username]) {
+    delete userTimeouts[username];
+    console.log(`[timeout] Timeout cleared for user ${username}`);
+    return true;
+  }
+  return false;
+}
+
+function getActiveTimeouts() {
+  const now = Date.now();
+  const result = {};
+  for (const [username, timeout] of Object.entries(userTimeouts)) {
+    if (timeout.until && timeout.until >= now) {
+      result[username] = timeout;
+    } else {
+      delete userTimeouts[username];
+    }
+  }
+  return result;
+}
 
 loadMessages();
 loadKnownUsers();

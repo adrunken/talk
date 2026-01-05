@@ -1233,6 +1233,8 @@ const invites = new Map(); // key `${inviter}\u0000${target}` -> timestamp
 const games = new Map(); // gid -> {board: Chess, white, black, over}
 const fourPlayerSessions = new Map(); // sessionId -> {initiator, players: [player1, player2, player3], acceptedPlayers: [player1, player3], mode, timeControl, createdAt}
 const fourPlayerGames = new Map(); // game_id -> {players: [p0, p1, p2, p3], board: [...], currentTurn: 0, activePlayers: [0,1,2,3], moveCount: 0, playerWs: Map<playerName -> ws>}
+const snakeGames = new Map(); // game_id -> {players: [username, ...], gameState: {...}, playerWs: Map}
+let snakeLobby = { players: new Set(), playerWs: new Map() }; // Current snake game lobby
 let nextGameId = 1;
 let nextSessionId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
@@ -1695,6 +1697,147 @@ function hasLegalMoves4P(board, colorIndex) {
 
 function isCheckmate4P(board, colorIndex) {
   return isKingInCheck4P(board, colorIndex) && !hasLegalMoves4P(board, colorIndex);
+}
+
+function updateSnakeGameOnServer(gid) {
+  if (!snakeGames.has(gid)) return;
+
+  const gameState = snakeGames.get(gid);
+  if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
+    // Game over
+    if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+
+    let winner = null;
+    if (gameState.activePlayers.size === 1) {
+      winner = Array.from(gameState.activePlayers)[0];
+    }
+
+    // Notify all players
+    const gameOverPayload = {
+      type: 'snake_game_over',
+      game_id: gid,
+      winner: winner
+    };
+
+    for (const player of gameState.players) {
+      const pws = snakeLobby.playerWs.get(player);
+      if (pws && pws.readyState === 1) {
+        send(pws, gameOverPayload);
+      }
+    }
+
+    snakeGames.delete(gid);
+
+    // Keep players in lobby but reset game state for new game
+    snakeLobby.gameId = null;
+
+    console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', snakeLobby.players.size);
+    return;
+  }
+
+  // Update positions based on directions
+  const directions = {
+    'up': [0, -1],
+    'down': [0, 1],
+    'left': [-1, 0],
+    'right': [1, 0]
+  };
+
+  const opposites = {
+    'up': 'down',
+    'down': 'up',
+    'left': 'right',
+    'right': 'left'
+  };
+
+  const playerList = Array.from(gameState.activePlayers);
+  const newHeads = {}; // Track new head positions for collision detection
+
+  // Phase 1: Update directions and calculate new positions
+  for (const username of playerList) {
+    const player = gameState.playerStates[username];
+    if (!player || !player.alive) continue;
+
+    // Apply direction change (prevent 180-degree turns)
+    if (player.nextDirection && opposites[player.direction] !== player.nextDirection) {
+      player.direction = player.nextDirection;
+    }
+
+    // Calculate new head position
+    const dir = directions[player.direction] || [1, 0];
+    const head = player.positions[player.positions.length - 1];
+    const newHead = [head[0] + dir[0], head[1] + dir[1]];
+
+    newHeads[username] = newHead;
+  }
+
+  // Phase 2: Check collisions and apply moves
+  for (const username of playerList) {
+    const player = gameState.playerStates[username];
+    if (!player || !player.alive) continue;
+
+    const newHead = newHeads[username];
+
+    // Check boundaries
+    if (newHead[0] < 0 || newHead[0] >= 50 || newHead[1] < 0 || newHead[1] >= 50) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
+    // Check collision with trails
+    let hitTrail = false;
+    for (let i = 0; i < gameState.trails.length; i++) {
+      if (gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+        hitTrail = true;
+        break;
+      }
+    }
+
+    if (hitTrail) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
+    // Check collision with other player heads
+    let hitHead = false;
+    for (const otherUsername of playerList) {
+      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherNewHead = newHeads[otherUsername];
+      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
+        hitHead = true;
+        break;
+      }
+    }
+
+    if (hitHead) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
+
+    // Add current head position to trails
+    const head = player.positions[player.positions.length - 1];
+    gameState.trails.push({x: head[0], y: head[1], owner: username});
+    player.positions.push(newHead);
+  }
+
+  // Broadcast game state
+  const updatePayload = {
+    type: 'snake_game_update',
+    game_id: gid,
+    playerStates: gameState.playerStates,
+    trails: gameState.trails,
+    activePlayers: Array.from(gameState.activePlayers)
+  };
+
+  for (const player of gameState.players) {
+    const pws = snakeLobby.playerWs.get(player);
+    if (pws && pws.readyState === 1) {
+      send(pws, updatePayload);
+    }
+  }
 }
 
 wss.on('connection', (ws, req) => {
@@ -2911,6 +3054,135 @@ wss.on('connection', (ws, req) => {
 
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
+    else if (msg.type === 'snake_join') {
+      const username = users.get(ws);
+      if (!username) {
+        send(ws, { type: 'snake_error', message: 'Not authenticated' });
+        return;
+      }
+
+      // Add player to lobby or create a game if 2+ players
+      snakeLobby.players.add(username);
+      snakeLobby.playerWs.set(username, ws);
+
+      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.players.length});
+
+      // Send game state to joining player
+      if (snakeLobby.gameId) {
+        // Game is already running
+        const gameState = snakeGames.get(snakeLobby.gameId);
+        if (gameState) {
+          send(ws, {
+            type: 'snake_game_state',
+            game_id: snakeLobby.gameId,
+            players: Array.from(snakeLobby.players),
+            board: gameState.board,
+            playerStates: gameState.playerStates,
+            trails: gameState.trails
+          });
+        }
+      } else if (snakeLobby.players.size >= 2) {
+        // Start new game
+        const gid = nextGameId++;
+        const playersArray = Array.from(snakeLobby.players);
+        const colors = ['green', 'blue', 'yellow', 'red'];
+        const directions = ['right', 'down', 'left', 'up'];
+        const startPositions = [
+          [[5, 10]],
+          [[45, 40]],
+          [[10, 45]],
+          [[40, 5]]
+        ];
+
+        const gameState = {
+          gameId: gid,
+          players: playersArray,
+          playerStates: {},
+          trails: [],
+          gameStartTime: Date.now(),
+          activePlayers: new Set(playersArray),
+          gameRunning: true
+        };
+
+        for (let i = 0; i < playersArray.length; i++) {
+          gameState.playerStates[playersArray[i]] = {
+            color: colors[i % colors.length],
+            direction: directions[i % directions.length],
+            nextDirection: directions[i % directions.length],
+            positions: startPositions[i % startPositions.length].slice(),
+            alive: true
+          };
+        }
+
+        snakeGames.set(gid, gameState);
+        snakeLobby.gameId = gid;
+
+        // Notify all players game started
+        const startPayload = {
+          type: 'snake_game_start',
+          game_id: gid,
+          players: playersArray,
+          playerStates: gameState.playerStates
+        };
+
+        for (const player of playersArray) {
+          const pws = snakeLobby.playerWs.get(player);
+          if (pws && pws.readyState === 1) {
+            send(pws, startPayload);
+          }
+        }
+
+        console.log('[snake] Game started:', {gid, players: playersArray});
+
+        // Start game loop
+        if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+        snakeLobby.gameLoop = setInterval(() => {
+          updateSnakeGameOnServer(gid);
+        }, 100); // 10 ticks per second
+      } else {
+        // Broadcast lobby update
+        const lobbyPayload = {
+          type: 'snake_lobby_update',
+          players: Array.from(snakeLobby.players),
+          playersNeeded: Math.max(0, 2 - snakeLobby.players.size)
+        };
+
+        for (const pws of snakeLobby.playerWs.values()) {
+          if (pws.readyState === 1) send(pws, lobbyPayload);
+        }
+      }
+    }
+    else if (msg.type === 'snake_move') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+      const direction = msg.direction;
+
+      if (!snakeGames.has(gid) || !username) return;
+
+      const gameState = snakeGames.get(gid);
+      const player = gameState.playerStates[username];
+      if (player) {
+        player.nextDirection = direction;
+      }
+    }
+    else if (msg.type === 'snake_leave') {
+      const gid = msg.game_id;
+      const username = users.get(ws);
+
+      if (snakeLobby.players.has(username)) {
+        snakeLobby.players.delete(username);
+        snakeLobby.playerWs.delete(username);
+        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.players.size});
+      }
+
+      if (snakeGames.has(gid)) {
+        const gameState = snakeGames.get(gid);
+        if (username && gameState.playerStates[username]) {
+          gameState.playerStates[username].alive = false;
+          gameState.activePlayers.delete(username);
+        }
+      }
+    }
     else if (msg.type === 'admin_delete_user') {
       const uname = users.get(ws);
       const targetUser = String(msg.user || '').trim();
@@ -3055,6 +3327,21 @@ wss.on('connection', (ws, req) => {
     pings.delete(ws);
     userMessageTimes.delete(ws);
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
+
+    // Clean up snake game lobby
+    if (uname && snakeLobby.players.has(uname)) {
+      snakeLobby.players.delete(uname);
+      snakeLobby.playerWs.delete(uname);
+    }
+
+    // Clean up snake games
+    for (const [gid, gameState] of snakeGames.entries()) {
+      if (uname && gameState.playerStates[uname]) {
+        gameState.playerStates[uname].alive = false;
+        gameState.activePlayers.delete(uname);
+      }
+    }
+
     sendUserList();
   });
 });

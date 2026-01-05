@@ -987,8 +987,15 @@ html {
 .admin-timeout-duration-btn.selected { border-color: var(--accent-primary); background: var(--accent-primary); color: white; font-weight: 600; }
 
 /* Chess Game Setup Modal */
-.chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
+.chess-setup-button { padding: 0.5rem 0.75rem; background: var(--accent-primary); border: none; border-radius: var(--radius-lg); color: white; cursor: pointer; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .chess-setup-button:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+/* Games Dropdown Menu */
+.games-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 0.5rem 0; margin-top: 0.5rem; z-index: 100; }
+.games-dropdown.hidden { display: none; }
+.games-menu-item { width: 100%; padding: 0.75rem 1rem; border: none; background: none; color: var(--text-primary); cursor: pointer; font-size: 0.875rem; text-align: left; transition: background 0.2s ease; display: flex; align-items: center; gap: 0.5rem; }
+.games-menu-item:hover { background: var(--accent-secondary); color: var(--accent-primary); }
+.games-menu-item i { font-size: 1rem; min-width: 1.25rem; }
 
 .chess-setup-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.35); z-index: 1001; }
 .chess-setup-overlay.show { display: flex; }
@@ -1248,9 +1255,19 @@ html {
     </div>
 
     <div>
-        <button id="chess-setup-btn" class="chess-setup-button" title="Create a new chess game">
-            <i class="fas fa-chess-king"></i> Chess
-        </button>
+        <div style="position: relative;">
+          <button id="games-menu-btn" class="chess-setup-button" title="Open games menu">
+              <i class="fas fa-gamepad"></i> Games <i class="fas fa-caret-down"></i>
+          </button>
+          <div id="games-dropdown-menu" class="games-dropdown hidden">
+            <button id="chess-setup-btn" class="games-menu-item" title="Create a new chess game">
+              <i class="fas fa-chess-king"></i> Chess
+            </button>
+            <button id="snake-setup-btn" class="games-menu-item" title="Join or create a snake game">
+              <i class="fas fa-dot-circle"></i> Snake
+            </button>
+          </div>
+        </div>
         <h3>Users</h3>
         <div id="connected"></div>
     </div>
@@ -1489,6 +1506,35 @@ html {
       </div>
       <div class="board-pieces-section" id="pieces-section">
         <div class="pieces-grid" id="pieces-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Snake Game Modal -->
+<div id="snake-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+  <div id="snake-modal" style="position: relative; width: 95vw; max-width: 900px; height: 90vh; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
+    <!-- Game Board Area -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1rem; overflow: auto;">
+      <h2 id="snake-game-status" style="margin: 0; font-size: 1.25rem; color: var(--text-primary);">Waiting for players...</h2>
+      <div id="snake-game-board" style="width: 100%; max-width: 600px; aspect-ratio: 1; background: #000; border: 2px solid var(--accent-primary); border-radius: var(--radius-lg); position: relative; overflow: hidden;">
+        <!-- Game canvas will be rendered here -->
+      </div>
+      <div style="font-size: 0.875rem; color: var(--text-secondary); text-align: center;">
+        <p>Arrow keys: Turn left/right • Players: <span id="snake-player-count">0</span> alive</p>
+      </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div style="width: 100%; padding: 1rem; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+      <div style="flex: 1;">
+        <h3 style="margin: 0 0 0.5rem 0; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary);">Players</h3>
+        <div id="snake-players-list" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button id="snake-close" style="padding: 0.5rem 0.75rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; font-size: 0.875rem;" title="Close">
+          <i class="fas fa-times"></i> Close
+        </button>
       </div>
     </div>
   </div>
@@ -3013,6 +3059,207 @@ function ready() {
         // Close the modal
         hideChessSetupModal();
     }
+
+    // Snake game logic
+    var snakeGameState = {
+        gameId: null,
+        isRunning: false,
+        players: [],
+        width: 50,
+        height: 50,
+        playerStates: {}, // username -> {color, direction, positions: [[x, y], ...]}
+        trails: [], // All trail positions: {x, y, owner}
+        gameStartTime: null
+    };
+    var snakeCanvas = null;
+    var snakeCanvasCtx = null;
+    var snakeGameLoop = null;
+    var snakeKeyQueue = [];
+
+    function initSnakeCanvas() {
+        var $board = $('#snake-game-board');
+        $board.empty();
+
+        // Create canvas with proper dimensions
+        var boardWidth = Math.min($board.width(), 600);
+        var boardHeight = boardWidth; // Square board
+
+        snakeCanvas = document.createElement('canvas');
+        snakeCanvas.width = boardWidth;
+        snakeCanvas.height = boardHeight;
+        snakeCanvas.style.display = 'block';
+        snakeCanvas.style.cursor = 'none';
+        snakeCanvas.style.margin = '0 auto';
+        $board.append(snakeCanvas);
+        snakeCanvasCtx = snakeCanvas.getContext('2d');
+
+        // Calculate grid cell size based on canvas size
+        snakeGameState.cellSize = boardWidth / snakeGameState.width;
+    }
+
+    function drawSnakeGame() {
+        if (!snakeCanvasCtx || !snakeCanvas) return;
+
+        var ctx = snakeCanvasCtx;
+        var cellSize = snakeGameState.cellSize || 10;
+
+        ctx.fillStyle = '#d2b48c';
+        ctx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+        var colors = ['#0f0', '#00f', '#ff0', '#f00'];
+        var usernames = Object.keys(snakeGameState.playerStates);
+
+        // Draw trails
+        for (var i = 0; i < snakeGameState.trails.length; i++) {
+            var trail = snakeGameState.trails[i];
+            var ownerIndex = usernames.indexOf(trail.owner);
+            ctx.fillStyle = colors[ownerIndex % colors.length] || '#888';
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(trail.x * cellSize, trail.y * cellSize, cellSize, cellSize);
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Draw player heads
+        for (var j = 0; j < usernames.length; j++) {
+            var username = usernames[j];
+            var player = snakeGameState.playerStates[username];
+            if (player && player.positions.length > 0) {
+                var head = player.positions[player.positions.length - 1];
+                ctx.fillStyle = colors[j % colors.length];
+                ctx.fillRect(head[0] * cellSize, head[1] * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    function showSnakeModal() {
+        $('#snake-overlay').removeClass('hidden');
+        initSnakeCanvas();
+        drawSnakeGame();
+        $(document).on('keydown.snake', handleSnakeKeydown);
+    }
+
+    function hideSnakeModal() {
+        $('#snake-overlay').addClass('hidden');
+        $(document).off('keydown.snake');
+        if (snakeGameLoop) clearInterval(snakeGameLoop);
+        snakeGameState = {
+            gameId: null,
+            isRunning: false,
+            players: [],
+            width: 50,
+            height: 50,
+            playerStates: {},
+            trails: [],
+            gameStartTime: null
+        };
+    }
+
+    function handleSnakeKeydown(e) {
+        if (!snakeGameState.isRunning) return;
+
+        var key = e.key.toLowerCase();
+        if (key === 'arrowleft') {
+            e.preventDefault();
+            snakeKeyQueue.push('left');
+        } else if (key === 'arrowright') {
+            e.preventDefault();
+            snakeKeyQueue.push('right');
+        }
+    }
+
+    function updateSnakeGame() {
+        if (!snakeGameState.isRunning) return;
+
+        var me = displayeduser;
+        var myPlayer = snakeGameState.playerStates[me];
+        if (!myPlayer || myPlayer.positions.length === 0) return;
+
+        // Process key input
+        if (snakeKeyQueue.length > 0) {
+            var turn = snakeKeyQueue.shift();
+            var currentDir = myPlayer.direction;
+            var newDir = currentDir;
+
+            if (turn === 'left') {
+                var directions = ['up', 'right', 'down', 'left'];
+                var currentIdx = directions.indexOf(currentDir);
+                newDir = directions[(currentIdx + 1) % 4]; // Counter-clockwise
+            } else if (turn === 'right') {
+                var directions = ['up', 'right', 'down', 'left'];
+                var currentIdx = directions.indexOf(currentDir);
+                newDir = directions[(currentIdx + 3) % 4]; // Clockwise
+            }
+
+            myPlayer.direction = newDir;
+
+            // Send direction update to server
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({
+                    type: 'snake_move',
+                    game_id: snakeGameState.gameId,
+                    direction: newDir
+                }));
+            }
+        }
+
+        drawSnakeGame();
+    }
+
+    function joinSnakeGame() {
+        if (!ws || ws.readyState !== 1) {
+            flashStatus('Not connected to server');
+            return;
+        }
+
+        ws.send(JSON.stringify({
+            type: 'snake_join',
+            username: displayeduser
+        }));
+    }
+
+    function updateSnakePlayersList(players) {
+        var $list = $('#snake-players-list');
+        $list.empty();
+        var colors = ['#0f0', '#00f', '#ff0', '#f00'];
+        players.forEach(function(player, idx) {
+            var $badge = $('<span style="padding: 0.25rem 0.5rem; border-radius: 999px; background: ' + (colors[idx % colors.length]) + '20; color: ' + colors[idx % colors.length] + '; font-size: 0.875rem; font-weight: 500;">' + player + '</span>');
+            $list.append($badge);
+        });
+    }
+
+    // Games dropdown menu toggle
+    $('#games-menu-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').toggleClass('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#games-menu-btn, #games-dropdown-menu').length) {
+            $('#games-dropdown-menu').addClass('hidden');
+        }
+    });
+
+    // Snake setup handler
+    $('#snake-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').addClass('hidden');
+        showSnakeModal();
+        joinSnakeGame();
+    });
+
+    // Snake close button
+    $('#snake-close').on('click', function(e) {
+        e.preventDefault();
+        hideSnakeModal();
+        if (snakeGameState.gameId && ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'snake_leave',
+                game_id: snakeGameState.gameId,
+                username: displayeduser
+            }));
+        }
+    });
 
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
@@ -5100,6 +5347,41 @@ function ready() {
         }
         else if (data['type'] === 'displayeduser') {
             displayeduser = data['username'];
+        }
+        else if (data['type'] === 'snake_lobby_update') {
+            $('#snake-game-status').text('Waiting for ' + data['playersNeeded'] + ' more player(s)...');
+            $('#snake-player-count').text(data['players'].length);
+            updateSnakePlayersList(data['players']);
+        }
+        else if (data['type'] === 'snake_game_start') {
+            snakeGameState.gameId = data['game_id'];
+            snakeGameState.players = data['players'];
+            snakeGameState.playerStates = data['playerStates'];
+            snakeGameState.isRunning = true;
+            $('#snake-game-status').text('Game in progress...');
+            updateSnakePlayersList(data['players']);
+            if (!snakeGameLoop) {
+                snakeGameLoop = setInterval(updateSnakeGame, 100);
+            }
+        }
+        else if (data['type'] === 'snake_game_update') {
+            snakeGameState.playerStates = data['playerStates'];
+            snakeGameState.trails = data['trails'];
+            $('#snake-player-count').text(data['activePlayers'].length);
+            drawSnakeGame();
+        }
+        else if (data['type'] === 'snake_game_over') {
+            snakeGameState.isRunning = false;
+            if (snakeGameLoop) clearInterval(snakeGameLoop);
+            var msg = data['winner'] ? 'Game Over! Winner: ' + data['winner'] : 'Game Over!';
+            $('#snake-game-status').text(msg);
+
+            // Auto-restart after 5 seconds
+            setTimeout(function() {
+                if (snakeGameState.isRunning) return; // Game already restarted
+                $('#snake-game-status').text('Waiting for players...');
+                joinSnakeGame();
+            }, 5000);
         }
     }
 

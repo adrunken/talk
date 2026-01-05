@@ -4799,6 +4799,406 @@ window.addEventListener('error', function(ev) {
     }
   } catch (e) { /* ignore */ }
 });
+
+// GeoGuessr Game Handlers
+(function() {
+    // GeoGuessr setup modal
+    var $geoguessr_overlay = $('#geoguessr-setup-overlay');
+    var $geoguessr_modal = $geoguessr_overlay.find('.chess-setup-modal');
+
+    $('#geoguessr-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        geoguessrSetupState.mode = null;
+        geoguessrSetupState.numRounds = 3;
+        geoguessrSetupState.selectedUsers = [];
+        $geoguessr_overlay.addClass('show');
+        populateGeoguessrUsersList();
+    });
+
+    $(document).on('click', '[id^="geoguessr"] .setup-option-btn', function() {
+        var $btn = $(this);
+        var $section = $btn.closest('.setup-section');
+        var data_attr = $btn.data('mode') || $btn.data('rounds');
+
+        if ($btn.data('mode') !== undefined) {
+            geoguessrSetupState.mode = $btn.data('mode');
+            $section.find('.setup-option-btn').removeClass('selected');
+            $btn.addClass('selected');
+
+            if (geoguessrSetupState.mode === 'multiplayer') {
+                $('#geoguessr-multiplayer-section').show();
+            } else {
+                $('#geoguessr-multiplayer-section').hide();
+            }
+        } else if ($btn.data('rounds') !== undefined) {
+            geoguessrSetupState.numRounds = $btn.data('rounds');
+            $section.find('.setup-option-btn').removeClass('selected');
+            $btn.addClass('selected');
+        }
+
+        updateGeoguessrCreateButton();
+    });
+
+    function populateGeoguessrUsersList() {
+        var currentUser = $('#username').text();
+        var $usersList = $('#geoguessr-users-list');
+        $usersList.empty();
+
+        var onlineUsers = $('#connected').text().match(/\w+/g) || [];
+        var users = onlineUsers.filter(u => u !== currentUser);
+        geoguessrSetupState.allUsers = users;
+
+        users.forEach(function(user) {
+            var item = $('<div class="user-checkbox-item" />');
+            var checkbox = $('<input type="checkbox" data-user="' + user + '" />');
+            var label = $('<label class="user-checkbox-label" />')
+                .append(checkbox)
+                .append('<span>' + user + '</span>');
+            item.append(label);
+
+            checkbox.on('change', function() {
+                if ($(this).is(':checked')) {
+                    if (geoguessrSetupState.selectedUsers.length < 3) {
+                        geoguessrSetupState.selectedUsers.push(user);
+                    } else {
+                        $(this).prop('checked', false);
+                    }
+                } else {
+                    geoguessrSetupState.selectedUsers = geoguessrSetupState.selectedUsers.filter(u => u !== user);
+                }
+                updateGeoguessrCreateButton();
+            });
+
+            $usersList.append(item);
+        });
+    }
+
+    function updateGeoguessrCreateButton() {
+        var canCreate = false;
+
+        if (geoguessrSetupState.mode === 'singleplayer') {
+            canCreate = geoguessrSetupState.numRounds > 0;
+        } else if (geoguessrSetupState.mode === 'multiplayer') {
+            canCreate = geoguessrSetupState.numRounds > 0 && geoguessrSetupState.selectedUsers.length > 0;
+        }
+
+        $('#geoguessr-create-btn').prop('disabled', !canCreate);
+    }
+
+    $('#geoguessr-create-btn').on('click', function() {
+        if (!ws || ws.readyState !== 1) {
+            alert('Not connected to server');
+            return;
+        }
+
+        if (geoguessrSetupState.mode === 'singleplayer') {
+            ws.send(JSON.stringify({
+                type: 'geoguessr_invite',
+                mode: 'singleplayer',
+                numRounds: geoguessrSetupState.numRounds
+            }));
+        } else if (geoguessrSetupState.mode === 'multiplayer') {
+            ws.send(JSON.stringify({
+                type: 'geoguessr_invite',
+                to: geoguessrSetupState.selectedUsers,
+                mode: 'multiplayer',
+                numRounds: geoguessrSetupState.numRounds
+            }));
+        }
+
+        $geoguessr_overlay.removeClass('show');
+    });
+
+    $('#geoguessr-cancel-btn').on('click', function() {
+        $geoguessr_overlay.removeClass('show');
+    });
+
+    // Game modal handlers
+    $('#geoguessr-close').on('click', function() {
+        if (geoguessrGame && !geoguessrGame.gameOver) {
+            if (!confirm('Are you sure you want to quit the game?')) return;
+        }
+        geoguessrGame = null;
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+        $('#geoguessr-game-overlay').addClass('hidden');
+    });
+
+    $('#geoguessr-submit-btn').on('click', function() {
+        if (!geoguessrGame || !geoguessrGuess || !ws || ws.readyState !== 1) return;
+
+        ws.send(JSON.stringify({
+            type: 'geoguessr_guess',
+            game_id: geoguessrGame.id,
+            guess: geoguessrGuess
+        }));
+
+        $(this).prop('disabled', true);
+    });
+
+    $('#geoguessr-skip-btn').on('click', function() {
+        if (!geoguessrGame || !ws || ws.readyState !== 1) return;
+
+        // Submit a guess far away (North Pole) to skip
+        ws.send(JSON.stringify({
+            type: 'geoguessr_guess',
+            game_id: geoguessrGame.id,
+            guess: {lat: 90, lng: 0}
+        }));
+
+        $(this).prop('disabled', true);
+    });
+
+    // WebSocket message handlers
+    function startGeoguessrGame(data) {
+        geoguessrGame = {
+            id: data.game_id,
+            players: data.players,
+            currentRound: data.currentRound,
+            totalRounds: data.numRounds,
+            locations: [data.location],
+            isSingleplayer: data.mode === 'singleplayer',
+            gameOver: false,
+            roundResults: {}
+        };
+
+        geoguessrRoundTime = 60;
+        geoguessrGuess = null;
+
+        $('#geoguessr-game-overlay').removeClass('hidden');
+        $('#geoguessr-round-info').text((data.currentRound + 1) + '/' + data.numRounds);
+
+        if (!data.isSingleplayer) {
+            $('#geoguessr-scores-section').show();
+        }
+
+        renderGeoguessrStreetView(data.location);
+        initGeoguessrMap();
+        startGeoguessrTimer();
+
+        console.log('[geoguessr] Game started:', data);
+    }
+
+    function renderGeoguessrStreetView(location) {
+        var $container = $('#geoguessr-street-view');
+        $container.empty();
+
+        // Simple street view simulation using static image URL
+        var apiKey = 'AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg'; // You should use your own API key
+        var url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + location.lat + ',' + location.lng +
+                  '&zoom=15&size=800x600&maptype=roadmap&key=' + apiKey;
+
+        var $img = $('<img />', {
+            src: url,
+            style: 'width: 100%; height: 100%; object-fit: cover;'
+        }).on('load', function() {
+            // Map loaded
+        }).on('error', function() {
+            $container.html('<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">Could not load street view</div>');
+        });
+
+        $container.append($img);
+    }
+
+    function initGeoguessrMap() {
+        var $mapContainer = $('#geoguessr-map');
+        $mapContainer.empty();
+        $mapContainer.removeClass('has-guess');
+
+        var $canvas = $('<canvas />', {
+            id: 'geoguessr-map-canvas',
+            width: $mapContainer.width(),
+            height: $mapContainer.height()
+        });
+
+        $mapContainer.append($canvas);
+
+        var canvas = $canvas[0];
+        var ctx = canvas.getContext('2d');
+
+        // Draw world map background
+        ctx.fillStyle = '#90EE90';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+
+        // Simple grid
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        for (let i = 0; i <= canvas.height; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+        }
+
+        // Click handler for map
+        $mapContainer.on('click', function(e) {
+            var rect = canvas.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+
+            // Convert canvas coordinates to lat/lng (simple mapping)
+            var lat = 80 - (y / canvas.height) * 160;
+            var lng = (x / canvas.width) * 360 - 180;
+
+            geoguessrGuess = {lat: Math.max(-85, Math.min(85, lat)), lng: lng};
+
+            // Draw guess marker
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            $mapContainer.addClass('has-guess');
+            $('#geoguessr-submit-btn').prop('disabled', false);
+        });
+    }
+
+    function startGeoguessrTimer() {
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+
+        geoguessrRoundInterval = setInterval(function() {
+            geoguessrRoundTime--;
+            var $timer = $('#geoguessr-timer');
+            $timer.text(Math.max(0, geoguessrRoundTime));
+
+            if (geoguessrRoundTime <= 10) {
+                $timer.addClass('danger').removeClass('warning');
+            } else if (geoguessrRoundTime <= 20) {
+                $timer.addClass('warning').removeClass('danger');
+            } else {
+                $timer.removeClass('warning danger');
+            }
+
+            if (geoguessrRoundTime <= 0) {
+                clearInterval(geoguessrRoundInterval);
+                // Auto skip if no guess made
+                if (!geoguessrGuess && ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'geoguessr_guess',
+                        game_id: geoguessrGame.id,
+                        guess: {lat: 0, lng: 0}
+                    }));
+                }
+            }
+        }, 1000);
+    }
+
+    // Global ws message handler update (add to the existing ws.onmessage handler)
+    var originalOnMessage = null;
+
+    // Store reference to add geoguessr handlers
+    window.handleGeoguessrMessage = function(msg) {
+        if (msg.type === 'geoguessr_invite') {
+            addInvite(msg.from, msg.mode, null, msg.sessionId, true);
+        }
+        else if (msg.type === 'geoguessr_game_start') {
+            startGeoguessrGame(msg);
+        }
+        else if (msg.type === 'geoguessr_guess_result') {
+            handleGeoguessrGuessResult(msg);
+        }
+        else if (msg.type === 'geoguessr_round_start') {
+            startGeoguessrRound(msg);
+        }
+        else if (msg.type === 'geoguessr_game_over') {
+            handleGeoguessrGameOver(msg);
+        }
+    };
+
+    function handleGeoguessrGuessResult(data) {
+        if (!geoguessrGame) return;
+
+        var score = data.score;
+        var distance = data.distanceKm;
+
+        $('#geoguessr-results').empty();
+        var results = $('<div />');
+        results.append($('<div class="geoguessr-result-item" />')
+            .append($('<div class="geoguessr-result-label" />').text('Score'))
+            .append($('<div class="geoguessr-result-value" />').text(Math.round(score) + ' points')));
+        results.append($('<div class="geoguessr-result-item" />')
+            .append($('<div class="geoguessr-result-label" />').text('Distance'))
+            .append($('<div class="geoguessr-result-value" />').text(distance.toFixed(1) + ' km')));
+
+        $('#geoguessr-results').append(results);
+
+        // Show next round button or game over
+        if (geoguessrGame.currentRound < geoguessrGame.totalRounds - 1) {
+            setTimeout(function() {
+                if (confirm('Ready for the next round?')) {
+                    if (ws && ws.readyState === 1) {
+                        ws.send(JSON.stringify({
+                            type: 'geoguessr_next_round',
+                            game_id: geoguessrGame.id
+                        }));
+                    }
+                }
+            }, 1000);
+        } else {
+            setTimeout(function() {
+                if (ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'geoguessr_next_round',
+                        game_id: geoguessrGame.id
+                    }));
+                }
+            }, 2000);
+        }
+    }
+
+    function startGeoguessrRound(data) {
+        geoguessrGame.currentRound = data.currentRound;
+        geoguessrGame.totalRounds = data.totalRounds;
+        geoguessrGame.locations[data.currentRound] = data.location;
+        geoguessrRoundTime = 60;
+        geoguessrGuess = null;
+
+        $('#geoguessr-round-info').text((data.currentRound + 1) + '/' + data.totalRounds);
+        $('#geoguessr-results').empty();
+        $('#geoguessr-submit-btn').prop('disabled', false);
+        $('#geoguessr-skip-btn').prop('disabled', false);
+
+        renderGeoguessrStreetView(data.location);
+        initGeoguessrMap();
+        startGeoguessrTimer();
+    }
+
+    function handleGeoguessrGameOver(data) {
+        geoguessrGame.gameOver = true;
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+
+        var rankings = data.rankings || [];
+        var scoresHtml = '';
+        rankings.forEach(function(entry) {
+            scoresHtml += '<div class="geoguessr-score-item">' +
+                '<span class="geoguessr-score-name">#' + entry.rank + ' ' + entry.player + '</span>' +
+                '<span class="geoguessr-score-points">' + entry.score + ' pts</span>' +
+                '</div>';
+        });
+
+        $('#geoguessr-results').html(scoresHtml || '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">Game Over</div>');
+        $('#geoguessr-submit-btn').text('Game Over').prop('disabled', true);
+        $('#geoguessr-skip-btn').text('Close Game').off('click').on('click', function() {
+            $('#geoguessr-game-overlay').addClass('hidden');
+        });
+    }
+})();
 </script>
 </body>
 </html>

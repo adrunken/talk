@@ -3434,6 +3434,40 @@ function ready() {
         });
     });
 
+    // Admin timeout modal handlers
+    $('#admin-timeout-close').on('click', function() {
+        hideAdminTimeoutModal();
+    });
+
+    $(document).on('click', '.admin-timeout-duration-btn', function() {
+        var duration = $(this).data('duration');
+        if (!duration || selectedTimeoutUser === null) return;
+
+        if (!selectedTimeoutDuration || selectedTimeoutDuration !== duration) {
+            $('.admin-timeout-duration-btn').removeClass('selected');
+            $(this).addClass('selected');
+            selectedTimeoutDuration = duration;
+
+            // Auto-confirm if both user and duration are selected
+            if (selectedTimeoutUser && selectedTimeoutDuration && ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({
+                    type: 'admin_timeout_user',
+                    user: selectedTimeoutUser,
+                    duration: selectedTimeoutDuration
+                }));
+                hideAdminTimeoutModal();
+                flashStatus('User ' + selectedTimeoutUser + ' has been timed out');
+            }
+        }
+    });
+
+    // Close modal when clicking outside
+    $('#admin-timeout-modal').on('click', function(e) {
+        if (e.target.id === 'admin-timeout-modal') {
+            hideAdminTimeoutModal();
+        }
+    });
+
     // Delegated handlers for invites and users
     $('#right').on('click', '.invite-user-btn', function() {
         var toUser = $(this).data('user');

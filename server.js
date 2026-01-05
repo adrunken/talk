@@ -1868,19 +1868,22 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Flood control (track non-ping messages)
-    const arr = userMessageTimes.get(ws) || [];
-    arr.push(Date.now());
-    while (arr.length > 10) arr.shift();
-    userMessageTimes.set(ws, arr);
-    if (arr.length === 10 && (arr[arr.length - 1] - arr[0]) < 5000) {
-      send(ws, { type: 'flood' });
-      try { ws.close(); } catch(_){ }
-      return;
-    }
-
     let msg;
     try { msg = JSON.parse(msgStr); } catch (_) { return; }
+
+    // Flood control (track only chat messages, exclude game messages)
+    const gameMessageTypes = ['snake_move', 'snake_join', 'snake_leave', 'chess_move', 'chess_resign', 'chess_draw'];
+    if (!gameMessageTypes.includes(msg.type)) {
+      const arr = userMessageTimes.get(ws) || [];
+      arr.push(Date.now());
+      while (arr.length > 10) arr.shift();
+      userMessageTimes.set(ws, arr);
+      if (arr.length === 10 && (arr[arr.length - 1] - arr[0]) < 5000) {
+        send(ws, { type: 'flood' });
+        try { ws.close(); } catch(_){ }
+        return;
+      }
+    }
 
     if (msg.type === 'message') {
       let message = String(msg.message || '').trim();

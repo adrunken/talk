@@ -969,8 +969,145 @@ html {
     text-decoration: line-through;
 }
 
+/* GeoGuessr styles */
+#geoguessr-map {
+    cursor: crosshair;
+}
+
+#geoguessr-map.has-guess {
+    cursor: pointer;
+}
+
+.geoguessr-guess-marker {
+    width: 30px;
+    height: 30px;
+    background: #ff0000;
+    border: 3px solid white;
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+.geoguessr-guess-marker::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #ff0000;
+}
+
+.geoguessr-actual-marker {
+    width: 30px;
+    height: 30px;
+    background: #00ff00;
+    border: 3px solid white;
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.geoguessr-actual-marker::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #00ff00;
+}
+
+.geoguessr-result-item {
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-primary);
+    font-size: 0.875rem;
+}
+
+.geoguessr-result-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.geoguessr-result-value {
+    color: var(--accent-primary);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.geoguessr-score-item {
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.geoguessr-score-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.geoguessr-score-points {
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+#geoguessr-submit-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+#geoguessr-submit-btn:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+}
+
+#geoguessr-skip-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+#geoguessr-timer {
+    transition: color 0.3s ease;
+}
+
+#geoguessr-timer.warning {
+    color: #f59e0b;
+    animation: pulse 1s infinite;
+}
+
+#geoguessr-timer.danger {
+    color: #ef4444;
+    animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=geometry"></script>
 </head>
 <body>
 
@@ -1026,6 +1163,9 @@ html {
     <div>
         <button id="chess-setup-btn" class="chess-setup-button" title="Create a new chess game">
             <i class="fas fa-chess-king"></i> Chess
+        </button>
+        <button id="geoguessr-setup-btn" class="chess-setup-button" title="Create a new GeoGuessr game" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-globe"></i> GeoGuessr
         </button>
         <h3>Users</h3>
         <div id="connected"></div>
@@ -1328,6 +1468,105 @@ html {
   </div>
 </div>
 
+<!-- GeoGuessr Game Setup Modal -->
+<div id="geoguessr-setup-overlay" class="chess-setup-overlay">
+  <div class="chess-setup-modal">
+    <h2 class="chess-setup-title">GeoGuessr Game</h2>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Game Mode</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-mode="singleplayer" title="Play alone">
+          <i class="fas fa-user"></i> Single Player
+        </button>
+        <button class="setup-option-btn" data-mode="multiplayer" title="Play with friends (2-4 players)">
+          <i class="fas fa-users"></i> Multiplayer
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-label">Number of Rounds</div>
+      <div class="setup-options">
+        <button class="setup-option-btn" data-rounds="3" title="3 rounds">
+          <i class="fas fa-sync"></i> 3 Rounds
+        </button>
+        <button class="setup-option-btn" data-rounds="5" title="5 rounds">
+          <i class="fas fa-sync"></i> 5 Rounds
+        </button>
+      </div>
+    </div>
+
+    <div class="setup-section" id="geoguessr-multiplayer-section" style="display: none;">
+      <div class="setup-section-label">Invite Players <span id="geoguessr-player-count" style="color: var(--text-secondary); font-weight: 400; font-size: 0.8rem;">(select up to 3)</span></div>
+      <div class="users-list" id="geoguessr-users-list"></div>
+      <div class="setup-validation-msg" id="geoguessr-validation-msg"></div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="setup-action-btn" id="geoguessr-cancel-btn">Cancel</button>
+      <button class="setup-action-btn primary" id="geoguessr-create-btn" disabled>Create Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- GeoGuessr Game Modal -->
+<div id="geoguessr-game-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.9); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+  <div id="geoguessr-game-modal" style="position: relative; width: 95vw; max-width: 1400px; height: 95vh; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
+
+    <!-- Header with round info and timer -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-light); background: var(--bg-tertiary);">
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <h3 style="margin: 0; font-size: 1.25rem; color: var(--accent-primary);">GeoGuessr</h3>
+        <div style="font-size: 0.875rem; color: var(--text-secondary);">Round <span id="geoguessr-round-info">1/3</span></div>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <div id="geoguessr-timer" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-primary); min-width: 80px; text-align: right;">60</div>
+        <button id="geoguessr-close" style="background: none; border: 1px solid var(--border-light); color: var(--text-secondary); cursor: pointer; padding: 0.5rem 0.75rem; border-radius: var(--radius-md); transition: all 0.2s ease;">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+    </div>
+
+    <!-- Main game area -->
+    <div style="display: flex; flex: 1; gap: 1rem; padding: 1rem; overflow: hidden;">
+      <!-- Street View area -->
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 0.75rem; overflow: hidden;">
+        <div id="geoguessr-street-view" style="flex: 1; background: #111; border-radius: var(--radius-lg); overflow: hidden; position: relative;">
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">Loading Street View...</div>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="geoguessr-submit-btn" style="flex: 1; padding: 0.75rem; background: var(--accent-primary); border: none; color: white; border-radius: var(--radius-lg); cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
+            <i class="fas fa-check"></i> Submit Guess
+          </button>
+          <button id="geoguessr-skip-btn" style="flex: 1; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-light); color: var(--text-secondary); border-radius: var(--radius-lg); cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
+            <i class="fas fa-forward"></i> Skip
+          </button>
+        </div>
+      </div>
+
+      <!-- Map and info panel -->
+      <div style="width: 350px; display: flex; flex-direction: column; gap: 1rem; background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-lg); overflow-y: auto;">
+        <div id="geoguessr-map" style="height: 350px; background: #f0f0f0; border-radius: var(--radius-md); position: relative;">
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 0.875rem;">Click to make your guess</div>
+        </div>
+
+        <!-- Game info -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <h4 style="margin: 0; font-size: 0.875rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Results</h4>
+          <div id="geoguessr-results" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        </div>
+
+        <!-- Multiplayer scores (if multiplayer) -->
+        <div id="geoguessr-scores-section" style="display: none;">
+          <h4 style="margin: 0 0 0.75rem 0; font-size: 0.875rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">Scores</h4>
+          <div id="geoguessr-scores" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 var popsound = new Audio('popsound.mp3');
 popsound.muted = true; // Mute initially to comply with browser autoplay policies
@@ -1414,6 +1653,19 @@ var chessSetupState = {
     timeControl: null, // '1m', '3m', '5m', '10m', '30m', 'unlimited'
     selectedUsers: [], // Array of usernames to invite
     allUsers: [] // List of all available users (excluding current user)
+};
+
+// GeoGuessr state
+var geoguessrGame = null; // {id, players, currentRound, totalRounds, locations, roundStates}
+var geoguessrGuess = null; // {lat, lng}
+var geoguessrRoundTime = 60; // seconds
+var geoguessrRoundInterval = null;
+var geoguessrMapApi = null; // Will hold map rendering logic
+var geoguessrSetupState = {
+    mode: null, // 'singleplayer' or 'multiplayer'
+    numRounds: 3,
+    selectedUsers: [],
+    allUsers: []
 };
 
 // Load boards and pieces data from local file
@@ -3055,13 +3307,15 @@ function ready() {
         var fromUser = $inviteItem.data('from');
         var gameMode = $inviteItem.data('mode') || '4player';
         var sessionId = $inviteItem.data('session-id');
+        var gameType = $inviteItem.data('game-type') || 'chess';
 
-        console.log('[4p-chess-client] Accept clicked:', {from: fromUser, mode: gameMode, sessionId: sessionId});
+        console.log('[invite] Accept clicked:', {from: fromUser, mode: gameMode, sessionId: sessionId, game: gameType});
 
         if (ws && ws.readyState === 1) {
-            var payload = { type: 'chess_invite_accept', from: fromUser };
+            var messageType = gameType === 'geoguessr' ? 'geoguessr_invite_accept' : 'chess_invite_accept';
+            var payload = { type: messageType, from: fromUser };
             if (sessionId) payload.sessionId = sessionId;
-            console.log('[4p-chess-client] Sending payload:', payload);
+            console.log('[invite] Sending payload:', payload);
             ws.send(JSON.stringify(payload));
         }
 
@@ -4032,9 +4286,19 @@ function ready() {
         $('#connected').html(html);
     }
 
-    function addInvite(fromUser, mode, timeControl, sessionId) {
-        console.log('[4p-chess-client] Creating invite item:', {from: fromUser, mode: mode, timeControl: timeControl, sessionId: sessionId});
-        var item = $('<div class="invite-item" />').attr('data-from', fromUser).attr('data-mode', mode || '').attr('data-time-control', timeControl || '').attr('data-session-id', sessionId || '').text('Invite from ' + fromUser);
+    function addInvite(fromUser, mode, timeControl, sessionId, isGeoguessr) {
+        console.log('[invite] Creating invite item:', {from: fromUser, mode: mode, timeControl: timeControl, sessionId: sessionId, game: isGeoguessr ? 'geoguessr' : 'chess'});
+
+        var gameType = isGeoguessr ? 'geoguessr' : 'chess';
+        var displayText = isGeoguessr ? ('GeoGuessr from ' + fromUser) : ('Invite from ' + fromUser);
+
+        var item = $('<div class="invite-item" />')
+            .attr('data-from', fromUser)
+            .attr('data-mode', mode || '')
+            .attr('data-time-control', timeControl || '')
+            .attr('data-session-id', sessionId || '')
+            .attr('data-game-type', gameType)
+            .text(displayText);
         var actions = $('<span class="invite-actions" />');
         actions.append('<button class="invite-btn invite-accept">Accept</button>');
         actions.append('<button class="invite-btn invite-decline">Decline</button>');
@@ -4472,6 +4736,12 @@ function ready() {
         else if (data['type'] === 'displayeduser') {
             displayeduser = data['username'];
         }
+        // GeoGuessr messages
+        else if (data['type'] && data['type'].indexOf('geoguessr') === 0) {
+            if (window.handleGeoguessrMessage) {
+                window.handleGeoguessrMessage(data);
+            }
+        }
     }
 
     // Attach onmessage when connection is established
@@ -4548,6 +4818,406 @@ window.addEventListener('error', function(ev) {
     }
   } catch (e) { /* ignore */ }
 });
+
+// GeoGuessr Game Handlers
+(function() {
+    // GeoGuessr setup modal
+    var $geoguessr_overlay = $('#geoguessr-setup-overlay');
+    var $geoguessr_modal = $geoguessr_overlay.find('.chess-setup-modal');
+
+    $('#geoguessr-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        geoguessrSetupState.mode = null;
+        geoguessrSetupState.numRounds = 3;
+        geoguessrSetupState.selectedUsers = [];
+        $geoguessr_overlay.addClass('show');
+        populateGeoguessrUsersList();
+    });
+
+    $(document).on('click', '[id^="geoguessr"] .setup-option-btn', function() {
+        var $btn = $(this);
+        var $section = $btn.closest('.setup-section');
+        var data_attr = $btn.data('mode') || $btn.data('rounds');
+
+        if ($btn.data('mode') !== undefined) {
+            geoguessrSetupState.mode = $btn.data('mode');
+            $section.find('.setup-option-btn').removeClass('selected');
+            $btn.addClass('selected');
+
+            if (geoguessrSetupState.mode === 'multiplayer') {
+                $('#geoguessr-multiplayer-section').show();
+            } else {
+                $('#geoguessr-multiplayer-section').hide();
+            }
+        } else if ($btn.data('rounds') !== undefined) {
+            geoguessrSetupState.numRounds = $btn.data('rounds');
+            $section.find('.setup-option-btn').removeClass('selected');
+            $btn.addClass('selected');
+        }
+
+        updateGeoguessrCreateButton();
+    });
+
+    function populateGeoguessrUsersList() {
+        var currentUser = $('#username').text();
+        var $usersList = $('#geoguessr-users-list');
+        $usersList.empty();
+
+        var onlineUsers = $('#connected').text().match(/\w+/g) || [];
+        var users = onlineUsers.filter(u => u !== currentUser);
+        geoguessrSetupState.allUsers = users;
+
+        users.forEach(function(user) {
+            var item = $('<div class="user-checkbox-item" />');
+            var checkbox = $('<input type="checkbox" data-user="' + user + '" />');
+            var label = $('<label class="user-checkbox-label" />')
+                .append(checkbox)
+                .append('<span>' + user + '</span>');
+            item.append(label);
+
+            checkbox.on('change', function() {
+                if ($(this).is(':checked')) {
+                    if (geoguessrSetupState.selectedUsers.length < 3) {
+                        geoguessrSetupState.selectedUsers.push(user);
+                    } else {
+                        $(this).prop('checked', false);
+                    }
+                } else {
+                    geoguessrSetupState.selectedUsers = geoguessrSetupState.selectedUsers.filter(u => u !== user);
+                }
+                updateGeoguessrCreateButton();
+            });
+
+            $usersList.append(item);
+        });
+    }
+
+    function updateGeoguessrCreateButton() {
+        var canCreate = false;
+
+        if (geoguessrSetupState.mode === 'singleplayer') {
+            canCreate = geoguessrSetupState.numRounds > 0;
+        } else if (geoguessrSetupState.mode === 'multiplayer') {
+            canCreate = geoguessrSetupState.numRounds > 0 && geoguessrSetupState.selectedUsers.length > 0;
+        }
+
+        $('#geoguessr-create-btn').prop('disabled', !canCreate);
+    }
+
+    $('#geoguessr-create-btn').on('click', function() {
+        if (!ws || ws.readyState !== 1) {
+            alert('Not connected to server');
+            return;
+        }
+
+        if (geoguessrSetupState.mode === 'singleplayer') {
+            ws.send(JSON.stringify({
+                type: 'geoguessr_invite',
+                mode: 'singleplayer',
+                numRounds: geoguessrSetupState.numRounds
+            }));
+        } else if (geoguessrSetupState.mode === 'multiplayer') {
+            ws.send(JSON.stringify({
+                type: 'geoguessr_invite',
+                to: geoguessrSetupState.selectedUsers,
+                mode: 'multiplayer',
+                numRounds: geoguessrSetupState.numRounds
+            }));
+        }
+
+        $geoguessr_overlay.removeClass('show');
+    });
+
+    $('#geoguessr-cancel-btn').on('click', function() {
+        $geoguessr_overlay.removeClass('show');
+    });
+
+    // Game modal handlers
+    $('#geoguessr-close').on('click', function() {
+        if (geoguessrGame && !geoguessrGame.gameOver) {
+            if (!confirm('Are you sure you want to quit the game?')) return;
+        }
+        geoguessrGame = null;
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+        $('#geoguessr-game-overlay').addClass('hidden');
+    });
+
+    $('#geoguessr-submit-btn').on('click', function() {
+        if (!geoguessrGame || !geoguessrGuess || !ws || ws.readyState !== 1) return;
+
+        ws.send(JSON.stringify({
+            type: 'geoguessr_guess',
+            game_id: geoguessrGame.id,
+            guess: geoguessrGuess
+        }));
+
+        $(this).prop('disabled', true);
+    });
+
+    $('#geoguessr-skip-btn').on('click', function() {
+        if (!geoguessrGame || !ws || ws.readyState !== 1) return;
+
+        // Submit a guess far away (North Pole) to skip
+        ws.send(JSON.stringify({
+            type: 'geoguessr_guess',
+            game_id: geoguessrGame.id,
+            guess: {lat: 90, lng: 0}
+        }));
+
+        $(this).prop('disabled', true);
+    });
+
+    // WebSocket message handlers
+    function startGeoguessrGame(data) {
+        geoguessrGame = {
+            id: data.game_id,
+            players: data.players,
+            currentRound: data.currentRound,
+            totalRounds: data.numRounds,
+            locations: [data.location],
+            isSingleplayer: data.mode === 'singleplayer',
+            gameOver: false,
+            roundResults: {}
+        };
+
+        geoguessrRoundTime = 60;
+        geoguessrGuess = null;
+
+        $('#geoguessr-game-overlay').removeClass('hidden');
+        $('#geoguessr-round-info').text((data.currentRound + 1) + '/' + data.numRounds);
+
+        if (!data.isSingleplayer) {
+            $('#geoguessr-scores-section').show();
+        }
+
+        renderGeoguessrStreetView(data.location);
+        initGeoguessrMap();
+        startGeoguessrTimer();
+
+        console.log('[geoguessr] Game started:', data);
+    }
+
+    function renderGeoguessrStreetView(location) {
+        var $container = $('#geoguessr-street-view');
+        $container.empty();
+
+        // Simple street view simulation using static image URL
+        var apiKey = 'AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg'; // You should use your own API key
+        var url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + location.lat + ',' + location.lng +
+                  '&zoom=15&size=800x600&maptype=roadmap&key=' + apiKey;
+
+        var $img = $('<img />', {
+            src: url,
+            style: 'width: 100%; height: 100%; object-fit: cover;'
+        }).on('load', function() {
+            // Map loaded
+        }).on('error', function() {
+            $container.html('<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);">Could not load street view</div>');
+        });
+
+        $container.append($img);
+    }
+
+    function initGeoguessrMap() {
+        var $mapContainer = $('#geoguessr-map');
+        $mapContainer.empty();
+        $mapContainer.removeClass('has-guess');
+
+        var $canvas = $('<canvas />', {
+            id: 'geoguessr-map-canvas',
+            width: $mapContainer.width(),
+            height: $mapContainer.height()
+        });
+
+        $mapContainer.append($canvas);
+
+        var canvas = $canvas[0];
+        var ctx = canvas.getContext('2d');
+
+        // Draw world map background
+        ctx.fillStyle = '#90EE90';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+
+        // Simple grid
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= canvas.width; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        for (let i = 0; i <= canvas.height; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+        }
+
+        // Click handler for map
+        $mapContainer.on('click', function(e) {
+            var rect = canvas.getBoundingClientRect();
+            var x = e.clientX - rect.left;
+            var y = e.clientY - rect.top;
+
+            // Convert canvas coordinates to lat/lng (simple mapping)
+            var lat = 80 - (y / canvas.height) * 160;
+            var lng = (x / canvas.width) * 360 - 180;
+
+            geoguessrGuess = {lat: Math.max(-85, Math.min(85, lat)), lng: lng};
+
+            // Draw guess marker
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.4);
+
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            $mapContainer.addClass('has-guess');
+            $('#geoguessr-submit-btn').prop('disabled', false);
+        });
+    }
+
+    function startGeoguessrTimer() {
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+
+        geoguessrRoundInterval = setInterval(function() {
+            geoguessrRoundTime--;
+            var $timer = $('#geoguessr-timer');
+            $timer.text(Math.max(0, geoguessrRoundTime));
+
+            if (geoguessrRoundTime <= 10) {
+                $timer.addClass('danger').removeClass('warning');
+            } else if (geoguessrRoundTime <= 20) {
+                $timer.addClass('warning').removeClass('danger');
+            } else {
+                $timer.removeClass('warning danger');
+            }
+
+            if (geoguessrRoundTime <= 0) {
+                clearInterval(geoguessrRoundInterval);
+                // Auto skip if no guess made
+                if (!geoguessrGuess && ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'geoguessr_guess',
+                        game_id: geoguessrGame.id,
+                        guess: {lat: 0, lng: 0}
+                    }));
+                }
+            }
+        }, 1000);
+    }
+
+    // Global ws message handler update (add to the existing ws.onmessage handler)
+    var originalOnMessage = null;
+
+    // Store reference to add geoguessr handlers
+    window.handleGeoguessrMessage = function(msg) {
+        if (msg.type === 'geoguessr_invite') {
+            addInvite(msg.from, msg.mode, null, msg.sessionId, true);
+        }
+        else if (msg.type === 'geoguessr_game_start') {
+            startGeoguessrGame(msg);
+        }
+        else if (msg.type === 'geoguessr_guess_result') {
+            handleGeoguessrGuessResult(msg);
+        }
+        else if (msg.type === 'geoguessr_round_start') {
+            startGeoguessrRound(msg);
+        }
+        else if (msg.type === 'geoguessr_game_over') {
+            handleGeoguessrGameOver(msg);
+        }
+    };
+
+    function handleGeoguessrGuessResult(data) {
+        if (!geoguessrGame) return;
+
+        var score = data.score;
+        var distance = data.distanceKm;
+
+        $('#geoguessr-results').empty();
+        var results = $('<div />');
+        results.append($('<div class="geoguessr-result-item" />')
+            .append($('<div class="geoguessr-result-label" />').text('Score'))
+            .append($('<div class="geoguessr-result-value" />').text(Math.round(score) + ' points')));
+        results.append($('<div class="geoguessr-result-item" />')
+            .append($('<div class="geoguessr-result-label" />').text('Distance'))
+            .append($('<div class="geoguessr-result-value" />').text(distance.toFixed(1) + ' km')));
+
+        $('#geoguessr-results').append(results);
+
+        // Show next round button or game over
+        if (geoguessrGame.currentRound < geoguessrGame.totalRounds - 1) {
+            setTimeout(function() {
+                if (confirm('Ready for the next round?')) {
+                    if (ws && ws.readyState === 1) {
+                        ws.send(JSON.stringify({
+                            type: 'geoguessr_next_round',
+                            game_id: geoguessrGame.id
+                        }));
+                    }
+                }
+            }, 1000);
+        } else {
+            setTimeout(function() {
+                if (ws && ws.readyState === 1) {
+                    ws.send(JSON.stringify({
+                        type: 'geoguessr_next_round',
+                        game_id: geoguessrGame.id
+                    }));
+                }
+            }, 2000);
+        }
+    }
+
+    function startGeoguessrRound(data) {
+        geoguessrGame.currentRound = data.currentRound;
+        geoguessrGame.totalRounds = data.totalRounds;
+        geoguessrGame.locations[data.currentRound] = data.location;
+        geoguessrRoundTime = 60;
+        geoguessrGuess = null;
+
+        $('#geoguessr-round-info').text((data.currentRound + 1) + '/' + data.totalRounds);
+        $('#geoguessr-results').empty();
+        $('#geoguessr-submit-btn').prop('disabled', false);
+        $('#geoguessr-skip-btn').prop('disabled', false);
+
+        renderGeoguessrStreetView(data.location);
+        initGeoguessrMap();
+        startGeoguessrTimer();
+    }
+
+    function handleGeoguessrGameOver(data) {
+        geoguessrGame.gameOver = true;
+        if (geoguessrRoundInterval) clearInterval(geoguessrRoundInterval);
+
+        var rankings = data.rankings || [];
+        var scoresHtml = '';
+        rankings.forEach(function(entry) {
+            scoresHtml += '<div class="geoguessr-score-item">' +
+                '<span class="geoguessr-score-name">#' + entry.rank + ' ' + entry.player + '</span>' +
+                '<span class="geoguessr-score-points">' + entry.score + ' pts</span>' +
+                '</div>';
+        });
+
+        $('#geoguessr-results').html(scoresHtml || '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">Game Over</div>');
+        $('#geoguessr-submit-btn').text('Game Over').prop('disabled', true);
+        $('#geoguessr-skip-btn').text('Close Game').off('click').on('click', function() {
+            $('#geoguessr-game-overlay').addClass('hidden');
+        });
+    }
+})();
 </script>
 </body>
 </html>

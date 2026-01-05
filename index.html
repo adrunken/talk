@@ -3179,12 +3179,22 @@ function ready() {
     }
 
     function handleSnakeKeydown(e) {
-        if (!snakeGameState.isRunning) return;
+        // Log for debugging
+        console.log('[snake] Key pressed:', e.key, 'Game running:', snakeGameState.isRunning, 'Player:', displayeduser);
+
+        if (!snakeGameState.isRunning) {
+            console.log('[snake] Game not running, ignoring key');
+            return;
+        }
 
         var key = e.key;
         var me = displayeduser;
         var myPlayer = snakeGameState.playerStates[me];
-        if (!myPlayer) return;
+
+        if (!myPlayer) {
+            console.log('[snake] Player not found in game state:', me);
+            return;
+        }
 
         var newDir = null;
         if (key === 'ArrowUp') {
@@ -3202,18 +3212,24 @@ function ready() {
         }
 
         if (newDir) {
+            console.log('[snake] Direction command:', newDir, 'Current direction:', myPlayer.direction);
             // Prevent 180-degree turns on client side
             var opposites = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
             if (opposites[myPlayer.direction] !== newDir) {
                 myPlayer.direction = newDir;
                 // Send direction update to server
                 if (ws && ws.readyState === 1) {
+                    console.log('[snake] Sending direction to server:', newDir);
                     ws.send(JSON.stringify({
                         type: 'snake_move',
                         game_id: snakeGameState.gameId,
                         direction: newDir
                     }));
+                } else {
+                    console.log('[snake] WebSocket not ready, cannot send direction');
                 }
+            } else {
+                console.log('[snake] Cannot turn 180 degrees, ignoring command');
             }
         }
     }

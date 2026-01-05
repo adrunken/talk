@@ -1727,7 +1727,11 @@ function updateSnakeGameOnServer(gid) {
     }
 
     snakeGames.delete(gid);
-    snakeLobby = { players: new Set(), playerWs: new Map() };
+
+    // Keep players in lobby but reset game state for new game
+    snakeLobby.gameId = null;
+
+    console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', snakeLobby.players.size);
     return;
   }
 

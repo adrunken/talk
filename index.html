@@ -3251,9 +3251,11 @@ function ready() {
             return;
         }
 
+        var username = $('#username').text().trim();
+        console.log('[snake] Joining game as:', username);
         ws.send(JSON.stringify({
             type: 'snake_join',
-            username: displayeduser
+            username: username
         }));
     }
 

@@ -463,6 +463,14 @@ app.get('/pieces/:pieceName/:color/:type.png', (req, res) => {
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// Initialize Socket.IO for Snake game
+const io = SocketIO(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 // User Settings API endpoints
 app.get('/api/settings/:username', (req, res) => {
   const username = String(req.params.username || '').trim();

@@ -3222,38 +3222,7 @@ function ready() {
     function updateSnakeGame() {
         if (!snakeGameState.isRunning) return;
 
-        var me = displayeduser;
-        var myPlayer = snakeGameState.playerStates[me];
-        if (!myPlayer || myPlayer.positions.length === 0) return;
-
-        // Process key input
-        if (snakeKeyQueue.length > 0) {
-            var turn = snakeKeyQueue.shift();
-            var currentDir = myPlayer.direction;
-            var newDir = currentDir;
-
-            if (turn === 'left') {
-                var directions = ['up', 'right', 'down', 'left'];
-                var currentIdx = directions.indexOf(currentDir);
-                newDir = directions[(currentIdx + 1) % 4]; // Counter-clockwise
-            } else if (turn === 'right') {
-                var directions = ['up', 'right', 'down', 'left'];
-                var currentIdx = directions.indexOf(currentDir);
-                newDir = directions[(currentIdx + 3) % 4]; // Clockwise
-            }
-
-            myPlayer.direction = newDir;
-
-            // Send direction update to server
-            if (ws && ws.readyState === 1) {
-                ws.send(JSON.stringify({
-                    type: 'snake_move',
-                    game_id: snakeGameState.gameId,
-                    direction: newDir
-                }));
-            }
-        }
-
+        // Redraw game state (direction changes are sent directly from keydown handler)
         drawSnakeGame();
     }
 

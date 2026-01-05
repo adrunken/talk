@@ -3060,6 +3060,193 @@ function ready() {
         hideChessSetupModal();
     }
 
+    // Snake game logic
+    var snakeGameState = {
+        gameId: null,
+        isRunning: false,
+        players: [],
+        width: 50,
+        height: 50,
+        playerStates: {}, // username -> {color, direction, positions: [[x, y], ...]}
+        trails: [], // All trail positions: {x, y, owner}
+        gameStartTime: null
+    };
+    var snakeCanvas = null;
+    var snakeCanvasCtx = null;
+    var snakeGameLoop = null;
+    var snakeKeyQueue = [];
+
+    function initSnakeCanvas() {
+        var $board = $('#snake-game-board');
+        $board.empty();
+        snakeCanvas = document.createElement('canvas');
+        snakeCanvas.width = $board.width();
+        snakeCanvas.height = $board.height();
+        snakeCanvas.style.display = 'block';
+        snakeCanvas.style.cursor = 'none';
+        $board.append(snakeCanvas);
+        snakeCanvasCtx = snakeCanvas.getContext('2d');
+
+        // Calculate grid cell size based on canvas size
+        var cellWidth = snakeCanvas.width / snakeGameState.width;
+        var cellHeight = snakeCanvas.height / snakeGameState.height;
+        snakeGameState.cellSize = Math.min(cellWidth, cellHeight);
+    }
+
+    function drawSnakeGame() {
+        if (!snakeCanvasCtx || !snakeCanvas) return;
+
+        var ctx = snakeCanvasCtx;
+        var cellSize = snakeGameState.cellSize || 10;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+        var colors = ['#0f0', '#00f', '#ff0', '#f00'];
+        var usernames = Object.keys(snakeGameState.playerStates);
+
+        // Draw trails
+        for (var i = 0; i < snakeGameState.trails.length; i++) {
+            var trail = snakeGameState.trails[i];
+            var ownerIndex = usernames.indexOf(trail.owner);
+            ctx.fillStyle = colors[ownerIndex % colors.length] || '#888';
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(trail.x * cellSize, trail.y * cellSize, cellSize, cellSize);
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Draw player heads
+        for (var j = 0; j < usernames.length; j++) {
+            var username = usernames[j];
+            var player = snakeGameState.playerStates[username];
+            if (player && player.positions.length > 0) {
+                var head = player.positions[player.positions.length - 1];
+                ctx.fillStyle = colors[j % colors.length];
+                ctx.fillRect(head[0] * cellSize, head[1] * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    function showSnakeModal() {
+        $('#snake-overlay').removeClass('hidden');
+        initSnakeCanvas();
+        drawSnakeGame();
+        $(document).on('keydown.snake', handleSnakeKeydown);
+    }
+
+    function hideSnakeModal() {
+        $('#snake-overlay').addClass('hidden');
+        $(document).off('keydown.snake');
+        if (snakeGameLoop) clearInterval(snakeGameLoop);
+        snakeGameState = {
+            gameId: null,
+            isRunning: false,
+            players: [],
+            width: 50,
+            height: 50,
+            playerStates: {},
+            trails: [],
+            gameStartTime: null
+        };
+    }
+
+    function handleSnakeKeydown(e) {
+        if (!snakeGameState.isRunning) return;
+
+        var key = e.key.toLowerCase();
+        if (key === 'arrowleft') {
+            e.preventDefault();
+            snakeKeyQueue.push('left');
+        } else if (key === 'arrowright') {
+            e.preventDefault();
+            snakeKeyQueue.push('right');
+        }
+    }
+
+    function updateSnakeGame() {
+        if (!snakeGameState.isRunning) return;
+
+        var me = displayeduser;
+        var myPlayer = snakeGameState.playerStates[me];
+        if (!myPlayer || myPlayer.positions.length === 0) return;
+
+        // Process key input
+        if (snakeKeyQueue.length > 0) {
+            var turn = snakeKeyQueue.shift();
+            var currentDir = myPlayer.direction;
+            var newDir = currentDir;
+
+            if (turn === 'left') {
+                var directions = ['up', 'right', 'down', 'left'];
+                var currentIdx = directions.indexOf(currentDir);
+                newDir = directions[(currentIdx + 1) % 4]; // Counter-clockwise
+            } else if (turn === 'right') {
+                var directions = ['up', 'right', 'down', 'left'];
+                var currentIdx = directions.indexOf(currentDir);
+                newDir = directions[(currentIdx + 3) % 4]; // Clockwise
+            }
+
+            myPlayer.direction = newDir;
+
+            // Send direction update to server
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify({
+                    type: 'snake_move',
+                    game_id: snakeGameState.gameId,
+                    direction: newDir
+                }));
+            }
+        }
+
+        drawSnakeGame();
+    }
+
+    function joinSnakeGame() {
+        if (!ws || ws.readyState !== 1) {
+            flashStatus('Not connected to server');
+            return;
+        }
+
+        ws.send(JSON.stringify({
+            type: 'snake_join',
+            username: displayeduser
+        }));
+    }
+
+    // Games dropdown menu toggle
+    $('#games-menu-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').toggleClass('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#games-menu-btn, #games-dropdown-menu').length) {
+            $('#games-dropdown-menu').addClass('hidden');
+        }
+    });
+
+    // Snake setup handler
+    $('#snake-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').addClass('hidden');
+        showSnakeModal();
+        joinSnakeGame();
+    });
+
+    // Snake close button
+    $('#snake-close').on('click', function(e) {
+        e.preventDefault();
+        hideSnakeModal();
+        if (snakeGameState.gameId && ws && ws.readyState === 1) {
+            ws.send(JSON.stringify({
+                type: 'snake_leave',
+                game_id: snakeGameState.gameId,
+                username: displayeduser
+            }));
+        }
+    });
+
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
         var $input = $('#first-username-input');

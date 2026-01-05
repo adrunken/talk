@@ -1321,6 +1321,35 @@ html {
   </div>
 </div>
 
+<!-- Admin Timeout modal -->
+<div id="admin-timeout-modal" class="first-login-overlay">
+  <div class="first-login-panel" style="min-width: 450px; max-height: 80vh; overflow-y: auto;">
+    <div class="first-login-title">Timeout User</div>
+    <div style="margin: 1rem 0;">
+      <h4 style="margin-bottom: 0.5rem;">Select User</h4>
+      <div id="admin-timeout-users-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 0.5rem;">
+      </div>
+    </div>
+    <div style="margin: 1rem 0;">
+      <h4 style="margin-bottom: 0.5rem;">Select Duration</h4>
+      <div id="admin-timeout-duration-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+        <button class="admin-timeout-duration-btn" data-duration="30000">30 seconds</button>
+        <button class="admin-timeout-duration-btn" data-duration="60000">1 minute</button>
+        <button class="admin-timeout-duration-btn" data-duration="300000">5 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="600000">10 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="1800000">30 minutes</button>
+        <button class="admin-timeout-duration-btn" data-duration="3600000">1 hour</button>
+        <button class="admin-timeout-duration-btn" data-duration="10800000">3 hours</button>
+        <button class="admin-timeout-duration-btn" data-duration="21600000">6 hours</button>
+        <button class="admin-timeout-duration-btn" data-duration="43200000">12 hours</button>
+      </div>
+    </div>
+    <div class="first-login-actions">
+      <button id="admin-timeout-close" class="first-login-save">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="chess-modal" class="hidden">
   <div class="chess-layout">
     <div class="chess-board" id="chess-board"></div>

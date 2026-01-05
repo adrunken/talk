@@ -3160,6 +3160,9 @@ function ready() {
         initSnakeCanvas();
         drawSnakeGame();
         $(document).on('keydown.snake', handleSnakeKeydown);
+        console.log('[snake] Modal shown, keydown listener attached');
+        // Focus the board to ensure it receives key events
+        $('#snake-game-board').focus();
     }
 
     function hideSnakeModal() {

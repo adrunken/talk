@@ -3284,9 +3284,8 @@ function ready() {
     $('#snake-setup-btn').on('click', function(e) {
         e.preventDefault();
         $('#games-dropdown-menu').addClass('hidden');
-        // Load the new multiplayer snake game
-        var snakeUrl = './game-wrapper.html?url=' + encodeURIComponent('./snake.html');
-        window.location.href = snakeUrl;
+        // Load the new multiplayer snake game in a new window
+        window.open('./snake.html', 'snake_game', 'width=1000,height=600');
     });
 
     // Snake close button

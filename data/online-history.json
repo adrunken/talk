@@ -774,6 +774,11 @@
       "action": "online",
       "timestamp": 1767664788,
       "time": "01:59"
+    },
+    {
+      "action": "online",
+      "timestamp": 1767666776,
+      "time": "02:32"
     }
   ],
   "lnk": [
@@ -1554,6 +1559,38 @@
       "action": "online",
       "timestamp": 1767666501,
       "time": "02:28"
+    },
+    {
+      "action": "online",
+      "timestamp": 1767666507,
+      "time": "02:28"
+    },
+    {
+      "action": "offline",
+      "timestamp": 1767666542,
+      "time": "02:29"
+    },
+    {
+      "action": "online",
+      "timestamp": 1767666795,
+      "time": "02:33"
+    },
+    {
+      "action": "online",
+      "timestamp": 1767666807,
+      "time": "02:33"
+    },
+    {
+      "action": "online",
+      "timestamp": 1767666867,
+      "time": "02:34"
+    }
+  ],
+  "as": [
+    {
+      "action": "online",
+      "timestamp": 1767666805,
+      "time": "02:33"
     }
   ]
 }

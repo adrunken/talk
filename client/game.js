@@ -419,11 +419,18 @@ socket.on("snake_game_over", function (data) {
   // Start countdown
   snakeGameOverState.countdownInterval = setInterval(function() {
     snakeGameOverState.countdownSeconds--;
-    if (snakeGameOverState.countdownSeconds < 0) {
+    if (snakeGameOverState.countdownSeconds <= 0) {
       clearInterval(snakeGameOverState.countdownInterval);
       snakeGameOverState.isGameOver = false;
       snakeGameOverState.winner = null;
       snakeGameOverState.countdownSeconds = 7;
+
+      // Rejoin lobby to start new game
+      console.log("[snake] Countdown ended, rejoining lobby for new game");
+      var username = document.getElementById("nameInput").value || "Worm";
+      socket.emit("snake_join", {
+        username: username
+      });
     }
   }, 1000);
 });

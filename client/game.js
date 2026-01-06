@@ -58,16 +58,32 @@ var socket = {
 
 // Handle incoming WebSocket messages
 rawSocket.onmessage = function(event) {
+  var msgStr = event.data;
+  var data = null;
+  var eventType = null;
+
+  // Try to parse as JSON first
   try {
-    var data = JSON.parse(event.data);
-    console.log('[snake] received:', data.type, data);
-    if (eventHandlers[data.type]) {
-      eventHandlers[data.type].forEach(function(callback) {
-        callback(data);
-      });
-    }
+    data = JSON.parse(msgStr);
+    eventType = data.type;
+    console.log('[snake] received JSON:', eventType, data);
   } catch (e) {
-    console.error('[snake] Failed to parse message:', event.data, e);
+    // Handle plain string messages from server (e.g., "id123", "message text")
+    if (msgStr.startsWith('id')) {
+      // Parse "id123" format
+      data = { id: parseInt(msgStr.substring(2)) };
+      eventType = 'id';
+      console.log('[snake] received id message:', data);
+    } else {
+      console.error('[snake] Failed to parse message:', msgStr);
+      return;
+    }
+  }
+
+  if (eventType && eventHandlers[eventType]) {
+    eventHandlers[eventType].forEach(function(callback) {
+      callback(data);
+    });
   }
 };
 

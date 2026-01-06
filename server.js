@@ -1873,13 +1873,15 @@ function updateSnakeGameOnServer(gid) {
   const colorHues = {green: 100, blue: 240, yellow: 60, red: 0};
   let playerId = 0;
 
-  for (const username of gameState.players) {
-    const state = gameState.playerStates[username];
+  for (let i = 0; i < gameState.players.length; i++) {
+    const playerId_internal = gameState.players[i];
+    const state = gameState.playerStates[playerId_internal];
+    const displayName = gameState.displayNames ? gameState.displayNames[i] : playerId_internal;
     const head = state.positions[state.positions.length - 1];
 
     playersList.push({
       id: playerId++,
-      name: username,
+      name: displayName,
       x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
       y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       color: colorHues[state.color] || 100,

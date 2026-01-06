@@ -3197,7 +3197,8 @@ wss.on('connection', (ws, req) => {
         console.log('[snake] Starting new game - size >= 2 condition met');
         const gid = nextGameId++;
         const playerInfoArray = Array.from(snakeLobby.playerInfo.values());
-        const playersArray = playerInfoArray.map(p => p.gamePlayerId); // Use unique game player IDs
+        const gid = nextGameId++; // Get game ID first to use in player IDs
+        const playersArray = playerInfoArray.map((p, idx) => `${p.username}#${idx}_${gid}`); // Create unique game player IDs
         const displayNames = playerInfoArray.map(p => p.username); // Keep track of display names
         console.log('[snake] Game players:', displayNames, '(IDs:', playersArray, ')');
         const colors = ['green', 'blue', 'yellow', 'red'];

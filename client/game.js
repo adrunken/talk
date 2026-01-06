@@ -480,7 +480,17 @@ socket.on("snake_lobby_update", function (data) {
   ctx.textAlign = "center";
   ctx.fillText("Waiting for players...", 200, 150);
   ctx.fillText("Players: " + data.players.length, 200, 200);
-  ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+
+  // Display countdown if 2+ players are waiting
+  if (data.players.length >= 2 && data.countdownSeconds > 0) {
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
+  } else if (data.playersNeeded > 0) {
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+  }
 });
 
 var gameId = null;

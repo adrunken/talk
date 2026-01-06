@@ -429,10 +429,13 @@ socket.on("snake_game_over", function (data) {
     console.log("[snake] Countdown:", snakeGameOverState.countdownSeconds);
     if (snakeGameOverState.countdownSeconds <= 0) {
       clearInterval(snakeGameOverState.countdownInterval);
-      console.log("[snake] Countdown ended, resetting game state");
+      console.log("[snake] Countdown ended, rejoining lobby for new game");
       snakeGameOverState.isGameOver = false;
       snakeGameOverState.winner = null;
       snakeGameOverState.countdownSeconds = 7;
+
+      // Rejoin lobby to start new game - this triggers the server to check if a new game should start
+      socket.emit("snake_join", {});
     }
   }, 1000);
 });

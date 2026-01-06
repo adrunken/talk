@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const WebSocket = require('ws');
+const SocketIO = require('socket.io');
 const sanitizeHtml = require('sanitize-html');
 const ChessCtor = require('chess.js').Chess;
 const Stockfish = require('stockfish');
@@ -460,7 +461,31 @@ app.get('/pieces/:pieceName/:color/:type.png', (req, res) => {
 });
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// Initialize Socket.IO for Snake game (must be done BEFORE WebSocket server)
+const io = SocketIO(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+  path: "/socket.io"
+});
+
+// WebSocket server - exclude /socket.io path to avoid conflicts
+const wss = new WebSocket.Server({
+  server,
+  path: "/ws"
+});
+
+// Health check endpoint for Socket.IO
+app.get('/api/socket-io-health', (req, res) => {
+  res.json({
+    status: 'ok',
+    socketIo: 'running',
+    clients: io.engine.clientsCount || 0,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // User Settings API endpoints
 app.get('/api/settings/:username', (req, res) => {
@@ -3156,6 +3181,41 @@ wss.on('connection', (ws, req) => {
         }
       }
     }
+    else if (msg.type === 'keyPress') {
+      // Handle keyPress from client - convert to direction
+      const username = users.get(ws);
+      if (!username) return;
+
+      // Find the game this player is in
+      let gameId = null;
+      for (const [gid, gameState] of snakeGames.entries()) {
+        if (gameState.players.includes(username)) {
+          gameId = gid;
+          break;
+        }
+      }
+      if (!gameId) {
+        // Player might be in lobby, waiting for game to start
+        return;
+      }
+
+      const inputId = msg.inputId; // "right", "down", "left", "up"
+      const directionMap = {
+        'right': 'right',
+        'down': 'down',
+        'left': 'left',
+        'up': 'up'
+      };
+      const direction = directionMap[inputId];
+      if (!direction) return;
+
+      const gameState = snakeGames.get(gameId);
+      const player = gameState.playerStates[username];
+      if (player) {
+        player.nextDirection = direction;
+        console.log('[snake_move] Direction updated for', username, ':', direction);
+      }
+    }
     else if (msg.type === 'snake_move') {
       const gid = msg.game_id;
       const username = users.get(ws);
@@ -3356,6 +3416,35 @@ wss.on('connection', (ws, req) => {
 
     sendUserList();
   });
+});
+
+// Socket.IO handlers for Snake game
+console.log('[socket.io] Initializing Socket.IO on path /socket.io');
+
+io.on('connection', (socket) => {
+  console.log('[socket.io] Client connected:', socket.id, 'Total clients:', io.engine.clientsCount);
+
+  socket.on('disconnect', (reason) => {
+    console.log('[socket.io] Client disconnected:', socket.id, 'Reason:', reason);
+  });
+
+  socket.on('changeName', (data) => {
+    console.log('[socket.io] changeName:', data);
+    socket.emit('changeName', { success: true, name: data.name });
+  });
+
+  socket.on('keyPress', (data) => {
+    console.log('[socket.io] keyPress:', data);
+    // Broadcast to all clients
+    io.emit('keyPress', data);
+  });
+
+  socket.on('connect_error', (error) => {
+    console.log('[socket.io] Connection error:', error);
+  });
+
+  // Ping to keep connection alive
+  socket.emit('ping', { timestamp: Date.now() });
 });
 
 server.listen(PORT, HOST, () => {

@@ -20,6 +20,9 @@ ctx.fillStyle = "#000000";
 ctx.fillText("Connecting Server, Wait.. ", 200, 200);
 uiDiv.style.height = "0px";
 
+// Initialize username display
+initializeUsernameDisplay();
+
 document.getElementById("ctx").focus();
 
 // Create a WebSocket-to-SocketIO adapter for the snake game client

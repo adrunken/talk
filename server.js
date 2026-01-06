@@ -1983,7 +1983,7 @@ wss.on('connection', (ws, req) => {
     try { msg = JSON.parse(msgStr); } catch (_) { return; }
 
     // Flood control (track only chat messages, exclude game messages)
-    const gameMessageTypes = ['snake_move', 'snake_join', 'snake_leave', 'chess_move', 'chess_resign', 'chess_draw'];
+    const gameMessageTypes = ['snake_move', 'snake_join', 'snake_leave', 'keyPress', 'changeName', 'chess_move', 'chess_resign', 'chess_draw'];
     if (!gameMessageTypes.includes(msg.type)) {
       const arr = userMessageTimes.get(ws) || [];
       arr.push(Date.now());

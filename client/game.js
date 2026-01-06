@@ -22,7 +22,14 @@ uiDiv.style.height = "0px";
 
 document.getElementById("ctx").focus();
 
-var socket = io();
+// Connect to Socket.IO server with explicit path
+var socket = io({
+  path: '/socket.io',
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: 5
+});
 var id = -1;
 
 var start = new Date();

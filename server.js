@@ -3486,15 +3486,20 @@ wss.on('connection', (ws, req) => {
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
 
     // Clean up snake game lobby
+    let playerId = null;
     if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+      const playerInfo = snakeLobby.playerInfo.get(ws);
+      playerId = playerInfo.playerId;
       snakeLobby.playerInfo.delete(ws);
     }
 
     // Clean up snake games
-    for (const [gid, gameState] of snakeGames.entries()) {
-      if (uname && gameState.playerStates[uname]) {
-        gameState.playerStates[uname].alive = false;
-        gameState.activePlayers.delete(uname);
+    if (playerId !== null) {
+      for (const [gid, gameState] of snakeGames.entries()) {
+        if (gameState.playerStates[playerId]) {
+          gameState.playerStates[playerId].alive = false;
+          gameState.activePlayers.delete(playerId);
+        }
       }
     }
 

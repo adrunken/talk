@@ -477,6 +477,16 @@ const wss = new WebSocket.Server({
   path: "/ws"
 });
 
+// Health check endpoint for Socket.IO
+app.get('/api/socket-io-health', (req, res) => {
+  res.json({
+    status: 'ok',
+    socketIo: 'running',
+    clients: io.engine.clientsCount || 0,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // User Settings API endpoints
 app.get('/api/settings/:username', (req, res) => {
   const username = String(req.params.username || '').trim();

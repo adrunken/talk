@@ -3335,7 +3335,7 @@ wss.on('connection', (ws, req) => {
           const startPayload = {
             type: 'snake_game_start',
             game_id: gid,
-            players: playersArray,
+            players: playerDisplayNames,
             playerStates: gameState.playerStates
           };
 
@@ -3345,7 +3345,7 @@ wss.on('connection', (ws, req) => {
             }
           }
 
-          console.log('[snake] Game started via double-check:', {gid, players: playersArray});
+          console.log('[snake] Game started via double-check:', {gid, players: playerDisplayNames});
 
           // Start game loop
           if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);

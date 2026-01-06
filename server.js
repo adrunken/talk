@@ -3358,19 +3358,18 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'keyPress') {
       // Handle keyPress from client - convert to direction
-      const username = users.get(ws);
-      if (!username) return;
+      if (!ws) return;
 
       // Find the game this player is in by matching WebSocket
       let gameId = null;
-      let playerInternalId = null;
+      let playerId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
         // Find player by matching with WebSocket stored in playerWsMap
         if (gameState.playerWsMap) {
-          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+          for (const [pId, playerWs] of gameState.playerWsMap.entries()) {
             if (playerWs === ws) {
               gameId = gid;
-              playerInternalId = playerId;
+              playerId = pId;
               break;
             }
           }
@@ -3378,7 +3377,7 @@ wss.on('connection', (ws, req) => {
         if (gameId) break;
       }
 
-      if (!gameId) {
+      if (!gameId || !playerId) {
         // Player might be in lobby, waiting for game to start
         return;
       }
@@ -3394,10 +3393,10 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[playerInternalId];
+      const player = gameState.playerStates[playerId];
       if (player) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[snake_move] Direction updated for playerId', playerId, ':', direction);
       }
     }
     else if (msg.type === 'snake_move') {

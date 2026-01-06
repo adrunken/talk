@@ -3306,13 +3306,20 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      // Find the player in the lobby
+      const playerInfo = snakeLobby.playerInfo && Array.from(snakeLobby.playerInfo.values()).find(p => p.ws === ws);
+      if (!playerInfo) {
+        console.log('[snake_move] Player not found in lobby');
+        return;
+      }
+
       const gameState = snakeGames.get(gid);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInfo.playerId];
       if (player) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[snake_move] Direction updated for', playerInfo.username, ':', direction);
       } else {
-        console.log('[snake_move] Player not found in game:', username);
+        console.log('[snake_move] Player not found in game:', playerInfo.username);
       }
     }
     else if (msg.type === 'snake_leave') {

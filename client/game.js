@@ -418,7 +418,9 @@ socket.on("snake_game_over", function (data) {
       snakeGameOverState.countdownSeconds = 7;
 
       // Rejoin lobby to start new game - this triggers the server to check if a new game should start
-      socket.emit("snake_join", {});
+      socket.emit("snake_join", {
+        username: getLoggedInUsername()
+      });
     }
   }, 1000);
 });

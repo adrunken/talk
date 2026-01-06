@@ -258,6 +258,27 @@ socket.on("winners", function (data) {
 });
 
 socket.on("data", function (data) {
+  // Handle game over state
+  if (snakeGameOverState.isGameOver) {
+    ctx.clearRect(0, 0, 800, 400);
+    ctx.fillStyle = "#FFFFE0";
+    ctx.fillRect(0, 0, 800, 400);
+    ctx.textAlign = "center";
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#000000";
+
+    if (snakeGameOverState.winner) {
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+    } else {
+      ctx.fillText("Game Over!", 400, 150);
+    }
+
+    ctx.font = "40px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    return;
+  }
+
   ctx.clearRect(0, 0, 800, 400);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);

@@ -430,8 +430,8 @@ socket.on("id", function (data) {
   id = data.id;
   setTimeout(function () {
     socket.emit("kthx");
-    // Join the snake game lobby
-    var username = document.getElementById("nameInput").value || "Worm";
+    // Join the snake game lobby with the authenticated username
+    var username = getLoggedInUsername();
     console.log("[snake] Joining game as:", username);
     socket.emit("snake_join", {
       username: username

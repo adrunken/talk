@@ -1997,17 +1997,17 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
-    // Check collision with own body (trails from this player's body)
-    // Only collide with own trail, not other players' trails (Armegatron-style close approach)
-    let hitOwnBody = false;
+    // Check collision with any trail (own body or other players' trails)
+    // Snake dies if its head center crosses the center of any trail
+    let hitTrail = false;
     for (let i = 0; i < gameState.trails.length; i++) {
-      if (gameState.trails[i].owner === username && gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
-        hitOwnBody = true;
+      if (gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+        hitTrail = true;
         break;
       }
     }
 
-    if (hitOwnBody) {
+    if (hitTrail) {
       // If already in grace period, die immediately
       if (player.graceUntil > 0) {
         player.alive = false;

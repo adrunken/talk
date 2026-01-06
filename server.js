@@ -3315,6 +3315,10 @@ wss.on('connection', (ws, req) => {
 
           // Start game loop
           if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+
+          // Send initial game state immediately
+          updateSnakeGameOnServer(gid);
+
           snakeLobby.gameLoop = setInterval(() => {
             updateSnakeGameOnServer(gid);
           }, 100); // 10 ticks per second

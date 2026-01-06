@@ -1872,20 +1872,35 @@ function updateSnakeGameOnServer(gid) {
     });
   }
 
-  // Convert trails format
+  // Convert trails format - create line segments between consecutive points
   const trailsList = [];
-  for (const trail of gameState.trails) {
-    // Find the owner's color
-    const ownerState = gameState.playerStates[trail.owner];
-    const color = ownerState ? colorHues[ownerState.color] || 100 : 100;
+  const trailsByPlayer = {};
 
-    trailsList.push({
-      x: trail.x * 8,      // Scale to canvas
-      y: trail.y * 4,      // Scale to canvas
-      endX: trail.x * 8,   // For now, single point trails
-      endY: trail.y * 4,
-      color: color
-    });
+  // Group trails by player
+  for (const trail of gameState.trails) {
+    if (!trailsByPlayer[trail.owner]) {
+      trailsByPlayer[trail.owner] = [];
+    }
+    trailsByPlayer[trail.owner].push(trail);
+  }
+
+  // Create line segments from consecutive positions for each player
+  for (const username in trailsByPlayer) {
+    const ownerState = gameState.playerStates[username];
+    const color = ownerState ? colorHues[ownerState.color] || 100 : 100;
+    const trails = trailsByPlayer[username];
+
+    // Add trail segments connecting all positions
+    const positions = ownerState.positions;
+    for (let i = 0; i < positions.length - 1; i++) {
+      trailsList.push({
+        x: positions[i][0] * 8,
+        y: positions[i][1] * 4,
+        endX: positions[i + 1][0] * 8,
+        endY: positions[i + 1][1] * 4,
+        color: color
+      });
+    }
   }
 
   // Broadcast game state

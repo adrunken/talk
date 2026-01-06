@@ -384,6 +384,29 @@ socket.on("newName", function (data) {
   document.getElementById("nameInput").value = data.name;
 });
 
+socket.on("snake_game_over", function (data) {
+  console.log("[snake] Game over:", data);
+  snakeGameOverState.isGameOver = true;
+  snakeGameOverState.winner = data.winner;
+  snakeGameOverState.countdownSeconds = 7;
+
+  // Clear any existing countdown
+  if (snakeGameOverState.countdownInterval) {
+    clearInterval(snakeGameOverState.countdownInterval);
+  }
+
+  // Start countdown
+  snakeGameOverState.countdownInterval = setInterval(function() {
+    snakeGameOverState.countdownSeconds--;
+    if (snakeGameOverState.countdownSeconds < 0) {
+      clearInterval(snakeGameOverState.countdownInterval);
+      snakeGameOverState.isGameOver = false;
+      snakeGameOverState.winner = null;
+      snakeGameOverState.countdownSeconds = 7;
+    }
+  }, 1000);
+});
+
 socket.on("id", function (data) {
   console.log("Your id is " + data.id);
   id = data.id;

@@ -3221,7 +3221,7 @@ wss.on('connection', (ws, req) => {
         const startPayload = {
           type: 'snake_game_start',
           game_id: gid,
-          players: playersArray,
+          players: playersArray.map(p => p.username),
           playerStates: gameState.playerStates
         };
 

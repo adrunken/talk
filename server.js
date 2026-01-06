@@ -1905,13 +1905,19 @@ function updateSnakeGameOnServer(gid) {
       const lobbyPayload = {
         type: 'snake_lobby_update',
         players: playerNames,
-        playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size)
+        playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size),
+        countdownSeconds: snakeLobby.countdownSeconds
       };
 
       for (const playerInfo of snakeLobby.playerInfo.values()) {
         if (playerInfo.ws && playerInfo.ws.readyState === 1) {
           send(playerInfo.ws, lobbyPayload);
         }
+      }
+
+      // If 2+ players in lobby, start countdown for next game
+      if (snakeLobby.playerInfo.size >= 2) {
+        startSnakeLobbyCountdown();
       }
     }
 

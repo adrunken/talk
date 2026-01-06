@@ -1990,12 +1990,23 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
-    // Check collision with boundaries
-    // (boundaries are checked above, but keeping consistent with old body collision logic)
+    // Check head-on collision with other player heads (mutual destruction)
+    // Snakes can pass close to each other but die if they move into the same cell
+    let hitOtherHead = false;
+    for (const otherUsername of playerList) {
+      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherNewHead = newHeads[otherUsername];
+      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
+        hitOtherHead = true;
+        break;
+      }
+    }
 
-    // No special head-to-head collision - snakes can pass through each other closely
-    // They only die if they occupy the exact same cell after movement is resolved
-    // (which would be resolved in the next tick when both have moved)
+    if (hitOtherHead) {
+      player.alive = false;
+      gameState.activePlayers.delete(username);
+      continue;
+    }
 
     // Add current head position to trails
     const head = player.positions[player.positions.length - 1];

@@ -1859,10 +1859,11 @@ function updateSnakeGameOnServer(gid) {
     activePlayers: Array.from(gameState.activePlayers)
   };
 
-  for (const player of gameState.players) {
-    const pws = snakeLobby.playerWs.get(player);
-    if (pws && pws.readyState === 1) {
-      send(pws, updatePayload);
+  if (snakeLobby.playerInfo) {
+    for (const playerInfo of snakeLobby.playerInfo.values()) {
+      if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+        send(playerInfo.ws, updatePayload);
+      }
     }
   }
 }

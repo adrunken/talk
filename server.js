@@ -1262,7 +1262,6 @@ const snakeGames = new Map(); // game_id -> {players: [username, ...], gameState
 let snakeLobby = { playerInfo: new Map(), gameId: null, gameLoop: null }; // Current snake game lobby
 let nextGameId = 1;
 let nextSessionId = 1;
-const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
 

@@ -1967,6 +1967,11 @@ function updateSnakeGameOnServer(gid) {
 
     // Apply direction change (prevent 180-degree turns)
     if (player.nextDirection && opposites[player.direction] !== player.nextDirection) {
+      // If in grace period and successfully changing direction, clear grace period
+      if (player.graceUntil > 0 && player.nextDirection !== player.directionAtCollision) {
+        player.graceUntil = 0;
+        player.directionAtCollision = null;
+      }
       player.direction = player.nextDirection;
     }
 

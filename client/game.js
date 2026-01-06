@@ -409,8 +409,12 @@ socket.on("snake_lobby_update", function (data) {
   ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
 });
 
+var gameId = null;
+
 socket.on("snake_game_start", function (data) {
   console.log("[snake] Game started:", data);
+  gameId = data.game_id; // Store game ID for moves
+
   // Clear status and start rendering game
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);

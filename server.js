@@ -3183,8 +3183,10 @@ wss.on('connection', (ws, req) => {
         }
       } else if (snakeLobby.playerInfo.size >= 2) {
         // Start new game
+        console.log('[snake] Starting new game - size >= 2 condition met');
         const gid = nextGameId++;
         const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+        console.log('[snake] Game players:', playersArray);
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 

@@ -134,6 +134,14 @@ var lines = 16,
   cH = ctx.canvas.height / 2;
 var uiVisible = false;
 
+// Game over state tracking
+var snakeGameOverState = {
+  isGameOver: false,
+  winner: null,
+  countdownSeconds: 7,
+  countdownInterval: null
+};
+
 function nameInputKeydown(event) {
   if (event.keyCode == 13) {
     document.getElementById("setName").click();

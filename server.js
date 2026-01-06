@@ -3347,14 +3347,23 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       if (!username) return;
 
-      // Find the game this player is in
+      // Find the game this player is in by matching WebSocket
       let gameId = null;
+      let playerInternalId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
-        if (gameState.players.includes(username)) {
-          gameId = gid;
-          break;
+        // Find player by matching with WebSocket stored in playerWsMap
+        if (gameState.playerWsMap) {
+          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+            if (playerWs === ws) {
+              gameId = gid;
+              playerInternalId = playerId;
+              break;
+            }
+          }
         }
+        if (gameId) break;
       }
+
       if (!gameId) {
         // Player might be in lobby, waiting for game to start
         return;
@@ -3371,7 +3380,7 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInternalId];
       if (player) {
         player.nextDirection = direction;
         console.log('[snake_move] Direction updated for', username, ':', direction);

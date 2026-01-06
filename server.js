@@ -1759,6 +1759,23 @@ function updateSnakeGameOnServer(gid) {
 
     const lobbySize = snakeLobby.playerInfo ? snakeLobby.playerInfo.size : 0;
     console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', lobbySize);
+
+    // Send lobby update to show they're waiting for next game
+    if (snakeLobby.playerInfo) {
+      const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+      const lobbyPayload = {
+        type: 'snake_lobby_update',
+        players: playerNames,
+        playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size)
+      };
+
+      for (const playerInfo of snakeLobby.playerInfo.values()) {
+        if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+          send(playerInfo.ws, lobbyPayload);
+        }
+      }
+    }
+
     return;
   }
 

@@ -1855,15 +1855,17 @@ function updateSnakeGameOnServer(gid) {
   // Client expects: {players: [{id, isDead, color, x, y, name, gameStarted, hasJoined}, ...], trails: [{x, y, endX, endY, color}, ...]}
   const playersList = [];
   const colorHues = {green: 100, blue: 240, yellow: 60, red: 0};
-  let playerId = 0;
+  let displayId = 0;
 
-  for (const username of gameState.players) {
-    const state = gameState.playerStates[username];
+  for (const playerInfo of gameState.players) {
+    const playerId = playerInfo.playerId;
+    const state = gameState.playerStates[playerId];
+    if (!state) continue;
     const head = state.positions[state.positions.length - 1];
 
     playersList.push({
-      id: playerId++,
-      name: username,
+      id: displayId++,
+      name: state.username,
       x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
       y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       color: colorHues[state.color] || 100,
@@ -1877,8 +1879,9 @@ function updateSnakeGameOnServer(gid) {
   const trailsList = [];
 
   // Render each player's entire snake body as a trail
-  for (const username of gameState.players) {
-    const ownerState = gameState.playerStates[username];
+  for (const playerInfo of gameState.players) {
+    const playerId = playerInfo.playerId;
+    const ownerState = gameState.playerStates[playerId];
     if (!ownerState) continue;
 
     const color = colorHues[ownerState.color] || 100;

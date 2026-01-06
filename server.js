@@ -1809,7 +1809,7 @@ function updateSnakeGameOnServer(gid) {
     // Check boundaries
     if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 
@@ -1824,7 +1824,7 @@ function updateSnakeGameOnServer(gid) {
 
     if (hitTrail) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 

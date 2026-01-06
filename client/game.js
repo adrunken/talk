@@ -3,17 +3,17 @@ var uiDiv = document.getElementById("uiDiv");
 var canvas = document.getElementById("ctx");
 var ctx = canvas.getContext("2d");
 ctx.font = "30px Arial";
-ctx.clearRect(0, 0, 800, 400);
+ctx.clearRect(0, 0, 400, 400);
 ctx.fillStyle = "#FFFFE0";
-ctx.fillRect(0, 0, 800, 400);
+ctx.fillRect(0, 0, 400, 400);
 ctx.textAlign = "center";
 ctx.fillStyle = "#DDDDDD";
 
-for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+for (var bgLineX = 0; bgLineX < 400; bgLineX += 20) {
   ctx.fillRect(bgLineX, 0, 1, 400);
 }
 for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
-  ctx.fillRect(0, bgLineY, 800, 1);
+  ctx.fillRect(0, bgLineY, 400, 1);
 }
 
 ctx.fillStyle = "#000000";
@@ -96,7 +96,7 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillRect(0, 0, 400, 400);
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
@@ -114,7 +114,7 @@ rawSocket.onerror = function(error) {
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillRect(0, 0, 400, 400);
   ctx.fillStyle = "#FF0000";
   ctx.fillText("Connection Error", 200, 200);
   if (eventHandlers['connect_error']) {
@@ -255,9 +255,9 @@ socket.on("data", function (data) {
 
   // Handle game over state
   if (snakeGameOverState.isGameOver) {
-    ctx.clearRect(0, 0, 800, 400);
+    ctx.clearRect(0, 0, 400, 400);
     ctx.fillStyle = "#FFFFE0";
-    ctx.fillRect(0, 0, 800, 400);
+    ctx.fillRect(0, 0, 400, 400);
     ctx.textAlign = "center";
     ctx.font = "50px Arial";
     ctx.fillStyle = "#000000";
@@ -274,18 +274,18 @@ socket.on("data", function (data) {
     return;
   }
 
-  ctx.clearRect(0, 0, 800, 400);
+  ctx.clearRect(0, 0, 400, 400);
   ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillRect(0, 0, 400, 400);
   ctx.textAlign = "center";
   ctx.font = "10px Arial";
 
   ctx.fillStyle = "#BBBBBB";
-  for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+  for (var bgLineX = 0; bgLineX < 400; bgLineX += 20) {
     ctx.fillRect(bgLineX, 0, 1, 400);
   }
   for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
-    ctx.fillRect(0, bgLineY, 800, 1);
+    ctx.fillRect(0, bgLineY, 400, 1);
   }
 
   for (var i = 0; i < data.trails.length; i++) {
@@ -458,7 +458,7 @@ socket.on("snake_lobby_update", function (data) {
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillRect(0, 0, 400, 400);
   ctx.fillStyle = "#000000";
   ctx.font = "20px Arial";
   ctx.textAlign = "center";

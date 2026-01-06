@@ -2066,7 +2066,7 @@ function updateSnakeGameOnServer(gid) {
     playersList.push({
       id: playerId++,
       name: displayName,
-      x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
+      x: head[0] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       color: colorHues[state.color] || 100,
       isDead: !state.alive,
@@ -2089,9 +2089,9 @@ function updateSnakeGameOnServer(gid) {
     // Draw line segments between consecutive body segments
     for (let i = 0; i < positions.length - 1; i++) {
       trailsList.push({
-        x: positions[i][0] * 8,
+        x: positions[i][0] * 4,
         y: positions[i][1] * 4,
-        endX: positions[i + 1][0] * 8,
+        endX: positions[i + 1][0] * 4,
         endY: positions[i + 1][1] * 4,
         color: color
       });

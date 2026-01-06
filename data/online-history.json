@@ -1234,6 +1234,11 @@
       "action": "online",
       "timestamp": 1767736171,
       "time": "21:49"
+    },
+    {
+      "action": "offline",
+      "timestamp": 1767736235,
+      "time": "21:50"
     }
   ],
   "lnk": [

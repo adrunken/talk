@@ -1262,7 +1262,6 @@ const snakeGames = new Map(); // game_id -> {players: [username, ...], gameState
 let snakeLobby = { playerInfo: new Map(), gameId: null, gameLoop: null }; // Current snake game lobby
 let nextGameId = 1;
 let nextSessionId = 1;
-const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
 
@@ -1433,7 +1432,6 @@ setInterval(() => {
       }
       users.delete(ws);
       pings.delete(ws);
-      userMessageTimes.delete(ws);
       if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
       changed = true;
     }
@@ -1728,6 +1726,7 @@ function updateSnakeGameOnServer(gid) {
   if (!snakeGames.has(gid)) return;
 
   const gameState = snakeGames.get(gid);
+  if (!gameState) return;
   if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
     // Game over
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
@@ -1924,15 +1923,28 @@ function updateSnakeGameOnServer(gid) {
     countdown: 0,
     inCountdown: false,
     waiting: false,
-    onlinePlayers: gameState.players.length
+    onlinePlayers: gameState.players.length,
+    activePlayers: gameState.activePlayers.size
   };
 
-  if (snakeLobby.playerInfo) {
-    for (const playerInfo of snakeLobby.playerInfo.values()) {
-      if (playerInfo.ws && playerInfo.ws.readyState === 1) {
-        send(playerInfo.ws, updatePayload);
+  // Send to all connected players in the current game
+  let sendCount = 0;
+  const failedSends = [];
+  if (gameState.playerWsMap) {
+    for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+      if (playerWs && playerWs.readyState === 1) {
+        send(playerWs, updatePayload);
+        sendCount++;
+      } else if (!playerWs) {
+        failedSends.push(`${playerId}:null`);
+      } else if (playerWs.readyState !== 1) {
+        failedSends.push(`${playerId}:readyState=${playerWs.readyState}`);
       }
     }
+  }
+
+  if (failedSends.length > 0) {
+    console.log('[snake] Failed to send to players:', failedSends.join(', '));
   }
 }
 
@@ -1950,11 +1962,8 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  userMessageTimes.set(ws, []);
-
   ws.on('message', async (data) => {
     let msgStr = data.toString();
-    if (msgStr.length > 4096) { send(ws, { type: 'flood' }); try { ws.close(); } catch(_){} return; }
 
     pings.set(ws, now());
 
@@ -1966,20 +1975,6 @@ wss.on('connection', (ws, req) => {
 
     let msg;
     try { msg = JSON.parse(msgStr); } catch (_) { return; }
-
-    // Flood control (track only chat messages, exclude game messages)
-    const gameMessageTypes = ['snake_move', 'snake_join', 'snake_leave', 'chess_move', 'chess_resign', 'chess_draw'];
-    if (!gameMessageTypes.includes(msg.type)) {
-      const arr = userMessageTimes.get(ws) || [];
-      arr.push(Date.now());
-      while (arr.length > 10) arr.shift();
-      userMessageTimes.set(ws, arr);
-      if (arr.length === 10 && (arr[arr.length - 1] - arr[0]) < 5000) {
-        send(ws, { type: 'flood' });
-        try { ws.close(); } catch(_){ }
-        return;
-      }
-    }
 
     if (msg.type === 'message') {
       let message = String(msg.message || '').trim();
@@ -3241,6 +3236,18 @@ wss.on('connection', (ws, req) => {
         snakeGames.set(gid, gameState);
         snakeLobby.gameId = gid;
 
+        // Validate all players have WebSocket references
+        let validPlayers = 0;
+        for (const playerId of playersArray) {
+          const ws = playerWsMap.get(playerId);
+          if (ws && ws.readyState === 1) {
+            validPlayers++;
+          } else {
+            console.warn('[snake] Player has invalid WebSocket:', {playerId, ws: ws ? 'present' : 'missing', readyState: ws?.readyState});
+          }
+        }
+        console.log('[snake] Game started with validation:', {gid, players: playersArray, validPlayers, totalPlayers: playersArray.length});
+
         // Notify all players game started
         const startPayload = {
           type: 'snake_game_start',
@@ -3254,8 +3261,6 @@ wss.on('connection', (ws, req) => {
             send(playerInfo.ws, startPayload);
           }
         }
-
-        console.log('[snake] Game started:', {gid, players: playersArray});
 
         // Start game loop
         if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
@@ -3328,6 +3333,18 @@ wss.on('connection', (ws, req) => {
           snakeGames.set(gid, gameState);
           snakeLobby.gameId = gid;
 
+          // Validate all players have WebSocket references
+          let validPlayers = 0;
+          for (const playerId of playersArray) {
+            const ws = playerWsMap.get(playerId);
+            if (ws && ws.readyState === 1) {
+              validPlayers++;
+            } else {
+              console.warn('[snake] Player has invalid WebSocket:', {playerId, ws: ws ? 'present' : 'missing', readyState: ws?.readyState});
+            }
+          }
+          console.log('[snake] Game started via double-check with validation:', {gid, players: playerDisplayNames, validPlayers, totalPlayers: playersArray.length});
+
           // Notify all players game started
           const startPayload = {
             type: 'snake_game_start',
@@ -3341,8 +3358,6 @@ wss.on('connection', (ws, req) => {
               send(playerInfo.ws, startPayload);
             }
           }
-
-          console.log('[snake] Game started via double-check:', {gid, players: playerDisplayNames});
 
           // Start game loop
           if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
@@ -3358,19 +3373,18 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'keyPress') {
       // Handle keyPress from client - convert to direction
-      const username = users.get(ws);
-      if (!username) return;
+      if (!ws) return;
 
       // Find the game this player is in by matching WebSocket
       let gameId = null;
-      let playerInternalId = null;
+      let playerId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
         // Find player by matching with WebSocket stored in playerWsMap
-        if (gameState.playerWsMap) {
-          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+        if (gameState && gameState.playerWsMap) {
+          for (const [pId, playerWs] of gameState.playerWsMap.entries()) {
             if (playerWs === ws) {
               gameId = gid;
-              playerInternalId = playerId;
+              playerId = pId;
               break;
             }
           }
@@ -3378,7 +3392,7 @@ wss.on('connection', (ws, req) => {
         if (gameId) break;
       }
 
-      if (!gameId) {
+      if (!gameId || !playerId) {
         // Player might be in lobby, waiting for game to start
         return;
       }
@@ -3394,10 +3408,15 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[playerInternalId];
-      if (player) {
+      if (!gameState || !gameState.playerStates) {
+        console.log('[keyPress] Game state not found for gameId:', gameId);
+        return;
+      }
+
+      const player = gameState.playerStates[playerId];
+      if (player && player.alive) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[keyPress] Direction updated for playerId', playerId, ':', direction);
       }
     }
     else if (msg.type === 'snake_move') {
@@ -3423,18 +3442,30 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'snake_leave') {
       const gid = msg.game_id;
-      const username = users.get(ws);
 
       if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+        const playerInfo = snakeLobby.playerInfo.get(ws);
         snakeLobby.playerInfo.delete(ws);
-        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.playerInfo.size});
+        console.log('[snake] Player left lobby:', playerInfo?.username);
       }
 
       if (snakeGames.has(gid)) {
         const gameState = snakeGames.get(gid);
-        if (username && gameState.playerStates[username]) {
-          gameState.playerStates[username].alive = false;
-          gameState.activePlayers.delete(username);
+        // Find the player by matching WebSocket in playerWsMap
+        if (gameState && gameState.playerWsMap) {
+          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+            if (playerWs === ws) {
+              if (gameState.playerStates && gameState.playerStates[playerId]) {
+                gameState.playerStates[playerId].alive = false;
+                if (gameState.activePlayers) {
+                  gameState.activePlayers.delete(playerId);
+                }
+                console.log('[snake] Player left game:', playerId);
+              }
+              gameState.playerWsMap.delete(playerId);
+              break;
+            }
+          }
         }
       }
     }
@@ -3578,21 +3609,39 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     const uname = users.get(ws);
+    console.log('[ws] Connection closed for user:', uname);
     users.delete(ws);
     pings.delete(ws);
-    userMessageTimes.delete(ws);
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
 
     // Clean up snake game lobby
     if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
       snakeLobby.playerInfo.delete(ws);
+      console.log('[snake] Player removed from lobby:', uname);
     }
 
-    // Clean up snake games
+    // Clean up snake games - find and mark player as dead using playerWsMap
     for (const [gid, gameState] of snakeGames.entries()) {
-      if (uname && gameState.playerStates[uname]) {
-        gameState.playerStates[uname].alive = false;
-        gameState.activePlayers.delete(uname);
+      if (gameState && gameState.playerWsMap) {
+        const playerToRemove = [];
+        for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+          if (playerWs === ws) {
+            playerToRemove.push(playerId);
+          }
+        }
+
+        // Remove and mark players as dead
+        for (const playerId of playerToRemove) {
+          if (gameState.playerStates && gameState.playerStates[playerId]) {
+            gameState.playerStates[playerId].alive = false;
+            if (gameState.activePlayers) {
+              gameState.activePlayers.delete(playerId);
+            }
+            console.log('[snake] Player disconnected, marked dead:', {playerId, gid, activePlayers: gameState.activePlayers.size});
+          }
+          // Remove WebSocket reference to prevent memory leaks
+          gameState.playerWsMap.delete(playerId);
+        }
       }
     }
 

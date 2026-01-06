@@ -1850,13 +1850,55 @@ function updateSnakeGameOnServer(gid) {
     player.positions.push(newHead);
   }
 
+  // Convert server format to client format
+  // Client expects: {players: [{id, isDead, color, x, y, name, gameStarted, hasJoined}, ...], trails: [{x, y, endX, endY, color}, ...]}
+  const playersList = [];
+  const colorHues = {green: 100, blue: 240, yellow: 60, red: 0};
+  let playerId = 0;
+
+  for (const username of gameState.players) {
+    const state = gameState.playerStates[username];
+    const head = state.positions[state.positions.length - 1];
+
+    playersList.push({
+      id: playerId++,
+      name: username,
+      x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
+      y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
+      color: colorHues[state.color] || 100,
+      isDead: !state.alive,
+      hasJoined: true,
+      gameStarted: gameState.activePlayers.size > 1
+    });
+  }
+
+  // Convert trails format
+  const trailsList = [];
+  for (const trail of gameState.trails) {
+    // Find the owner's color
+    const ownerState = gameState.playerStates[trail.owner];
+    const color = ownerState ? colorHues[ownerState.color] || 100 : 100;
+
+    trailsList.push({
+      x: trail.x * 8,      // Scale to canvas
+      y: trail.y * 4,      // Scale to canvas
+      endX: trail.x * 8,   // For now, single point trails
+      endY: trail.y * 4,
+      color: color
+    });
+  }
+
   // Broadcast game state
   const updatePayload = {
-    type: 'snake_game_update',
+    type: 'data',
     game_id: gid,
-    playerStates: gameState.playerStates,
-    trails: gameState.trails,
-    activePlayers: Array.from(gameState.activePlayers)
+    players: playersList,
+    trails: trailsList,
+    gameStarted: gameState.activePlayers.size > 1,
+    countdown: 0,
+    inCountdown: false,
+    waiting: false,
+    onlinePlayers: gameState.players.length
   };
 
   if (snakeLobby.playerInfo) {

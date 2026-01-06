@@ -1744,10 +1744,11 @@ function updateSnakeGameOnServer(gid) {
       winner: winner
     };
 
-    for (const player of gameState.players) {
-      const pws = snakeLobby.playerWs.get(player);
-      if (pws && pws.readyState === 1) {
-        send(pws, gameOverPayload);
+    if (snakeLobby.playerInfo) {
+      for (const playerInfo of snakeLobby.playerInfo.values()) {
+        if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+          send(playerInfo.ws, gameOverPayload);
+        }
       }
     }
 
@@ -1756,7 +1757,8 @@ function updateSnakeGameOnServer(gid) {
     // Keep players in lobby but reset game state for new game
     snakeLobby.gameId = null;
 
-    console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', snakeLobby.players.size);
+    const lobbySize = snakeLobby.playerInfo ? snakeLobby.playerInfo.size : 0;
+    console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', lobbySize);
     return;
   }
 

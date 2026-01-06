@@ -1726,6 +1726,7 @@ function updateSnakeGameOnServer(gid) {
   if (!snakeGames.has(gid)) return;
 
   const gameState = snakeGames.get(gid);
+  if (!gameState) return;
   if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
     // Game over
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);

@@ -3164,7 +3164,7 @@ wss.on('connection', (ws, req) => {
       }
       snakeLobby.playerInfo.set(ws, { username, ws });
 
-      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size});
+      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
 
       // Send game state to joining player
       if (snakeLobby.gameId) {

@@ -3260,10 +3260,14 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       if (!username) return;
 
+      // Find the player in the lobby
+      const playerInfo = snakeLobby.playerInfo && Array.from(snakeLobby.playerInfo.values()).find(p => p.ws === ws);
+      if (!playerInfo) return;
+
       // Find the game this player is in
       let gameId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
-        if (gameState.players.includes(username)) {
+        if (gameState.players.some(p => p.playerId === playerInfo.playerId)) {
           gameId = gid;
           break;
         }
@@ -3284,10 +3288,10 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInfo.playerId];
       if (player) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[snake_move] Direction updated for', playerInfo.username, ':', direction);
       }
     }
     else if (msg.type === 'snake_move') {

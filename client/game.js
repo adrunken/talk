@@ -30,6 +30,26 @@ var socket = io({
   reconnectionDelayMax: 5000,
   reconnectionAttempts: 5
 });
+
+// Connection event handlers for debugging
+socket.on('connect', function() {
+  console.log('[socket.io] Connected with id:', socket.id);
+  ctx.fillStyle = "#000000";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = "#000000";
+  ctx.fillText("Connected! Setting up game...", 200, 200);
+});
+
+socket.on('disconnect', function() {
+  console.log('[socket.io] Disconnected');
+});
+
+socket.on('connect_error', function(error) {
+  console.error('[socket.io] Connection error:', error);
+});
+
 var id = -1;
 
 var start = new Date();

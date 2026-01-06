@@ -142,43 +142,27 @@ var snakeGameOverState = {
   countdownInterval: null
 };
 
-function nameInputKeydown(event) {
-  if (event.keyCode == 13) {
-    document.getElementById("setName").click();
-  }
-}
-
-function validNick() {
-  var regex = /^\w*$/;
-
-  var str =
-    " fck suck pucy die dead rape rump fuck kill nugg negr shit asss ass gay homo arse dick d1ck cunt t1t p1s dink dlck cok dick fux fuk bitc tit smut slut shag piss pron nob phuk nigg mofo kums kum hell hoar god gay fuks fook feck fags fag dink cum boob blow porn hate poop sex sh1t c0ck c00n shit butt cock coon muff cox crap cum cawk cipa clit cnut cock";
-  var n = str.indexOf(
-    " " + document.getElementById("nameInput").value.toLowerCase()
-  );
-  if (n != -1) return 0;
-
-  n = str.indexOf(document.getElementById("nameInput").value.toLowerCase());
-  if (n != -1) return 0;
-
-  return regex.exec(document.getElementById("nameInput").value) !== null;
-}
-
-function changeName() {
-  if (validNick()) {
-    var name = "" + document.getElementById("nameInput").value;
-    if (name == "") {
-      name = "Worm";
+function getLoggedInUsername() {
+  try {
+    // Try to get username from localStorage (set by main app)
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername && storedUsername.trim()) {
+      return storedUsername.trim();
     }
-    console.log("changing name to " + name);
-    socket.emit("changeName", {
-      name: name,
-    });
-    setCookie("trailgame_name", name, 30);
-    document.getElementById("nameInput").value = name;
+  } catch (e) {
+    console.log("[snake] localStorage not available:", e);
   }
 
-  document.getElementById("ctx").focus();
+  // Fallback to a default name
+  return "Worm";
+}
+
+function initializeUsernameDisplay() {
+  const username = getLoggedInUsername();
+  const usernameDisplay = document.getElementById("username-display");
+  if (usernameDisplay) {
+    usernameDisplay.textContent = "Playing as: " + username;
+  }
 }
 
 function mouseClick(e) {

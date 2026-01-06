@@ -559,17 +559,6 @@ function mouseMove(e) {
   }
 }
 
-var isRgb = false;
-function rgb() {
-  if (!isRgb) {
-    isRgb = true;
-    var oldName = document.getElementById("nameInput").value;
-    socket.emit("changeName", { name: "RGB" });
-    document.getElementById("nameInput").value = oldName;
-    document.getElementById("setName").click();
-  }
-}
-
 function unfocus() {
   var tmp = document.createElement("input");
   document.body.appendChild(tmp);
@@ -578,17 +567,3 @@ function unfocus() {
 
   document.getElementById("ctx").focus();
 }
-setTimeout(function () {
-  try {
-    if (getCookie("trailgame_name") != "") {
-      if (getCookie("trailgame_name").length > 6) {
-        setCookie("trailgame_name", "Guest", 100);
-      }
-      document.getElementById("nameInput").value = getCookie("trailgame_name");
-      document.getElementById("setName").click();
-    } else {
-      console.error("Creating cookie for name");
-      setCookie("trailgame_name", "Guest", 100);
-    }
-  } catch (err) {}
-}, 500);

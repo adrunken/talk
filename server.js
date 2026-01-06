@@ -3213,11 +3213,18 @@ wss.on('connection', (ws, req) => {
           return [[x, y]];
         });
 
+        // Create a map from player ID to WebSocket for finding players later
+        const playerWsMap = new Map();
+        for (let i = 0; i < playerInfoArray.length; i++) {
+          playerWsMap.set(playersArray[i], playerInfoArray[i].ws);
+        }
+
         const gameState = {
           gameId: gid,
           players: playersArray,
           displayNames: displayNames, // Map of gamePlayerId index to display username
           playerStates: {},
+          playerWsMap: playerWsMap,
           trails: [],
           gameStartTime: Date.now(),
           activePlayers: new Set(playersArray),

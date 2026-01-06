@@ -22,16 +22,57 @@ uiDiv.style.height = "0px";
 
 document.getElementById("ctx").focus();
 
-// Connect to WebSocket server (the game logic is on the WebSocket endpoint)
+// Create a WebSocket-to-SocketIO adapter for the snake game client
 var wsScheme = (window.location.protocol === 'https:') ? 'wss' : 'ws';
 var wsUrl = wsScheme + '://' + window.location.host + '/ws';
 
 console.log('[snake] Connecting to WebSocket:', wsUrl);
 
-var socket = new WebSocket(wsUrl);
+var rawSocket = new WebSocket(wsUrl);
+var eventHandlers = {};
+
+// Create a Socket.IO-like interface that uses WebSocket underneath
+var socket = {
+  emit: function(event, data) {
+    var msg = { type: event };
+    Object.assign(msg, data);
+    console.log('[snake] emit:', event, data);
+    if (rawSocket.readyState === 1) {
+      rawSocket.send(JSON.stringify(msg));
+    }
+  },
+  on: function(event, callback) {
+    if (!eventHandlers[event]) {
+      eventHandlers[event] = [];
+    }
+    eventHandlers[event].push(callback);
+  },
+  off: function(event, callback) {
+    if (eventHandlers[event]) {
+      eventHandlers[event] = eventHandlers[event].filter(function(cb) {
+        return cb !== callback;
+      });
+    }
+  }
+};
+
+// Handle incoming WebSocket messages
+rawSocket.onmessage = function(event) {
+  try {
+    var data = JSON.parse(event.data);
+    console.log('[snake] received:', data.type, data);
+    if (eventHandlers[data.type]) {
+      eventHandlers[data.type].forEach(function(callback) {
+        callback(data);
+      });
+    }
+  } catch (e) {
+    console.error('[snake] Failed to parse message:', event.data, e);
+  }
+};
 
 // Connection event handlers
-socket.onopen = function() {
+rawSocket.onopen = function() {
   console.log('[snake] WebSocket connected');
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -39,20 +80,29 @@ socket.onopen = function() {
   ctx.fillRect(0, 0, 800, 400);
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
+  if (eventHandlers['connect']) {
+    eventHandlers['connect'].forEach(function(cb) { cb(); });
+  }
 };
 
-socket.onerror = function(error) {
+rawSocket.onerror = function(error) {
   console.error('[snake] WebSocket error:', error);
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);
   ctx.fillStyle = "#FF0000";
-  ctx.fillText("Connection Error: " + error, 200, 200);
+  ctx.fillText("Connection Error", 200, 200);
+  if (eventHandlers['connect_error']) {
+    eventHandlers['connect_error'].forEach(function(cb) { cb(error); });
+  }
 };
 
-socket.onclose = function() {
+rawSocket.onclose = function() {
   console.log('[snake] WebSocket disconnected');
+  if (eventHandlers['disconnect']) {
+    eventHandlers['disconnect'].forEach(function(cb) { cb(); });
+  }
 };
 
 var id = -1;

@@ -3349,7 +3349,7 @@ wss.on('connection', (ws, req) => {
       let playerId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
         // Find player by matching with WebSocket stored in playerWsMap
-        if (gameState.playerWsMap) {
+        if (gameState && gameState.playerWsMap) {
           for (const [pId, playerWs] of gameState.playerWsMap.entries()) {
             if (playerWs === ws) {
               gameId = gid;
@@ -3377,10 +3377,15 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
+      if (!gameState || !gameState.playerStates) {
+        console.log('[keyPress] Game state not found for gameId:', gameId);
+        return;
+      }
+
       const player = gameState.playerStates[playerId];
-      if (player) {
+      if (player && player.alive) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for playerId', playerId, ':', direction);
+        console.log('[keyPress] Direction updated for playerId', playerId, ':', direction);
       }
     }
     else if (msg.type === 'snake_move') {

@@ -2017,35 +2017,32 @@ function updateSnakeGameOnServer(gid) {
       // Start grace period - player has 250ms to change direction
       player.graceUntil = now + 250;
       player.directionAtCollision = player.direction;
-      // Continue moving but flag that they're in danger
+      // Player continues moving but is in danger
     }
 
-    // Only move if not hitting own body (unless in grace period)
-    if (!hitOwnBody) {
-      // Check head-on collision with other player heads (mutual destruction)
-      // Snakes can pass close to each other but die if they move into the same cell
-      let hitOtherHead = false;
-      for (const otherUsername of playerList) {
-        if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-        const otherNewHead = newHeads[otherUsername];
-        if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-          hitOtherHead = true;
-          break;
-        }
+    // Check head-on collision with other player heads (mutual destruction)
+    // Snakes can pass close to each other but die if they move into the same cell
+    let hitOtherHead = false;
+    for (const otherUsername of playerList) {
+      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherNewHead = newHeads[otherUsername];
+      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
+        hitOtherHead = true;
+        break;
       }
+    }
 
-      if (hitOtherHead) {
-        // If already in grace period, die immediately
-        if (player.graceUntil > 0) {
-          player.alive = false;
-          gameState.activePlayers.delete(username);
-          continue;
-        }
-        // Start grace period - player has 250ms to change direction
-        player.graceUntil = now + 250;
-        player.directionAtCollision = player.direction;
-        // Continue moving but flag that they're in danger
+    if (hitOtherHead) {
+      // If already in grace period, die immediately
+      if (player.graceUntil > 0) {
+        player.alive = false;
+        gameState.activePlayers.delete(username);
+        continue;
       }
+      // Start grace period - player has 250ms to change direction
+      player.graceUntil = now + 250;
+      player.directionAtCollision = player.direction;
+      // Player continues moving but is in danger
     }
 
     // Add current head position to trails

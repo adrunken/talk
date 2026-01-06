@@ -3179,7 +3179,7 @@ wss.on('connection', (ws, req) => {
       } else if (snakeLobby.playerInfo.size >= 2) {
         // Start new game
         const gid = nextGameId++;
-        const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+        const playersArray = Array.from(snakeLobby.playerInfo.values());
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3196,18 +3196,22 @@ wss.on('connection', (ws, req) => {
           playerStates: {},
           trails: [],
           gameStartTime: Date.now(),
-          activePlayers: new Set(playersArray),
+          activePlayers: new Set(),
           gameRunning: true
         };
 
         for (let i = 0; i < playersArray.length; i++) {
-          gameState.playerStates[playersArray[i]] = {
+          const player = playersArray[i];
+          const playerId = player.playerId;
+          gameState.playerStates[playerId] = {
+            username: player.username,
             color: colors[i % colors.length],
             direction: directions[i % directions.length],
             nextDirection: directions[i % directions.length],
             positions: startPositions[i % startPositions.length].slice(),
             alive: true
           };
+          gameState.activePlayers.add(playerId);
         }
 
         snakeGames.set(gid, gameState);

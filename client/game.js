@@ -134,6 +134,14 @@ var lines = 16,
   cH = ctx.canvas.height / 2;
 var uiVisible = false;
 
+// Game over state tracking
+var snakeGameOverState = {
+  isGameOver: false,
+  winner: null,
+  countdownSeconds: 7,
+  countdownInterval: null
+};
+
 function nameInputKeydown(event) {
   if (event.keyCode == 13) {
     document.getElementById("setName").click();
@@ -250,6 +258,35 @@ socket.on("winners", function (data) {
 });
 
 socket.on("data", function (data) {
+  console.log('[snake] Received data event:', {
+    playersCount: data.players ? data.players.length : 0,
+    trailsCount: data.trails ? data.trails.length : 0,
+    gameStarted: data.gameStarted,
+    gameOverState: snakeGameOverState.isGameOver,
+    firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
+  });
+
+  // Handle game over state
+  if (snakeGameOverState.isGameOver) {
+    ctx.clearRect(0, 0, 800, 400);
+    ctx.fillStyle = "#FFFFE0";
+    ctx.fillRect(0, 0, 800, 400);
+    ctx.textAlign = "center";
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#000000";
+
+    if (snakeGameOverState.winner) {
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+    } else {
+      ctx.fillText("Game Over!", 400, 150);
+    }
+
+    ctx.font = "40px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    return;
+  }
+
   ctx.clearRect(0, 0, 800, 400);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);
@@ -374,6 +411,34 @@ socket.on("data", function (data) {
 socket.on("newName", function (data) {
   console.log("Server changed your name to " + data.name);
   document.getElementById("nameInput").value = data.name;
+});
+
+socket.on("snake_game_over", function (data) {
+  console.log("[snake] Game over:", data);
+  snakeGameOverState.isGameOver = true;
+  snakeGameOverState.winner = data.winner;
+  snakeGameOverState.countdownSeconds = 7;
+
+  // Clear any existing countdown
+  if (snakeGameOverState.countdownInterval) {
+    clearInterval(snakeGameOverState.countdownInterval);
+  }
+
+  // Start countdown
+  snakeGameOverState.countdownInterval = setInterval(function() {
+    snakeGameOverState.countdownSeconds--;
+    console.log("[snake] Countdown:", snakeGameOverState.countdownSeconds);
+    if (snakeGameOverState.countdownSeconds <= 0) {
+      clearInterval(snakeGameOverState.countdownInterval);
+      console.log("[snake] Countdown ended, rejoining lobby for new game");
+      snakeGameOverState.isGameOver = false;
+      snakeGameOverState.winner = null;
+      snakeGameOverState.countdownSeconds = 7;
+
+      // Rejoin lobby to start new game - this triggers the server to check if a new game should start
+      socket.emit("snake_join", {});
+    }
+  }, 1000);
 });
 
 socket.on("id", function (data) {

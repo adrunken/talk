@@ -1759,6 +1759,23 @@ function updateSnakeGameOnServer(gid) {
 
     const lobbySize = snakeLobby.playerInfo ? snakeLobby.playerInfo.size : 0;
     console.log('[snake] Game ended with winner:', winner, 'Players remaining in lobby:', lobbySize);
+
+    // Send lobby update to show they're waiting for next game
+    if (snakeLobby.playerInfo) {
+      const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+      const lobbyPayload = {
+        type: 'snake_lobby_update',
+        players: playerNames,
+        playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size)
+      };
+
+      for (const playerInfo of snakeLobby.playerInfo.values()) {
+        if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+          send(playerInfo.ws, lobbyPayload);
+        }
+      }
+    }
+
     return;
   }
 
@@ -3147,7 +3164,7 @@ wss.on('connection', (ws, req) => {
       }
       snakeLobby.playerInfo.set(ws, { username, ws });
 
-      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size});
+      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
 
       // Send game state to joining player
       if (snakeLobby.gameId) {
@@ -3166,8 +3183,10 @@ wss.on('connection', (ws, req) => {
         }
       } else if (snakeLobby.playerInfo.size >= 2) {
         // Start new game
+        console.log('[snake] Starting new game - size >= 2 condition met');
         const gid = nextGameId++;
         const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+        console.log('[snake] Game players:', playersArray);
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3219,11 +3238,15 @@ wss.on('connection', (ws, req) => {
 
         // Start game loop
         if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+
+        // Send initial game state immediately
+        updateSnakeGameOnServer(gid);
+
         snakeLobby.gameLoop = setInterval(() => {
           updateSnakeGameOnServer(gid);
         }, 100); // 10 ticks per second
       } else {
-        // Broadcast lobby update
+        // Broadcast lobby update and check if we should start a game
         const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
         const lobbyPayload = {
           type: 'snake_lobby_update',
@@ -3233,6 +3256,72 @@ wss.on('connection', (ws, req) => {
 
         for (const playerInfo of snakeLobby.playerInfo.values()) {
           if (playerInfo.ws && playerInfo.ws.readyState === 1) send(playerInfo.ws, lobbyPayload);
+        }
+
+        // Double-check: if we now have >= 2 players, start the game
+        // (This handles race conditions where the second player joins but the condition wasn't met)
+        if (snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId) {
+          console.log('[snake] Double-check: Found >= 2 players waiting, starting game now');
+          const gid = nextGameId++;
+          const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+          const colors = ['green', 'blue', 'yellow', 'red'];
+          const directions = ['right', 'down', 'left', 'up'];
+
+          // Generate random spawn positions in center area
+          const startPositions = playersArray.map(() => {
+            const x = 30 + Math.floor(Math.random() * 40);
+            const y = 30 + Math.floor(Math.random() * 40);
+            return [[x, y]];
+          });
+
+          const gameState = {
+            gameId: gid,
+            players: playersArray,
+            playerStates: {},
+            trails: [],
+            gameStartTime: Date.now(),
+            activePlayers: new Set(playersArray),
+            gameRunning: true
+          };
+
+          for (let i = 0; i < playersArray.length; i++) {
+            gameState.playerStates[playersArray[i]] = {
+              color: colors[i % colors.length],
+              direction: directions[i % directions.length],
+              nextDirection: directions[i % directions.length],
+              positions: startPositions[i % startPositions.length].slice(),
+              alive: true
+            };
+          }
+
+          snakeGames.set(gid, gameState);
+          snakeLobby.gameId = gid;
+
+          // Notify all players game started
+          const startPayload = {
+            type: 'snake_game_start',
+            game_id: gid,
+            players: playersArray,
+            playerStates: gameState.playerStates
+          };
+
+          for (const playerInfo of snakeLobby.playerInfo.values()) {
+            if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+              send(playerInfo.ws, startPayload);
+            }
+          }
+
+          console.log('[snake] Game started via double-check:', {gid, players: playersArray});
+
+          // Start game loop
+          if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
+
+          // Send initial game state immediately
+          updateSnakeGameOnServer(gid);
+
+          snakeLobby.gameLoop = setInterval(() => {
+            updateSnakeGameOnServer(gid);
+          }, 100); // 10 ticks per second
         }
       }
     }

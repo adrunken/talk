@@ -263,14 +263,14 @@ socket.on("data", function (data) {
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 200, 150);
     } else {
-      ctx.fillText("Game Over!", 400, 150);
+      ctx.fillText("Game Over!", 200, 150);
     }
 
     ctx.font = "40px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 200, 280);
     return;
   }
 
@@ -302,7 +302,7 @@ socket.on("data", function (data) {
       ctx.font = "30px Arial";
       if (data.players[i].hasJoined) {
         ctx.fillStyle = "#AA0000";
-        ctx.fillText("Game Over - you lost!", 400, 230);
+        ctx.fillText("Game Over - you lost!", 200, 230);
       } else {
         ctx.fillStyle = "#000000";
 
@@ -469,7 +469,7 @@ socket.on("snake_lobby_update", function (data) {
   if (data.players.length >= 2 && data.countdownSeconds > 0) {
     ctx.font = "50px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
+    ctx.fillText("Game starts in: " + data.countdownSeconds, 200, 300);
   } else if (data.playersNeeded > 0) {
     ctx.font = "20px Arial";
     ctx.fillStyle = "#000000";
@@ -542,7 +542,7 @@ document.getElementById("ctx").onkeyup = function (event) {
 };
 
 function mouseMove(e) {
-  mx = Math.round((e.clientX / window.innerWidth) * 800);
+  mx = Math.round((e.clientX / window.innerWidth) * 400);
   my = Math.round((e.clientY / window.innerHeight) * 400);
   if (e.clientY < window.innerHeight - 70 && uiVisible) {
     unfocus();

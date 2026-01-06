@@ -3587,11 +3587,22 @@ wss.on('connection', (ws, req) => {
       snakeLobby.playerInfo.delete(ws);
     }
 
-    // Clean up snake games
+    // Clean up snake games - find and mark player as dead using playerWsMap
     for (const [gid, gameState] of snakeGames.entries()) {
-      if (uname && gameState.playerStates[uname]) {
-        gameState.playerStates[uname].alive = false;
-        gameState.activePlayers.delete(uname);
+      if (gameState.playerWsMap) {
+        for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+          if (playerWs === ws) {
+            // Found the player in this game - mark them as dead
+            if (gameState.playerStates[playerId]) {
+              gameState.playerStates[playerId].alive = false;
+              gameState.activePlayers.delete(playerId);
+              console.log('[snake] Player disconnected, marked dead:', playerId);
+            }
+            // Remove WebSocket reference to prevent memory leaks
+            gameState.playerWsMap.delete(playerId);
+            break;
+          }
+        }
       }
     }
 

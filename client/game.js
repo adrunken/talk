@@ -80,6 +80,11 @@ rawSocket.onopen = function() {
   ctx.fillRect(0, 0, 800, 400);
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
+
+  // Send ping to initialize the game
+  console.log('[snake] Sending ping to initialize game');
+  rawSocket.send('ping');
+
   if (eventHandlers['connect']) {
     eventHandlers['connect'].forEach(function(cb) { cb(); });
   }

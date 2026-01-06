@@ -3173,10 +3173,7 @@ wss.on('connection', (ws, req) => {
         snakeLobby.playerInfo = new Map();
       }
 
-      // Ensure unique game player identifiers by using WebSocket ID if usernames collide
-      // This prevents Set deduplication issues when multiple players have the same username
-      const gamePlayerId = username + '_' + ws;
-      snakeLobby.playerInfo.set(ws, { username, gamePlayerId, ws });
+      snakeLobby.playerInfo.set(ws, { username, ws });
 
       console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
 

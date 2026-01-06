@@ -461,14 +461,20 @@ app.get('/pieces/:pieceName/:color/:type.png', (req, res) => {
 });
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
-// Initialize Socket.IO for Snake game
+// Initialize Socket.IO for Snake game (must be done BEFORE WebSocket server)
 const io = SocketIO(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  path: "/socket.io"
+});
+
+// WebSocket server - exclude /socket.io path to avoid conflicts
+const wss = new WebSocket.Server({
+  server,
+  path: "/ws"
 });
 
 // User Settings API endpoints

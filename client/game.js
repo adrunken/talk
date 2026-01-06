@@ -394,6 +394,86 @@ socket.on("afk?", function (data) {
   socket.emit("not afk");
 });
 
+// Snake game events
+socket.on("snake_lobby_update", function (data) {
+  console.log("[snake] Lobby update:", data);
+  ctx.fillStyle = "#000000";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = "#000000";
+  ctx.font = "20px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("Waiting for players...", 200, 150);
+  ctx.fillText("Players: " + data.players.length, 200, 200);
+  ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+});
+
+socket.on("snake_game_start", function (data) {
+  console.log("[snake] Game started:", data);
+  // Clear status and start rendering game
+  ctx.fillStyle = "#000000";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Update winners with game players
+  if (data.players && data.players.length > 0) {
+    socket.emit("winners", { list: data.players });
+  }
+});
+
+socket.on("snake_game_update", function (data) {
+  console.log("[snake] Game update:", data);
+  // Convert server format to client format
+  var clientData = {
+    trails: data.trails || [],
+    playerStates: data.playerStates || {}
+  };
+  // Trigger the "data" handler with converted data
+  socket.emit("_internal_data", clientData);
+});
+
+socket.on("_internal_data", function (data) {
+  // This is our internal way of triggering the data rendering
+  // Call the data handler logic directly
+  ctx.clearRect(0, 0, 800, 400);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, 800, 400);
+  ctx.textAlign = "center";
+  ctx.font = "10px Arial";
+
+  ctx.fillStyle = "#BBBBBB";
+  for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+    ctx.fillRect(bgLineX, 0, 1, 400);
+  }
+  for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+    ctx.fillRect(0, bgLineY, 800, 1);
+  }
+
+  if (data.trails) {
+    for (var i = 0; i < data.trails.length; i++) {
+      ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
+      ctx.beginPath();
+      ctx.lineWidth = "3";
+      ctx.moveTo(data.trails[i].x, data.trails[i].y);
+      ctx.lineTo(data.trails[i].x, data.trails[i].y);
+      ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = "#000";
+  ctx.font = "10px Arial";
+  if (data.winner) {
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#0000FF";
+    ctx.fillText("You are Winner!", 360, 250);
+    ctx.font = "35px Arial";
+    ctx.fillStyle = "#33FF99";
+    ctx.fillText("Winner: " + data.winner, 360, 200);
+  }
+});
+
 document.getElementById("ctx").onkeydown = function (event) {
   if (event.keyCode === 70 || event.keyCode === 76)
     socket.emit("keyPress", {

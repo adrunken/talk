@@ -1927,23 +1927,10 @@ function updateSnakeGameOnServer(gid) {
   };
 
   // Send to all connected players in the current game
-  const deadPlayers = [];
   if (gameState.playerWsMap) {
     for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
       if (playerWs && playerWs.readyState === 1) {
         send(playerWs, updatePayload);
-      } else if (!playerWs || playerWs.readyState !== 1) {
-        // Mark for cleanup - WebSocket is closed
-        deadPlayers.push(playerId);
-      }
-    }
-    // Clean up closed WebSocket references after iteration
-    for (const playerId of deadPlayers) {
-      gameState.playerWsMap.delete(playerId);
-      // Also mark player as dead in game state
-      if (gameState.playerStates[playerId]) {
-        gameState.playerStates[playerId].alive = false;
-        gameState.activePlayers.delete(playerId);
       }
     }
   }

@@ -1963,11 +1963,8 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  userMessageTimes.set(ws, []);
-
   ws.on('message', async (data) => {
     let msgStr = data.toString();
-    if (msgStr.length > 4096) { send(ws, { type: 'flood' }); try { ws.close(); } catch(_){} return; }
 
     pings.set(ws, now());
 

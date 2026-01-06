@@ -258,11 +258,12 @@ socket.on("winners", function (data) {
 });
 
 socket.on("data", function (data) {
-  console.log('[snake] Received data:', {
+  console.log('[snake] Received data event:', {
     playersCount: data.players ? data.players.length : 0,
     trailsCount: data.trails ? data.trails.length : 0,
     gameStarted: data.gameStarted,
-    gameOverState: snakeGameOverState.isGameOver
+    gameOverState: snakeGameOverState.isGameOver,
+    firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
   // Handle game over state

@@ -23,7 +23,13 @@ uiDiv.style.height = "0px";
 document.getElementById("ctx").focus();
 
 // Connect to Socket.IO server with explicit path
-var socket = io({
+// Use window.parent.location if in iframe to get the parent URL
+var parentLoc = (window.parent && window.parent.location) ? window.parent.location : window.location;
+var socketUrl = parentLoc.protocol + '//' + parentLoc.host;
+
+console.log('[socket.io] Connecting to:', socketUrl);
+
+var socket = io(socketUrl, {
   path: '/socket.io',
   reconnection: true,
   reconnectionDelay: 1000,

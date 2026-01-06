@@ -1872,26 +1872,18 @@ function updateSnakeGameOnServer(gid) {
     });
   }
 
-  // Convert trails format - create line segments between consecutive points
+  // Convert trails format - each trail point becomes a visible mark
   const trailsList = [];
-  const trailsByPlayer = {};
 
-  // Group trails by player
-  for (const trail of gameState.trails) {
-    if (!trailsByPlayer[trail.owner]) {
-      trailsByPlayer[trail.owner] = [];
-    }
-    trailsByPlayer[trail.owner].push(trail);
-  }
-
-  // Create line segments from consecutive positions for each player
-  for (const username in trailsByPlayer) {
+  // Render each player's entire snake body as a trail
+  for (const username of gameState.players) {
     const ownerState = gameState.playerStates[username];
-    const color = ownerState ? colorHues[ownerState.color] || 100 : 100;
-    const trails = trailsByPlayer[username];
+    if (!ownerState) continue;
 
-    // Add trail segments connecting all positions
+    const color = colorHues[ownerState.color] || 100;
     const positions = ownerState.positions;
+
+    // Draw line segments between consecutive body segments
     for (let i = 0; i < positions.length - 1; i++) {
       trailsList.push({
         x: positions[i][0] * 8,

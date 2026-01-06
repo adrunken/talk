@@ -1928,24 +1928,14 @@ function updateSnakeGameOnServer(gid) {
     activePlayers: gameState.activePlayers.size
   };
 
-  // Send to all connected players in the current game using their WebSocket references
-  let sentCount = 0;
+  // Send to all connected players in the current game
   if (gameState.playerWsMap) {
     for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
       if (playerWs && playerWs.readyState === 1) {
         send(playerWs, updatePayload);
-        sentCount++;
-      }
-    }
-  }
-
-  // Also send to any players still in the lobby waiting for games
-  if (snakeLobby.playerInfo) {
-    for (const playerInfo of snakeLobby.playerInfo.values()) {
-      // Only send to players not currently in a game
-      if (playerInfo.ws && playerInfo.ws.readyState === 1 && !gameState.playerWsMap.has(playerInfo.ws)) {
-        send(playerInfo.ws, updatePayload);
-        sentCount++;
+      } else if (!playerWs || playerWs.readyState !== 1) {
+        // Clean up closed WebSocket references
+        gameState.playerWsMap.delete(playerId);
       }
     }
   }

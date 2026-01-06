@@ -3135,7 +3135,17 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      const username = users.get(ws);
+      let username = users.get(ws);
+
+      // If username not in users map, try to use the one from the message
+      if (!username && msg.username) {
+        username = cleanUsername(msg.username, ws);
+        users.set(ws, username);
+        usernameToWs.set(username, ws);
+        knownUsers.add(username);
+        persistKnownUsers();
+      }
+
       if (!username) {
         send(ws, { type: 'snake_error', message: 'Not authenticated' });
         return;

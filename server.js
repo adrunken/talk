@@ -3197,8 +3197,10 @@ wss.on('connection', (ws, req) => {
         // Start new game
         console.log('[snake] Starting new game - size >= 2 condition met');
         const gid = nextGameId++;
-        const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
-        console.log('[snake] Game players:', playersArray);
+        const playerInfoArray = Array.from(snakeLobby.playerInfo.values());
+        const playersArray = playerInfoArray.map(p => p.gamePlayerId); // Use unique game player IDs
+        const displayNames = playerInfoArray.map(p => p.username); // Keep track of display names
+        console.log('[snake] Game players:', displayNames, '(IDs:', playersArray, ')');
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3212,6 +3214,7 @@ wss.on('connection', (ws, req) => {
         const gameState = {
           gameId: gid,
           players: playersArray,
+          displayNames: displayNames, // Map of gamePlayerId index to display username
           playerStates: {},
           trails: [],
           gameStartTime: Date.now(),

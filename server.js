@@ -1974,37 +1974,28 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
-    // Check collision with trails
-    let hitTrail = false;
+    // Check collision with own body (trails from this player's body)
+    // Only collide with own trail, not other players' trails (Armegatron-style close approach)
+    let hitOwnBody = false;
     for (let i = 0; i < gameState.trails.length; i++) {
-      if (gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
-        hitTrail = true;
+      if (gameState.trails[i].owner === username && gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+        hitOwnBody = true;
         break;
       }
     }
 
-    if (hitTrail) {
+    if (hitOwnBody) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;
     }
 
-    // Check collision with other player heads
-    let hitHead = false;
-    for (const otherUsername of playerList) {
-      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-      const otherNewHead = newHeads[otherUsername];
-      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-        hitHead = true;
-        break;
-      }
-    }
+    // Check collision with boundaries
+    // (boundaries are checked above, but keeping consistent with old body collision logic)
 
-    if (hitHead) {
-      player.alive = false;
-      gameState.activePlayers.delete(username);
-      continue;
-    }
+    // No special head-to-head collision - snakes can pass through each other closely
+    // They only die if they occupy the exact same cell after movement is resolved
+    // (which would be resolved in the next tick when both have moved)
 
     // Add current head position to trails
     const head = player.positions[player.positions.length - 1];

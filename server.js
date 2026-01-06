@@ -1432,7 +1432,6 @@ setInterval(() => {
       }
       users.delete(ws);
       pings.delete(ws);
-      userMessageTimes.delete(ws);
       if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
       changed = true;
     }

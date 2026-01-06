@@ -3374,16 +3374,18 @@ wss.on('connection', (ws, req) => {
 });
 
 // Socket.IO handlers for Snake game
-io.on('connection', (socket) => {
-  console.log('[socket.io] Client connected:', socket.id);
+console.log('[socket.io] Initializing Socket.IO on path /socket.io');
 
-  socket.on('disconnect', () => {
-    console.log('[socket.io] Client disconnected:', socket.id);
+io.on('connection', (socket) => {
+  console.log('[socket.io] Client connected:', socket.id, 'Total clients:', io.engine.clientsCount);
+
+  socket.on('disconnect', (reason) => {
+    console.log('[socket.io] Client disconnected:', socket.id, 'Reason:', reason);
   });
 
   socket.on('changeName', (data) => {
     console.log('[socket.io] changeName:', data);
-    socket.emit('changeName', { success: true });
+    socket.emit('changeName', { success: true, name: data.name });
   });
 
   socket.on('keyPress', (data) => {
@@ -3391,6 +3393,13 @@ io.on('connection', (socket) => {
     // Broadcast to all clients
     io.emit('keyPress', data);
   });
+
+  socket.on('connect_error', (error) => {
+    console.log('[socket.io] Connection error:', error);
+  });
+
+  // Ping to keep connection alive
+  socket.emit('ping', { timestamp: Date.now() });
 });
 
 server.listen(PORT, HOST, () => {

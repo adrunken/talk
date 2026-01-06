@@ -3152,10 +3152,20 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      const username = users.get(ws);
+      // Use username from message or fallback to users map
+      let username = msg.username || users.get(ws);
       if (!username) {
-        send(ws, { type: 'snake_error', message: 'Not authenticated' });
-        return;
+        // Generate a default username if not provided
+        username = 'Worm' + Math.floor(Math.random() * 10000);
+        users.set(ws, username);
+        knownUsers.add(username);
+        persistKnownUsers();
+      }
+      // Update users map if not already set
+      if (!users.has(ws) || !users.get(ws)) {
+        users.set(ws, username);
+        knownUsers.add(username);
+        persistKnownUsers();
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

@@ -3157,10 +3157,8 @@ wss.on('connection', (ws, req) => {
       if (!username) {
         // Generate a default username if not provided
         username = 'Worm' + Math.floor(Math.random() * 10000);
-        users.set(ws, username);
-        knownUsers.add(username);
-        persistKnownUsers();
       }
+
       // Update users map if not already set
       if (!users.has(ws) || !users.get(ws)) {
         users.set(ws, username);
@@ -3172,7 +3170,11 @@ wss.on('connection', (ws, req) => {
       if (!snakeLobby.playerInfo) {
         snakeLobby.playerInfo = new Map();
       }
-      snakeLobby.playerInfo.set(ws, { username, ws });
+
+      // Ensure unique game player identifiers by using WebSocket ID if usernames collide
+      // This prevents Set deduplication issues when multiple players have the same username
+      const gamePlayerId = username + '_' + ws;
+      snakeLobby.playerInfo.set(ws, { username, gamePlayerId, ws });
 
       console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
 

@@ -3424,19 +3424,22 @@ wss.on('connection', (ws, req) => {
       const gid = msg.game_id;
 
       if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+        const playerInfo = snakeLobby.playerInfo.get(ws);
         snakeLobby.playerInfo.delete(ws);
-        console.log('[snake] Player left lobby');
+        console.log('[snake] Player left lobby:', playerInfo?.username);
       }
 
       if (snakeGames.has(gid)) {
         const gameState = snakeGames.get(gid);
         // Find the player by matching WebSocket in playerWsMap
-        if (gameState.playerWsMap) {
+        if (gameState && gameState.playerWsMap) {
           for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
             if (playerWs === ws) {
-              if (gameState.playerStates[playerId]) {
+              if (gameState.playerStates && gameState.playerStates[playerId]) {
                 gameState.playerStates[playerId].alive = false;
-                gameState.activePlayers.delete(playerId);
+                if (gameState.activePlayers) {
+                  gameState.activePlayers.delete(playerId);
+                }
                 console.log('[snake] Player left game:', playerId);
               }
               gameState.playerWsMap.delete(playerId);

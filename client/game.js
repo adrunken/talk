@@ -394,6 +394,15 @@ socket.on("afk?", function (data) {
   socket.emit("not afk");
 });
 
+socket.on("username", function (data) {
+  console.log("[snake] Server requesting username");
+  var username = document.getElementById("nameInput").value || "Worm";
+  console.log("[snake] Responding with username:", username);
+  socket.emit("username", {
+    username: username
+  });
+});
+
 // Snake game events
 socket.on("snake_lobby_update", function (data) {
   console.log("[snake] Lobby update:", data);

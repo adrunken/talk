@@ -3403,9 +3403,8 @@ wss.on('connection', (ws, req) => {
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
 
     // Clean up snake game lobby
-    if (uname && snakeLobby.players.has(uname)) {
-      snakeLobby.players.delete(uname);
-      snakeLobby.playerWs.delete(uname);
+    if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+      snakeLobby.playerInfo.delete(ws);
     }
 
     // Clean up snake games

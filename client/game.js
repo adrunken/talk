@@ -445,7 +445,7 @@ socket.on("afk?", function (data) {
 
 socket.on("username", function (data) {
   console.log("[snake] Server requesting username");
-  var username = document.getElementById("nameInput").value || "Worm";
+  var username = getLoggedInUsername();
   console.log("[snake] Responding with username:", username);
   socket.emit("username", {
     username: username

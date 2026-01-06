@@ -3325,17 +3325,18 @@ wss.on('connection', (ws, req) => {
     else if (msg.type === 'snake_leave') {
       const gid = msg.game_id;
       const username = users.get(ws);
+      const playerInfo = snakeLobby.playerInfo && snakeLobby.playerInfo.get(ws);
 
       if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
         snakeLobby.playerInfo.delete(ws);
         console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.playerInfo.size});
       }
 
-      if (snakeGames.has(gid)) {
+      if (snakeGames.has(gid) && playerInfo) {
         const gameState = snakeGames.get(gid);
-        if (username && gameState.playerStates[username]) {
-          gameState.playerStates[username].alive = false;
-          gameState.activePlayers.delete(username);
+        if (gameState.playerStates[playerInfo.playerId]) {
+          gameState.playerStates[playerInfo.playerId].alive = false;
+          gameState.activePlayers.delete(playerInfo.playerId);
         }
       }
     }

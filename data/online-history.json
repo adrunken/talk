@@ -1534,6 +1534,11 @@
       "action": "online",
       "timestamp": 1767665367,
       "time": "02:09"
+    },
+    {
+      "action": "offline",
+      "timestamp": 1767665399,
+      "time": "02:09"
     }
   ]
 }

@@ -381,6 +381,12 @@ socket.on("id", function (data) {
   id = data.id;
   setTimeout(function () {
     socket.emit("kthx");
+    // Join the snake game lobby
+    var username = document.getElementById("nameInput").value || "Worm";
+    console.log("[snake] Joining game as:", username);
+    socket.emit("snake_join", {
+      username: username
+    });
   }, 100);
 });
 

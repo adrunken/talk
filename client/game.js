@@ -395,11 +395,6 @@ socket.on("data", function (data) {
   }
 });
 
-socket.on("newName", function (data) {
-  console.log("Server changed your name to " + data.name);
-  document.getElementById("nameInput").value = data.name;
-});
-
 socket.on("snake_game_over", function (data) {
   console.log("[snake] Game over:", data);
   snakeGameOverState.isGameOver = true;

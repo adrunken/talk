@@ -1873,13 +1873,15 @@ function updateSnakeGameOnServer(gid) {
   const colorHues = {green: 100, blue: 240, yellow: 60, red: 0};
   let playerId = 0;
 
-  for (const username of gameState.players) {
-    const state = gameState.playerStates[username];
+  for (let i = 0; i < gameState.players.length; i++) {
+    const playerId_internal = gameState.players[i];
+    const state = gameState.playerStates[playerId_internal];
+    const displayName = gameState.displayNames ? gameState.displayNames[i] : playerId_internal;
     const head = state.positions[state.positions.length - 1];
 
     playersList.push({
       id: playerId++,
-      name: username,
+      name: displayName,
       x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
       y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       color: colorHues[state.color] || 100,
@@ -3152,16 +3154,25 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      const username = users.get(ws);
+      // Use username from message or fallback to users map
+      let username = msg.username || users.get(ws);
       if (!username) {
-        send(ws, { type: 'snake_error', message: 'Not authenticated' });
-        return;
+        // Generate a default username if not provided
+        username = 'Worm' + Math.floor(Math.random() * 10000);
+      }
+
+      // Update users map if not already set
+      if (!users.has(ws) || !users.get(ws)) {
+        users.set(ws, username);
+        knownUsers.add(username);
+        persistKnownUsers();
       }
 
       // Use WebSocket as the unique player identifier, store username alongside
       if (!snakeLobby.playerInfo) {
         snakeLobby.playerInfo = new Map();
       }
+
       snakeLobby.playerInfo.set(ws, { username, ws });
 
       console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
@@ -3185,8 +3196,10 @@ wss.on('connection', (ws, req) => {
         // Start new game
         console.log('[snake] Starting new game - size >= 2 condition met');
         const gid = nextGameId++;
-        const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
-        console.log('[snake] Game players:', playersArray);
+        const playerInfoArray = Array.from(snakeLobby.playerInfo.values());
+        const playersArray = playerInfoArray.map((p, idx) => `${p.username}#${idx}_${gid}`); // Create unique game player IDs
+        const displayNames = playerInfoArray.map(p => p.username); // Keep track of display names
+        console.log('[snake] Game players:', displayNames, '(IDs:', playersArray, ')');
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3197,10 +3210,18 @@ wss.on('connection', (ws, req) => {
           return [[x, y]];
         });
 
+        // Create a map from player ID to WebSocket for finding players later
+        const playerWsMap = new Map();
+        for (let i = 0; i < playerInfoArray.length; i++) {
+          playerWsMap.set(playersArray[i], playerInfoArray[i].ws);
+        }
+
         const gameState = {
           gameId: gid,
           players: playersArray,
+          displayNames: displayNames, // Map of gamePlayerId index to display username
           playerStates: {},
+          playerWsMap: playerWsMap,
           trails: [],
           gameStartTime: Date.now(),
           activePlayers: new Set(playersArray),
@@ -3224,7 +3245,7 @@ wss.on('connection', (ws, req) => {
         const startPayload = {
           type: 'snake_game_start',
           game_id: gid,
-          players: playersArray,
+          players: displayNames,
           playerStates: gameState.playerStates
         };
 
@@ -3263,7 +3284,9 @@ wss.on('connection', (ws, req) => {
         if (snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId) {
           console.log('[snake] Double-check: Found >= 2 players waiting, starting game now');
           const gid = nextGameId++;
-          const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+          const playerInfoArray = Array.from(snakeLobby.playerInfo.values());
+          const playersArray = playerInfoArray.map((p, idx) => `${p.username}#${idx}_${gid}`);
+          const playerDisplayNames = playerInfoArray.map(p => p.username);
           const colors = ['green', 'blue', 'yellow', 'red'];
           const directions = ['right', 'down', 'left', 'up'];
 
@@ -3274,10 +3297,18 @@ wss.on('connection', (ws, req) => {
             return [[x, y]];
           });
 
+          // Create a map from player ID to WebSocket for finding players later
+          const playerWsMap = new Map();
+          for (let i = 0; i < playerInfoArray.length; i++) {
+            playerWsMap.set(playersArray[i], playerInfoArray[i].ws);
+          }
+
           const gameState = {
             gameId: gid,
             players: playersArray,
+            displayNames: playerDisplayNames,
             playerStates: {},
+            playerWsMap: playerWsMap,
             trails: [],
             gameStartTime: Date.now(),
             activePlayers: new Set(playersArray),
@@ -3301,7 +3332,7 @@ wss.on('connection', (ws, req) => {
           const startPayload = {
             type: 'snake_game_start',
             game_id: gid,
-            players: playersArray,
+            players: playerDisplayNames,
             playerStates: gameState.playerStates
           };
 
@@ -3311,7 +3342,7 @@ wss.on('connection', (ws, req) => {
             }
           }
 
-          console.log('[snake] Game started via double-check:', {gid, players: playersArray});
+          console.log('[snake] Game started via double-check:', {gid, players: playerDisplayNames});
 
           // Start game loop
           if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
@@ -3330,14 +3361,23 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       if (!username) return;
 
-      // Find the game this player is in
+      // Find the game this player is in by matching WebSocket
       let gameId = null;
+      let playerInternalId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
-        if (gameState.players.includes(username)) {
-          gameId = gid;
-          break;
+        // Find player by matching with WebSocket stored in playerWsMap
+        if (gameState.playerWsMap) {
+          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+            if (playerWs === ws) {
+              gameId = gid;
+              playerInternalId = playerId;
+              break;
+            }
+          }
         }
+        if (gameId) break;
       }
+
       if (!gameId) {
         // Player might be in lobby, waiting for game to start
         return;
@@ -3354,7 +3394,7 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInternalId];
       if (player) {
         player.nextDirection = direction;
         console.log('[snake_move] Direction updated for', username, ':', direction);

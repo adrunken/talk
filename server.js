@@ -1796,15 +1796,15 @@ function updateSnakeGameOnServer(gid) {
     const head = player.positions[player.positions.length - 1];
     const newHead = [head[0] + dir[0], head[1] + dir[1]];
 
-    newHeads[username] = newHead;
+    newHeads[playerId] = newHead;
   }
 
   // Phase 2: Check collisions and apply moves
-  for (const username of playerList) {
-    const player = gameState.playerStates[username];
+  for (const playerId of playerList) {
+    const player = gameState.playerStates[playerId];
     if (!player || !player.alive) continue;
 
-    const newHead = newHeads[username];
+    const newHead = newHeads[playerId];
 
     // Check boundaries
     if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {

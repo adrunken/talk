@@ -22,39 +22,38 @@ uiDiv.style.height = "0px";
 
 document.getElementById("ctx").focus();
 
-// Connect to Socket.IO server with explicit path
-// Use window.parent.location if in iframe to get the parent URL
-var parentLoc = (window.parent && window.parent.location) ? window.parent.location : window.location;
-var socketUrl = parentLoc.protocol + '//' + parentLoc.host;
+// Connect to WebSocket server (the game logic is on the WebSocket endpoint)
+var wsScheme = (window.location.protocol === 'https:') ? 'wss' : 'ws';
+var wsUrl = wsScheme + '://' + window.location.host + '/ws';
 
-console.log('[socket.io] Connecting to:', socketUrl);
+console.log('[snake] Connecting to WebSocket:', wsUrl);
 
-var socket = io(socketUrl, {
-  path: '/socket.io',
-  reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  reconnectionAttempts: 5
-});
+var socket = new WebSocket(wsUrl);
 
-// Connection event handlers for debugging
-socket.on('connect', function() {
-  console.log('[socket.io] Connected with id:', socket.id);
+// Connection event handlers
+socket.onopen = function() {
+  console.log('[snake] WebSocket connected');
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
-});
+};
 
-socket.on('disconnect', function() {
-  console.log('[socket.io] Disconnected');
-});
+socket.onerror = function(error) {
+  console.error('[snake] WebSocket error:', error);
+  ctx.fillStyle = "#000000";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = "#FF0000";
+  ctx.fillText("Connection Error: " + error, 200, 200);
+};
 
-socket.on('connect_error', function(error) {
-  console.error('[socket.io] Connection error:', error);
-});
+socket.onclose = function() {
+  console.log('[snake] WebSocket disconnected');
+};
 
 var id = -1;
 

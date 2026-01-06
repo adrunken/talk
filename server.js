@@ -3089,30 +3089,33 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      // Add player to lobby or create a game if 2+ players
-      snakeLobby.players.add(username);
-      snakeLobby.playerWs.set(username, ws);
+      // Use WebSocket as the unique player identifier, store username alongside
+      if (!snakeLobby.playerInfo) {
+        snakeLobby.playerInfo = new Map();
+      }
+      snakeLobby.playerInfo.set(ws, { username, ws });
 
-      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.players.length});
+      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size});
 
       // Send game state to joining player
       if (snakeLobby.gameId) {
         // Game is already running
         const gameState = snakeGames.get(snakeLobby.gameId);
         if (gameState) {
+          const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
           send(ws, {
             type: 'snake_game_state',
             game_id: snakeLobby.gameId,
-            players: Array.from(snakeLobby.players),
+            players: playerNames,
             board: gameState.board,
             playerStates: gameState.playerStates,
             trails: gameState.trails
           });
         }
-      } else if (snakeLobby.players.size >= 2) {
+      } else if (snakeLobby.playerInfo.size >= 2) {
         // Start new game
         const gid = nextGameId++;
-        const playersArray = Array.from(snakeLobby.players);
+        const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3154,10 +3157,9 @@ wss.on('connection', (ws, req) => {
           playerStates: gameState.playerStates
         };
 
-        for (const player of playersArray) {
-          const pws = snakeLobby.playerWs.get(player);
-          if (pws && pws.readyState === 1) {
-            send(pws, startPayload);
+        for (const playerInfo of snakeLobby.playerInfo.values()) {
+          if (playerInfo.ws && playerInfo.ws.readyState === 1) {
+            send(playerInfo.ws, startPayload);
           }
         }
 
@@ -3170,14 +3172,15 @@ wss.on('connection', (ws, req) => {
         }, 100); // 10 ticks per second
       } else {
         // Broadcast lobby update
+        const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
         const lobbyPayload = {
           type: 'snake_lobby_update',
-          players: Array.from(snakeLobby.players),
-          playersNeeded: Math.max(0, 2 - snakeLobby.players.size)
+          players: playerNames,
+          playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size)
         };
 
-        for (const pws of snakeLobby.playerWs.values()) {
-          if (pws.readyState === 1) send(pws, lobbyPayload);
+        for (const playerInfo of snakeLobby.playerInfo.values()) {
+          if (playerInfo.ws && playerInfo.ws.readyState === 1) send(playerInfo.ws, lobbyPayload);
         }
       }
     }

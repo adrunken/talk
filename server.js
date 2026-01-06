@@ -3181,6 +3181,41 @@ wss.on('connection', (ws, req) => {
         }
       }
     }
+    else if (msg.type === 'keyPress') {
+      // Handle keyPress from client - convert to direction
+      const username = users.get(ws);
+      if (!username) return;
+
+      // Find the game this player is in
+      let gameId = null;
+      for (const [gid, gameState] of snakeGames.entries()) {
+        if (gameState.players.includes(username)) {
+          gameId = gid;
+          break;
+        }
+      }
+      if (!gameId) {
+        // Player might be in lobby, waiting for game to start
+        return;
+      }
+
+      const inputId = msg.inputId; // "right", "down", "left", "up"
+      const directionMap = {
+        'right': 'right',
+        'down': 'down',
+        'left': 'left',
+        'up': 'up'
+      };
+      const direction = directionMap[inputId];
+      if (!direction) return;
+
+      const gameState = snakeGames.get(gameId);
+      const player = gameState.playerStates[username];
+      if (player) {
+        player.nextDirection = direction;
+        console.log('[snake_move] Direction updated for', username, ':', direction);
+      }
+    }
     else if (msg.type === 'snake_move') {
       const gid = msg.game_id;
       const username = users.get(ws);

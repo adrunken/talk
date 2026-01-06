@@ -1262,6 +1262,7 @@ const snakeGames = new Map(); // game_id -> {players: [username, ...], gameState
 let snakeLobby = { playerInfo: new Map(), gameId: null, gameLoop: null }; // Current snake game lobby
 let nextGameId = 1;
 let nextSessionId = 1;
+let nextPlayerId = 1;
 const userMessageTimes = new Map(); // ws -> Array<number> timestamps
 
 function now() { return Date.now() / 1000; }
@@ -1781,8 +1782,8 @@ function updateSnakeGameOnServer(gid) {
   const newHeads = {}; // Track new head positions for collision detection
 
   // Phase 1: Update directions and calculate new positions
-  for (const username of playerList) {
-    const player = gameState.playerStates[username];
+  for (const playerId of playerList) {
+    const player = gameState.playerStates[playerId];
     if (!player || !player.alive) continue;
 
     // Apply direction change (prevent 180-degree turns)
@@ -1795,20 +1796,20 @@ function updateSnakeGameOnServer(gid) {
     const head = player.positions[player.positions.length - 1];
     const newHead = [head[0] + dir[0], head[1] + dir[1]];
 
-    newHeads[username] = newHead;
+    newHeads[playerId] = newHead;
   }
 
   // Phase 2: Check collisions and apply moves
-  for (const username of playerList) {
-    const player = gameState.playerStates[username];
+  for (const playerId of playerList) {
+    const player = gameState.playerStates[playerId];
     if (!player || !player.alive) continue;
 
-    const newHead = newHeads[username];
+    const newHead = newHeads[playerId];
 
     // Check boundaries
     if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 
@@ -1823,15 +1824,15 @@ function updateSnakeGameOnServer(gid) {
 
     if (hitTrail) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 
     // Check collision with other player heads
     let hitHead = false;
-    for (const otherUsername of playerList) {
-      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-      const otherNewHead = newHeads[otherUsername];
+    for (const otherPlayerId of playerList) {
+      if (otherPlayerId === playerId || !gameState.playerStates[otherPlayerId].alive) continue;
+      const otherNewHead = newHeads[otherPlayerId];
       if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
         hitHead = true;
         break;
@@ -1840,13 +1841,13 @@ function updateSnakeGameOnServer(gid) {
 
     if (hitHead) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 
     // Add current head position to trails
     const head = player.positions[player.positions.length - 1];
-    gameState.trails.push({x: head[0], y: head[1], owner: username});
+    gameState.trails.push({x: head[0], y: head[1], owner: player.username});
     player.positions.push(newHead);
   }
 
@@ -1854,15 +1855,17 @@ function updateSnakeGameOnServer(gid) {
   // Client expects: {players: [{id, isDead, color, x, y, name, gameStarted, hasJoined}, ...], trails: [{x, y, endX, endY, color}, ...]}
   const playersList = [];
   const colorHues = {green: 100, blue: 240, yellow: 60, red: 0};
-  let playerId = 0;
+  let displayId = 0;
 
-  for (const username of gameState.players) {
-    const state = gameState.playerStates[username];
+  for (const playerInfo of gameState.players) {
+    const playerId = playerInfo.playerId;
+    const state = gameState.playerStates[playerId];
+    if (!state) continue;
     const head = state.positions[state.positions.length - 1];
 
     playersList.push({
-      id: playerId++,
-      name: username,
+      id: displayId++,
+      name: state.username,
       x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
       y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
       color: colorHues[state.color] || 100,
@@ -1876,8 +1879,9 @@ function updateSnakeGameOnServer(gid) {
   const trailsList = [];
 
   // Render each player's entire snake body as a trail
-  for (const username of gameState.players) {
-    const ownerState = gameState.playerStates[username];
+  for (const playerInfo of gameState.players) {
+    const playerId = playerInfo.playerId;
+    const ownerState = gameState.playerStates[playerId];
     if (!ownerState) continue;
 
     const color = colorHues[ownerState.color] || 100;
@@ -3135,17 +3139,28 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      const username = users.get(ws);
+      let username = users.get(ws);
+
+      // If username not in users map, try to use the one from the message
+      if (!username && msg.username) {
+        username = cleanUsername(msg.username, ws);
+        users.set(ws, username);
+        usernameToWs.set(username, ws);
+        knownUsers.add(username);
+        persistKnownUsers();
+      }
+
       if (!username) {
         send(ws, { type: 'snake_error', message: 'Not authenticated' });
         return;
       }
 
-      // Use WebSocket as the unique player identifier, store username alongside
+      // Use WebSocket as the unique player identifier, store username and playerId alongside
       if (!snakeLobby.playerInfo) {
         snakeLobby.playerInfo = new Map();
       }
-      snakeLobby.playerInfo.set(ws, { username, ws });
+      const playerId = nextPlayerId++;
+      snakeLobby.playerInfo.set(ws, { username, ws, playerId });
 
       console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size});
 
@@ -3167,7 +3182,7 @@ wss.on('connection', (ws, req) => {
       } else if (snakeLobby.playerInfo.size >= 2) {
         // Start new game
         const gid = nextGameId++;
-        const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+        const playersArray = Array.from(snakeLobby.playerInfo.values());
         const colors = ['green', 'blue', 'yellow', 'red'];
         const directions = ['right', 'down', 'left', 'up'];
 
@@ -3184,18 +3199,22 @@ wss.on('connection', (ws, req) => {
           playerStates: {},
           trails: [],
           gameStartTime: Date.now(),
-          activePlayers: new Set(playersArray),
+          activePlayers: new Set(),
           gameRunning: true
         };
 
         for (let i = 0; i < playersArray.length; i++) {
-          gameState.playerStates[playersArray[i]] = {
+          const player = playersArray[i];
+          const playerId = player.playerId;
+          gameState.playerStates[playerId] = {
+            username: player.username,
             color: colors[i % colors.length],
             direction: directions[i % directions.length],
             nextDirection: directions[i % directions.length],
             positions: startPositions[i % startPositions.length].slice(),
             alive: true
           };
+          gameState.activePlayers.add(playerId);
         }
 
         snakeGames.set(gid, gameState);
@@ -3205,7 +3224,7 @@ wss.on('connection', (ws, req) => {
         const startPayload = {
           type: 'snake_game_start',
           game_id: gid,
-          players: playersArray,
+          players: playersArray.map(p => p.username),
           playerStates: gameState.playerStates
         };
 
@@ -3241,10 +3260,14 @@ wss.on('connection', (ws, req) => {
       const username = users.get(ws);
       if (!username) return;
 
+      // Find the player in the lobby
+      const playerInfo = snakeLobby.playerInfo && Array.from(snakeLobby.playerInfo.values()).find(p => p.ws === ws);
+      if (!playerInfo) return;
+
       // Find the game this player is in
       let gameId = null;
       for (const [gid, gameState] of snakeGames.entries()) {
-        if (gameState.players.includes(username)) {
+        if (gameState.players.some(p => p.playerId === playerInfo.playerId)) {
           gameId = gid;
           break;
         }
@@ -3265,10 +3288,10 @@ wss.on('connection', (ws, req) => {
       if (!direction) return;
 
       const gameState = snakeGames.get(gameId);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInfo.playerId];
       if (player) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[snake_move] Direction updated for', playerInfo.username, ':', direction);
       }
     }
     else if (msg.type === 'snake_move') {
@@ -3283,29 +3306,37 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
+      // Find the player in the lobby
+      const playerInfo = snakeLobby.playerInfo && Array.from(snakeLobby.playerInfo.values()).find(p => p.ws === ws);
+      if (!playerInfo) {
+        console.log('[snake_move] Player not found in lobby');
+        return;
+      }
+
       const gameState = snakeGames.get(gid);
-      const player = gameState.playerStates[username];
+      const player = gameState.playerStates[playerInfo.playerId];
       if (player) {
         player.nextDirection = direction;
-        console.log('[snake_move] Direction updated for', username, ':', direction);
+        console.log('[snake_move] Direction updated for', playerInfo.username, ':', direction);
       } else {
-        console.log('[snake_move] Player not found in game:', username);
+        console.log('[snake_move] Player not found in game:', playerInfo.username);
       }
     }
     else if (msg.type === 'snake_leave') {
       const gid = msg.game_id;
       const username = users.get(ws);
+      const playerInfo = snakeLobby.playerInfo && snakeLobby.playerInfo.get(ws);
 
       if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
         snakeLobby.playerInfo.delete(ws);
         console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.playerInfo.size});
       }
 
-      if (snakeGames.has(gid)) {
+      if (snakeGames.has(gid) && playerInfo) {
         const gameState = snakeGames.get(gid);
-        if (username && gameState.playerStates[username]) {
-          gameState.playerStates[username].alive = false;
-          gameState.activePlayers.delete(username);
+        if (gameState.playerStates[playerInfo.playerId]) {
+          gameState.playerStates[playerInfo.playerId].alive = false;
+          gameState.activePlayers.delete(playerInfo.playerId);
         }
       }
     }
@@ -3455,15 +3486,20 @@ wss.on('connection', (ws, req) => {
     if (usernameToWs.get(uname) === ws) usernameToWs.delete(uname);
 
     // Clean up snake game lobby
+    let playerId = null;
     if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+      const playerInfo = snakeLobby.playerInfo.get(ws);
+      playerId = playerInfo.playerId;
       snakeLobby.playerInfo.delete(ws);
     }
 
     // Clean up snake games
-    for (const [gid, gameState] of snakeGames.entries()) {
-      if (uname && gameState.playerStates[uname]) {
-        gameState.playerStates[uname].alive = false;
-        gameState.activePlayers.delete(uname);
+    if (playerId !== null) {
+      for (const [gid, gameState] of snakeGames.entries()) {
+        if (gameState.playerStates[playerId]) {
+          gameState.playerStates[playerId].alive = false;
+          gameState.activePlayers.delete(playerId);
+        }
       }
     }
 

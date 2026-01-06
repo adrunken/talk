@@ -1782,8 +1782,8 @@ function updateSnakeGameOnServer(gid) {
   const newHeads = {}; // Track new head positions for collision detection
 
   // Phase 1: Update directions and calculate new positions
-  for (const username of playerList) {
-    const player = gameState.playerStates[username];
+  for (const playerId of playerList) {
+    const player = gameState.playerStates[playerId];
     if (!player || !player.alive) continue;
 
     // Apply direction change (prevent 180-degree turns)

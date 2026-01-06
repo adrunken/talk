@@ -2003,8 +2003,15 @@ function updateSnakeGameOnServer(gid) {
     }
 
     if (hitOwnBody) {
-      player.alive = false;
-      gameState.activePlayers.delete(username);
+      // If already in grace period, die immediately
+      if (player.graceUntil > 0) {
+        player.alive = false;
+        gameState.activePlayers.delete(username);
+        continue;
+      }
+      // Start grace period - player has 250ms to change direction
+      player.graceUntil = now + 250;
+      player.directionAtCollision = player.direction;
       continue;
     }
 
@@ -2021,8 +2028,15 @@ function updateSnakeGameOnServer(gid) {
     }
 
     if (hitOtherHead) {
-      player.alive = false;
-      gameState.activePlayers.delete(username);
+      // If already in grace period, die immediately
+      if (player.graceUntil > 0) {
+        player.alive = false;
+        gameState.activePlayers.delete(username);
+        continue;
+      }
+      // Start grace period - player has 250ms to change direction
+      player.graceUntil = now + 250;
+      player.directionAtCollision = player.direction;
       continue;
     }
 

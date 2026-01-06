@@ -1820,7 +1820,9 @@ function startNewSnakeGame() {
       direction: directions[i % directions.length],
       nextDirection: directions[i % directions.length],
       positions: startPositions[i % startPositions.length].slice(),
-      alive: true
+      alive: true,
+      graceUntil: 0, // Timestamp when grace period expires (0 = no grace period)
+      directionAtCollision: null // Direction when collision occurred
     };
   }
 

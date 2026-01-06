@@ -3152,11 +3152,12 @@ wss.on('connection', (ws, req) => {
         return;
       }
 
-      // Use WebSocket as the unique player identifier, store username alongside
+      // Use WebSocket as the unique player identifier, store username and playerId alongside
       if (!snakeLobby.playerInfo) {
         snakeLobby.playerInfo = new Map();
       }
-      snakeLobby.playerInfo.set(ws, { username, ws });
+      const playerId = nextPlayerId++;
+      snakeLobby.playerInfo.set(ws, { username, ws, playerId });
 
       console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size});
 

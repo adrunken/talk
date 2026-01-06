@@ -20,6 +20,9 @@ ctx.fillStyle = "#000000";
 ctx.fillText("Connecting Server, Wait.. ", 200, 200);
 uiDiv.style.height = "0px";
 
+// Initialize username display
+initializeUsernameDisplay();
+
 document.getElementById("ctx").focus();
 
 // Create a WebSocket-to-SocketIO adapter for the snake game client
@@ -142,43 +145,27 @@ var snakeGameOverState = {
   countdownInterval: null
 };
 
-function nameInputKeydown(event) {
-  if (event.keyCode == 13) {
-    document.getElementById("setName").click();
-  }
-}
-
-function validNick() {
-  var regex = /^\w*$/;
-
-  var str =
-    " fck suck pucy die dead rape rump fuck kill nugg negr shit asss ass gay homo arse dick d1ck cunt t1t p1s dink dlck cok dick fux fuk bitc tit smut slut shag piss pron nob phuk nigg mofo kums kum hell hoar god gay fuks fook feck fags fag dink cum boob blow porn hate poop sex sh1t c0ck c00n shit butt cock coon muff cox crap cum cawk cipa clit cnut cock";
-  var n = str.indexOf(
-    " " + document.getElementById("nameInput").value.toLowerCase()
-  );
-  if (n != -1) return 0;
-
-  n = str.indexOf(document.getElementById("nameInput").value.toLowerCase());
-  if (n != -1) return 0;
-
-  return regex.exec(document.getElementById("nameInput").value) !== null;
-}
-
-function changeName() {
-  if (validNick()) {
-    var name = "" + document.getElementById("nameInput").value;
-    if (name == "") {
-      name = "Worm";
+function getLoggedInUsername() {
+  try {
+    // Try to get username from localStorage (set by main app)
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername && storedUsername.trim()) {
+      return storedUsername.trim();
     }
-    console.log("changing name to " + name);
-    socket.emit("changeName", {
-      name: name,
-    });
-    setCookie("trailgame_name", name, 30);
-    document.getElementById("nameInput").value = name;
+  } catch (e) {
+    console.log("[snake] localStorage not available:", e);
   }
 
-  document.getElementById("ctx").focus();
+  // Fallback to a default name
+  return "Worm";
+}
+
+function initializeUsernameDisplay() {
+  const username = getLoggedInUsername();
+  const usernameDisplay = document.getElementById("username-display");
+  if (usernameDisplay) {
+    usernameDisplay.textContent = "Playing as: " + username;
+  }
 }
 
 function mouseClick(e) {
@@ -408,11 +395,6 @@ socket.on("data", function (data) {
   }
 });
 
-socket.on("newName", function (data) {
-  console.log("Server changed your name to " + data.name);
-  document.getElementById("nameInput").value = data.name;
-});
-
 socket.on("snake_game_over", function (data) {
   console.log("[snake] Game over:", data);
   snakeGameOverState.isGameOver = true;
@@ -436,7 +418,9 @@ socket.on("snake_game_over", function (data) {
       snakeGameOverState.countdownSeconds = 7;
 
       // Rejoin lobby to start new game - this triggers the server to check if a new game should start
-      socket.emit("snake_join", {});
+      socket.emit("snake_join", {
+        username: getLoggedInUsername()
+      });
     }
   }, 1000);
 });
@@ -446,8 +430,8 @@ socket.on("id", function (data) {
   id = data.id;
   setTimeout(function () {
     socket.emit("kthx");
-    // Join the snake game lobby
-    var username = document.getElementById("nameInput").value || "Worm";
+    // Join the snake game lobby with the authenticated username
+    var username = getLoggedInUsername();
     console.log("[snake] Joining game as:", username);
     socket.emit("snake_join", {
       username: username
@@ -461,7 +445,7 @@ socket.on("afk?", function (data) {
 
 socket.on("username", function (data) {
   console.log("[snake] Server requesting username");
-  var username = document.getElementById("nameInput").value || "Worm";
+  var username = getLoggedInUsername();
   console.log("[snake] Responding with username:", username);
   socket.emit("username", {
     username: username
@@ -480,7 +464,17 @@ socket.on("snake_lobby_update", function (data) {
   ctx.textAlign = "center";
   ctx.fillText("Waiting for players...", 200, 150);
   ctx.fillText("Players: " + data.players.length, 200, 200);
-  ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+
+  // Display countdown if 2+ players are waiting
+  if (data.players.length >= 2 && data.countdownSeconds > 0) {
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
+  } else if (data.playersNeeded > 0) {
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+  }
 });
 
 var gameId = null;
@@ -562,17 +556,6 @@ function mouseMove(e) {
   }
 }
 
-var isRgb = false;
-function rgb() {
-  if (!isRgb) {
-    isRgb = true;
-    var oldName = document.getElementById("nameInput").value;
-    socket.emit("changeName", { name: "RGB" });
-    document.getElementById("nameInput").value = oldName;
-    document.getElementById("setName").click();
-  }
-}
-
 function unfocus() {
   var tmp = document.createElement("input");
   document.body.appendChild(tmp);
@@ -581,17 +564,3 @@ function unfocus() {
 
   document.getElementById("ctx").focus();
 }
-setTimeout(function () {
-  try {
-    if (getCookie("trailgame_name") != "") {
-      if (getCookie("trailgame_name").length > 6) {
-        setCookie("trailgame_name", "Guest", 100);
-      }
-      document.getElementById("nameInput").value = getCookie("trailgame_name");
-      document.getElementById("setName").click();
-    } else {
-      console.error("Creating cookie for name");
-      setCookie("trailgame_name", "Guest", 100);
-    }
-  } catch (err) {}
-}, 500);

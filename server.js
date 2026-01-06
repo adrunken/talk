@@ -3236,6 +3236,18 @@ wss.on('connection', (ws, req) => {
         snakeGames.set(gid, gameState);
         snakeLobby.gameId = gid;
 
+        // Validate all players have WebSocket references
+        let validPlayers = 0;
+        for (const playerId of playersArray) {
+          const ws = playerWsMap.get(playerId);
+          if (ws && ws.readyState === 1) {
+            validPlayers++;
+          } else {
+            console.warn('[snake] Player has invalid WebSocket:', {playerId, ws: ws ? 'present' : 'missing', readyState: ws?.readyState});
+          }
+        }
+        console.log('[snake] Game started with validation:', {gid, players: playersArray, validPlayers, totalPlayers: playersArray.length});
+
         // Notify all players game started
         const startPayload = {
           type: 'snake_game_start',
@@ -3249,8 +3261,6 @@ wss.on('connection', (ws, req) => {
             send(playerInfo.ws, startPayload);
           }
         }
-
-        console.log('[snake] Game started:', {gid, players: playersArray});
 
         // Start game loop
         if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);

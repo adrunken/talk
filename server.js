@@ -3287,7 +3287,9 @@ wss.on('connection', (ws, req) => {
         if (snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId) {
           console.log('[snake] Double-check: Found >= 2 players waiting, starting game now');
           const gid = nextGameId++;
-          const playersArray = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+          const playerInfoArray = Array.from(snakeLobby.playerInfo.values());
+          const playersArray = playerInfoArray.map((p, idx) => `${p.username}#${idx}_${gid}`);
+          const playerDisplayNames = playerInfoArray.map(p => p.username);
           const colors = ['green', 'blue', 'yellow', 'red'];
           const directions = ['right', 'down', 'left', 'up'];
 
@@ -3298,10 +3300,18 @@ wss.on('connection', (ws, req) => {
             return [[x, y]];
           });
 
+          // Create a map from player ID to WebSocket for finding players later
+          const playerWsMap = new Map();
+          for (let i = 0; i < playerInfoArray.length; i++) {
+            playerWsMap.set(playersArray[i], playerInfoArray[i].ws);
+          }
+
           const gameState = {
             gameId: gid,
             players: playersArray,
+            displayNames: playerDisplayNames,
             playerStates: {},
+            playerWsMap: playerWsMap,
             trails: [],
             gameStartTime: Date.now(),
             activePlayers: new Set(playersArray),

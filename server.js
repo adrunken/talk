@@ -1830,9 +1830,9 @@ function updateSnakeGameOnServer(gid) {
 
     // Check collision with other player heads
     let hitHead = false;
-    for (const otherUsername of playerList) {
-      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-      const otherNewHead = newHeads[otherUsername];
+    for (const otherPlayerId of playerList) {
+      if (otherPlayerId === playerId || !gameState.playerStates[otherPlayerId].alive) continue;
+      const otherNewHead = newHeads[otherPlayerId];
       if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
         hitHead = true;
         break;
@@ -1841,13 +1841,13 @@ function updateSnakeGameOnServer(gid) {
 
     if (hitHead) {
       player.alive = false;
-      gameState.activePlayers.delete(username);
+      gameState.activePlayers.delete(playerId);
       continue;
     }
 
     // Add current head position to trails
     const head = player.positions[player.positions.length - 1];
-    gameState.trails.push({x: head[0], y: head[1], owner: username});
+    gameState.trails.push({x: head[0], y: head[1], owner: player.username});
     player.positions.push(newHead);
   }
 

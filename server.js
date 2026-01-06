@@ -3244,10 +3244,9 @@ wss.on('connection', (ws, req) => {
       const gid = msg.game_id;
       const username = users.get(ws);
 
-      if (snakeLobby.players.has(username)) {
-        snakeLobby.players.delete(username);
-        snakeLobby.playerWs.delete(username);
-        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.players.size});
+      if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+        snakeLobby.playerInfo.delete(ws);
+        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.playerInfo.size});
       }
 
       if (snakeGames.has(gid)) {

@@ -3422,18 +3422,27 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'snake_leave') {
       const gid = msg.game_id;
-      const username = users.get(ws);
 
       if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
         snakeLobby.playerInfo.delete(ws);
-        console.log('[snake] Player left lobby:', {username, lobbySize: snakeLobby.playerInfo.size});
+        console.log('[snake] Player left lobby');
       }
 
       if (snakeGames.has(gid)) {
         const gameState = snakeGames.get(gid);
-        if (username && gameState.playerStates[username]) {
-          gameState.playerStates[username].alive = false;
-          gameState.activePlayers.delete(username);
+        // Find the player by matching WebSocket in playerWsMap
+        if (gameState.playerWsMap) {
+          for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+            if (playerWs === ws) {
+              if (gameState.playerStates[playerId]) {
+                gameState.playerStates[playerId].alive = false;
+                gameState.activePlayers.delete(playerId);
+                console.log('[snake] Player left game:', playerId);
+              }
+              gameState.playerWsMap.delete(playerId);
+              break;
+            }
+          }
         }
       }
     }

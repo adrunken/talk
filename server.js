@@ -1928,12 +1928,23 @@ function updateSnakeGameOnServer(gid) {
   };
 
   // Send to all connected players in the current game
+  let sendCount = 0;
+  const failedSends = [];
   if (gameState.playerWsMap) {
     for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
       if (playerWs && playerWs.readyState === 1) {
         send(playerWs, updatePayload);
+        sendCount++;
+      } else if (!playerWs) {
+        failedSends.push(`${playerId}:null`);
+      } else if (playerWs.readyState !== 1) {
+        failedSends.push(`${playerId}:readyState=${playerWs.readyState}`);
       }
     }
+  }
+
+  if (failedSends.length > 0) {
+    console.log('[snake] Failed to send to players:', failedSends.join(', '));
   }
 }
 

@@ -3601,6 +3601,7 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     const uname = users.get(ws);
+    console.log('[ws] Connection closed for user:', uname);
     users.delete(ws);
     pings.delete(ws);
     userMessageTimes.delete(ws);
@@ -3609,6 +3610,7 @@ wss.on('connection', (ws, req) => {
     // Clean up snake game lobby
     if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
       snakeLobby.playerInfo.delete(ws);
+      console.log('[snake] Player removed from lobby:', uname);
     }
 
     // Clean up snake games - find and mark player as dead using playerWsMap
@@ -3620,7 +3622,7 @@ wss.on('connection', (ws, req) => {
             if (gameState.playerStates[playerId]) {
               gameState.playerStates[playerId].alive = false;
               gameState.activePlayers.delete(playerId);
-              console.log('[snake] Player disconnected, marked dead:', playerId);
+              console.log('[snake] Player disconnected, marked dead:', {playerId, gid, activePlayers: gameState.activePlayers.size});
             }
             // Remove WebSocket reference to prevent memory leaks
             gameState.playerWsMap.delete(playerId);

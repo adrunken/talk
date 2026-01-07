@@ -486,6 +486,34 @@ socket.on("snake_game_start", function (data) {
   console.log("[snake] Game started:", data);
   gameId = data.game_id; // Store game ID for moves
 
+  // Store starting positions and player info for the game-over screen
+  if (data.playerStates) {
+    const playerNames = data.players || [];
+    const startPositions = {};
+    const playerColors = {};
+
+    for (let i = 0; i < playerNames.length; i++) {
+      const playerKey = Object.keys(data.playerStates)[i];
+      if (playerKey && data.playerStates[playerKey]) {
+        const playerState = data.playerStates[playerKey];
+        startPositions[playerNames[i]] = playerState.positions && playerState.positions.length > 0
+          ? playerState.positions[0]
+          : [400, 200];
+        playerColors[playerNames[i]] = playerState.color;
+      }
+    }
+
+    snakeGameOverState.nextGameStartPositions = startPositions;
+    snakeGameOverState.nextGamePlayerColors = playerColors;
+    snakeGameOverState.nextGamePlayerNames = playerNames;
+
+    console.log("[snake] Stored starting positions for game-over screen:", {
+      positions: startPositions,
+      colors: playerColors,
+      names: playerNames
+    });
+  }
+
   // Clear status and start rendering game
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);

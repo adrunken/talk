@@ -1878,11 +1878,29 @@ function updateSnakeGameOnServer(gid) {
       winner = Array.from(gameState.activePlayers)[0];
     }
 
-    // Notify all players
+    // Generate next game's starting positions for display on game-over screen
+    const nextGameStartPositions = {};
+    const nextGamePlayerColors = {};
+    const playerInfoArray = snakeLobby.playerInfo ? Array.from(snakeLobby.playerInfo.values()) : [];
+    const colors = ['green', 'blue', 'yellow', 'red'];
+    const directions = ['right', 'down', 'left', 'up'];
+
+    for (let i = 0; i < playerInfoArray.length; i++) {
+      const username = playerInfoArray[i].username;
+      const x = 30 + Math.floor(Math.random() * 40);
+      const y = 30 + Math.floor(Math.random() * 40);
+      nextGameStartPositions[username] = [x, y];
+      nextGamePlayerColors[username] = colors[i % colors.length];
+    }
+
+    // Notify all players with next game's starting positions
     const gameOverPayload = {
       type: 'snake_game_over',
       game_id: gid,
-      winner: winner
+      winner: winner,
+      nextGameStartPositions: nextGameStartPositions,
+      nextGamePlayerColors: nextGamePlayerColors,
+      nextGamePlayerNames: playerInfoArray.map(p => p.username)
     };
 
     if (snakeLobby.playerInfo) {

@@ -142,7 +142,10 @@ var snakeGameOverState = {
   isGameOver: false,
   winner: null,
   countdownSeconds: 7,
-  countdownInterval: null
+  countdownInterval: null,
+  nextGameStartPositions: null,
+  nextGamePlayerColors: null,
+  nextGamePlayerNames: null
 };
 
 function getLoggedInUsername() {
@@ -259,18 +262,73 @@ socket.on("data", function (data) {
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
     ctx.textAlign = "center";
-    ctx.font = "50px Arial";
+    ctx.font = "10px Arial";
+
+    // Draw background grid
+    ctx.fillStyle = "#BBBBBB";
+    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+      ctx.fillRect(bgLineX, 0, 1, 400);
+    }
+    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+      ctx.fillRect(0, bgLineY, 800, 1);
+    }
+
+    // Draw starting positions of snakes for next game as stationary snakes
+    if (snakeGameOverState.nextGameStartPositions && snakeGameOverState.nextGamePlayerNames) {
+      const colorMap = {
+        'green': 'hsl(120, 100%, 10%)',
+        'blue': 'hsl(240, 100%, 10%)',
+        'yellow': 'hsl(60, 100%, 10%)',
+        'red': 'hsl(0, 100%, 10%)'
+      };
+
+      for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
+        const playerName = snakeGameOverState.nextGamePlayerNames[i];
+        const pos = snakeGameOverState.nextGameStartPositions[playerName];
+        const color = snakeGameOverState.nextGamePlayerColors[playerName];
+        const hexColor = colorMap[color] || 'hsl(0, 0%, 10%)';
+
+        if (pos && Array.isArray(pos) && pos.length >= 2) {
+          const x = pos[0];
+          const y = pos[1];
+
+          // Draw snake head as a filled rectangle
+          ctx.fillStyle = hexColor;
+          ctx.fillRect(x - 2, y - 2, 4, 4);
+
+          // Draw player name next to snake
+          ctx.fillStyle = "#000000";
+          ctx.font = "12px Arial";
+          ctx.textAlign = "left";
+          ctx.fillText(playerName, x + 12, y + 5);
+        }
+      }
+    }
+
+    // Draw winner and countdown in center with semi-transparent background
+    ctx.fillStyle = "rgba(255, 255, 224, 0.9)";
+    ctx.fillRect(100, 80, 600, 240);
+
+    // Draw winner text
+    ctx.textAlign = "center";
+    ctx.font = "bold 50px Arial";
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 160);
     } else {
-      ctx.fillText("Game Over!", 400, 150);
+      ctx.fillText("Game Over!", 400, 160);
     }
 
-    ctx.font = "40px Arial";
+    // Draw countdown timer
+    ctx.font = "60px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    ctx.fillText(Math.max(0, snakeGameOverState.countdownSeconds), 400, 260);
+
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Restarting...", 400, 300);
+
     return;
   }
 
@@ -366,33 +424,6 @@ socket.on("data", function (data) {
       );
     }
   }
-  ctx.fillStyle = "#000000";
-  ctx.font = "25px Arial";
-
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
-    ctx.fillText("Your snake has green circular head.", 300, 290);
-  }
-
-  ctx.font = "50px Arial";
-
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Wait " + data.countdown, 330, 200);
-  }
-  if (!data.gameStarted && !data.waiting && data.onlinePlayers < 2) {
-    ctx.font = "25px Arial";
-    ctx.fillText("Waiting for more online players...", 200, 200);
-  }
-  if (data.waiting && !data.gameStarted && !data.inCountdown) {
-    if (data.lastWinnerID == id) {
-      ctx.font = "30px Arial";
-      ctx.fillStyle = "#0000FF";
-      ctx.fillText("You are Winner!", 360, 250);
-      ctx.font = "35px Arial";
-      ctx.fillStyle = "#33FF99";
-    }
-    ctx.fillText("Winner: " + data.lastWinner, 360, 200);
-  }
 });
 
 socket.on("snake_game_over", function (data) {
@@ -400,6 +431,18 @@ socket.on("snake_game_over", function (data) {
   snakeGameOverState.isGameOver = true;
   snakeGameOverState.winner = data.winner;
   snakeGameOverState.countdownSeconds = 7;
+
+  // Store next game's starting positions from the server
+  if (data.nextGameStartPositions) {
+    snakeGameOverState.nextGameStartPositions = data.nextGameStartPositions;
+    snakeGameOverState.nextGamePlayerColors = data.nextGamePlayerColors;
+    snakeGameOverState.nextGamePlayerNames = data.nextGamePlayerNames;
+    console.log("[snake] Stored next game starting positions from server:", {
+      positions: snakeGameOverState.nextGameStartPositions,
+      colors: snakeGameOverState.nextGamePlayerColors,
+      names: snakeGameOverState.nextGamePlayerNames
+    });
+  }
 
   // Clear any existing countdown
   if (snakeGameOverState.countdownInterval) {
@@ -455,25 +498,27 @@ socket.on("username", function (data) {
 // Snake game events
 socket.on("snake_lobby_update", function (data) {
   console.log("[snake] Lobby update:", data);
+
+  // Skip rendering lobby screen if game is over (restart screen takes priority)
+  if (snakeGameOverState.isGameOver) {
+    console.log("[snake] Skipping lobby update while game over screen is active");
+    return;
+  }
+
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);
-  ctx.fillStyle = "#000000";
-  ctx.font = "20px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Waiting for players...", 200, 150);
-  ctx.fillText("Players: " + data.players.length, 200, 200);
 
-  // Display countdown if 2+ players are waiting
-  if (data.players.length >= 2 && data.countdownSeconds > 0) {
-    ctx.font = "50px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
-  } else if (data.playersNeeded > 0) {
-    ctx.font = "20px Arial";
+  // Only show "Waiting for players" screen if less than 2 players
+  if (data.players.length < 2) {
     ctx.fillStyle = "#000000";
-    ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+    ctx.font = "30px Arial";
+    ctx.fillText("Waiting for players...", 400, 150);
+    ctx.font = "20px Arial";
+    ctx.fillText("Players: " + data.players.length + "/2", 400, 220);
+    ctx.fillText("Need " + data.playersNeeded + " more", 400, 280);
   }
 });
 
@@ -482,6 +527,34 @@ var gameId = null;
 socket.on("snake_game_start", function (data) {
   console.log("[snake] Game started:", data);
   gameId = data.game_id; // Store game ID for moves
+
+  // Store starting positions and player info for the game-over screen
+  if (data.playerStates) {
+    const playerNames = data.players || [];
+    const startPositions = {};
+    const playerColors = {};
+
+    for (let i = 0; i < playerNames.length; i++) {
+      const playerKey = Object.keys(data.playerStates)[i];
+      if (playerKey && data.playerStates[playerKey]) {
+        const playerState = data.playerStates[playerKey];
+        startPositions[playerNames[i]] = playerState.positions && playerState.positions.length > 0
+          ? playerState.positions[0]
+          : [400, 200];
+        playerColors[playerNames[i]] = playerState.color;
+      }
+    }
+
+    snakeGameOverState.nextGameStartPositions = startPositions;
+    snakeGameOverState.nextGamePlayerColors = playerColors;
+    snakeGameOverState.nextGamePlayerNames = playerNames;
+
+    console.log("[snake] Stored starting positions for game-over screen:", {
+      positions: startPositions,
+      colors: playerColors,
+      names: playerNames
+    });
+  }
 
   // Clear status and start rendering game
   ctx.fillStyle = "#000000";

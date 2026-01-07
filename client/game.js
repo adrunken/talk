@@ -261,6 +261,8 @@ socket.on("data", function (data) {
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
+    ctx.textAlign = "center";
+    ctx.font = "10px Arial";
 
     // Draw background grid
     ctx.fillStyle = "#BBBBBB";
@@ -271,60 +273,62 @@ socket.on("data", function (data) {
       ctx.fillRect(0, bgLineY, 800, 1);
     }
 
-    // Draw starting positions of snakes for next game in background
+    // Draw starting positions of snakes for next game as stationary snakes
     if (snakeGameOverState.nextGameStartPositions && snakeGameOverState.nextGamePlayerNames) {
       const colorMap = {
-        'green': 'hsl(120, 100%, 30%)',
-        'blue': 'hsl(240, 100%, 30%)',
-        'yellow': 'hsl(60, 100%, 30%)',
-        'red': 'hsl(0, 100%, 30%)'
+        'green': 'hsl(120, 100%, 10%)',
+        'blue': 'hsl(240, 100%, 10%)',
+        'yellow': 'hsl(60, 100%, 10%)',
+        'red': 'hsl(0, 100%, 10%)'
       };
 
       for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
         const playerName = snakeGameOverState.nextGamePlayerNames[i];
         const pos = snakeGameOverState.nextGameStartPositions[playerName];
         const color = snakeGameOverState.nextGamePlayerColors[playerName];
-        const hexColor = colorMap[color] || 'hsl(0, 0%, 30%)';
+        const hexColor = colorMap[color] || 'hsl(0, 0%, 10%)';
 
         if (pos && Array.isArray(pos) && pos.length >= 2) {
-          // Draw the snake head at starting position - larger and more visible
-          ctx.fillStyle = hexColor;
-          ctx.fillRect(pos[0] - 5, pos[1] - 5, 10, 10);
+          const x = pos[0];
+          const y = pos[1];
 
-          // Draw a subtle circle around it
-          ctx.strokeStyle = hexColor;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(pos[0], pos[1], 12, 0, 2 * Math.PI);
-          ctx.stroke();
-
-          // Draw player name below the snake head
+          // Draw snake head as a filled rectangle
           ctx.fillStyle = hexColor;
+          ctx.fillRect(x - 2, y - 2, 4, 4);
+
+          // Draw player name next to snake
+          ctx.fillStyle = "#000000";
           ctx.font = "12px Arial";
-          ctx.textAlign = "center";
-          ctx.fillText(playerName, pos[0], pos[1] + 25);
+          ctx.textAlign = "left";
+          ctx.fillText(playerName, x + 12, y + 5);
         }
       }
     }
 
-    // Draw semi-transparent dark overlay for text readability
-    ctx.fillStyle = "rgba(255, 255, 224, 0.8)";
-    ctx.fillRect(150, 100, 500, 200);
+    // Draw winner and countdown in center with semi-transparent background
+    ctx.fillStyle = "rgba(255, 255, 224, 0.9)";
+    ctx.fillRect(100, 80, 600, 240);
 
-    // Draw winner text and countdown
+    // Draw winner text
     ctx.textAlign = "center";
-    ctx.font = "50px Arial";
+    ctx.font = "bold 50px Arial";
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 170);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 160);
     } else {
-      ctx.fillText("Game Over!", 400, 170);
+      ctx.fillText("Game Over!", 400, 160);
     }
 
-    ctx.font = "40px Arial";
+    // Draw countdown timer
+    ctx.font = "60px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 250);
+    ctx.fillText(Math.max(0, snakeGameOverState.countdownSeconds), 400, 260);
+
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Restarting...", 400, 300);
+
     return;
   }
 

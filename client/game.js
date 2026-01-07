@@ -486,18 +486,6 @@ socket.on("snake_lobby_update", function (data) {
     ctx.fillText("Players: " + data.players.length + "/2", 400, 220);
     ctx.fillText("Need " + data.playersNeeded + " more", 400, 280);
   }
-  // Show game starting countdown if 2+ players and countdown is active
-  else if (data.players.length >= 2 && data.countdownSeconds > 0) {
-    ctx.fillStyle = "#000000";
-    ctx.font = "35px Arial";
-    ctx.fillText("Game Starting Soon!", 400, 150);
-    ctx.font = "60px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText(data.countdownSeconds, 400, 280);
-    ctx.font = "25px Arial";
-    ctx.fillStyle = "#000000";
-    ctx.fillText("Players: " + data.players.join(", "), 400, 350);
-  }
 });
 
 var gameId = null;

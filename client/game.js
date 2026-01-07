@@ -502,21 +502,28 @@ socket.on("snake_lobby_update", function (data) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";
   ctx.fillRect(0, 0, 800, 400);
-  ctx.fillStyle = "#000000";
-  ctx.font = "20px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Waiting for players...", 200, 150);
-  ctx.fillText("Players: " + data.players.length, 200, 200);
 
-  // Display countdown if 2+ players are waiting
-  if (data.players.length >= 2 && data.countdownSeconds > 0) {
-    ctx.font = "50px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
-  } else if (data.playersNeeded > 0) {
-    ctx.font = "20px Arial";
+  // Only show "Waiting for players" screen if less than 2 players
+  if (data.players.length < 2) {
     ctx.fillStyle = "#000000";
-    ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+    ctx.font = "30px Arial";
+    ctx.fillText("Waiting for players...", 400, 150);
+    ctx.font = "20px Arial";
+    ctx.fillText("Players: " + data.players.length + "/2", 400, 220);
+    ctx.fillText("Need " + data.playersNeeded + " more", 400, 280);
+  }
+  // Show game starting countdown if 2+ players and countdown is active
+  else if (data.players.length >= 2 && data.countdownSeconds > 0) {
+    ctx.fillStyle = "#000000";
+    ctx.font = "35px Arial";
+    ctx.fillText("Game Starting Soon!", 400, 150);
+    ctx.font = "60px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText(data.countdownSeconds, 400, 280);
+    ctx.font = "25px Arial";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Players: " + data.players.join(", "), 400, 350);
   }
 });
 

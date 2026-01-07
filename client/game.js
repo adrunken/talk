@@ -254,8 +254,11 @@ socket.on("data", function (data) {
     firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
-  // Store the latest game data (before game over) to display snakes on the game over screen
-  if (!snakeGameOverState.isGameOver) {
+  // Check if we're in the "Get Ready" phase (first 3 seconds after game start)
+  var isInGetReadyPhase = gameStartTime && (Date.now() - gameStartTime) < gameReadyDelay;
+
+  // Don't update positions if in get-ready phase or game over - just keep the last known state
+  if (!isInGetReadyPhase && !snakeGameOverState.isGameOver) {
     snakeGameOverState.lastGameData = data;
   }
 

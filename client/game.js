@@ -268,6 +268,10 @@ socket.on("data", function (data) {
 
   // Handle game over state - render with winner text overlay while new game plays
   if (snakeGameOverState.isGameOver) {
+    const elapsedTime = Date.now() - snakeGameOverState.gameOverStartTime;
+    const showFrozenPreviousGame = elapsedTime < 1000;  // First 1 second: show frozen previous game
+    const showWinnerText = elapsedTime < 4000;  // Show winner text for 4 seconds
+
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
@@ -283,23 +287,31 @@ socket.on("data", function (data) {
       ctx.fillRect(0, bgLineY, 800, 1);
     }
 
-    // Render the final game state (all snakes stationary)
-    if (snakeGameOverState.lastGameState) {
-      const gameData = snakeGameOverState.lastGameState;
+    // Choose which game state to render based on elapsed time
+    let gameDataToRender = null;
 
+    if (showFrozenPreviousGame && snakeGameOverState.lastGameState) {
+      // First 1 second: render the frozen previous game state
+      gameDataToRender = snakeGameOverState.lastGameState;
+    } else if (!showFrozenPreviousGame && data && data.players) {
+      // After 1 second: render the new game state (snakes are frozen by not updating)
+      gameDataToRender = data;
+    }
+
+    if (gameDataToRender) {
       // Draw trails
-      for (var i = 0; i < gameData.trails.length; i++) {
-        ctx.strokeStyle = "hsl(" + gameData.trails[i].color + ", 100%, 20%)";
+      for (var i = 0; i < gameDataToRender.trails.length; i++) {
+        ctx.strokeStyle = "hsl(" + gameDataToRender.trails[i].color + ", 100%, 20%)";
         ctx.beginPath();
         ctx.lineWidth = "3";
-        ctx.moveTo(gameData.trails[i].x, gameData.trails[i].y);
-        ctx.lineTo(gameData.trails[i].endX, gameData.trails[i].endY);
+        ctx.moveTo(gameDataToRender.trails[i].x, gameDataToRender.trails[i].y);
+        ctx.lineTo(gameDataToRender.trails[i].endX, gameDataToRender.trails[i].endY);
         ctx.stroke();
       }
 
-      // Draw player heads (stationary)
-      for (var i = 0; i < gameData.players.length; i++) {
-        const player = gameData.players[i];
+      // Draw player heads (stationary during game-over period)
+      for (var i = 0; i < gameDataToRender.players.length; i++) {
+        const player = gameDataToRender.players[i];
 
         if (!player.isDead) {
           ctx.fillStyle = "hsl(" + player.color + ", 100%, 10%)";
@@ -314,22 +326,24 @@ socket.on("data", function (data) {
       }
     }
 
-    // Draw winner text overlay on game board
-    ctx.textAlign = "center";
+    // Draw winner text overlay only during the first 4 seconds
+    if (showWinnerText) {
+      ctx.textAlign = "center";
 
-    // Draw "Winner: [name]" in cyan
-    ctx.font = "48px Arial";
-    ctx.fillStyle = "#00FFFF";
-    if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 180);
-    } else {
-      ctx.fillText("Game Over!", 400, 180);
+      // Draw "Winner: [name]" in cyan
+      ctx.font = "48px Arial";
+      ctx.fillStyle = "#00FFFF";
+      if (snakeGameOverState.winner) {
+        ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 180);
+      } else {
+        ctx.fillText("Game Over!", 400, 180);
+      }
+
+      // Draw "You are Winner!" in blue
+      ctx.font = "42px Arial";
+      ctx.fillStyle = "#0000FF";
+      ctx.fillText("You are Winner!", 400, 250);
     }
-
-    // Draw "You are Winner!" in blue
-    ctx.font = "42px Arial";
-    ctx.fillStyle = "#0000FF";
-    ctx.fillText("You are Winner!", 400, 250);
 
     return;
   }

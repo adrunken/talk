@@ -272,6 +272,16 @@ socket.on("data", function (data) {
     const elapsedTime = Date.now() - snakeGameOverState.gameOverStartTime;
     const showFrozenPreviousGame = elapsedTime < 1000;  // First 1 second: show frozen previous game
     const showWinnerText = elapsedTime < 4000;  // Show winner text for 4 seconds
+    const frozenStateInitiated = elapsedTime >= 1000 && elapsedTime < 4000;  // 1-4 seconds: frozen snakes
+
+    // Capture the new game state when transitioning from frozen previous to frozen new game
+    if (frozenStateInitiated && !snakeGameOverState.frozenGameState && data && data.players) {
+      snakeGameOverState.frozenGameState = {
+        players: JSON.parse(JSON.stringify(data.players)),
+        trails: JSON.parse(JSON.stringify(data.trails)),
+        gameStarted: data.gameStarted
+      };
+    }
 
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
@@ -294,9 +304,9 @@ socket.on("data", function (data) {
     if (showFrozenPreviousGame && snakeGameOverState.lastGameState) {
       // First 1 second: render the frozen previous game state
       gameDataToRender = snakeGameOverState.lastGameState;
-    } else if (!showFrozenPreviousGame && data && data.players) {
-      // After 1 second: render the new game state (snakes are frozen by not updating)
-      gameDataToRender = data;
+    } else if (frozenStateInitiated && snakeGameOverState.frozenGameState) {
+      // 1-4 seconds: render the frozen new game state (snakes stay in place)
+      gameDataToRender = snakeGameOverState.frozenGameState;
     }
 
     if (gameDataToRender) {

@@ -145,7 +145,8 @@ var snakeGameOverState = {
   countdownInterval: null,
   nextGameStartPositions: null,
   nextGamePlayerColors: null,
-  nextGamePlayerNames: null
+  nextGamePlayerNames: null,
+  lastGameState: null  // Store final game state for rendering on game-over screen
 };
 
 function getLoggedInUsername() {

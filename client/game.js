@@ -498,6 +498,13 @@ socket.on("username", function (data) {
 // Snake game events
 socket.on("snake_lobby_update", function (data) {
   console.log("[snake] Lobby update:", data);
+
+  // Skip rendering lobby screen if game is over (restart screen takes priority)
+  if (snakeGameOverState.isGameOver) {
+    console.log("[snake] Skipping lobby update while game over screen is active");
+    return;
+  }
+
   ctx.fillStyle = "#000000";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#FFFFE0";

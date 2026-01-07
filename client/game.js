@@ -281,35 +281,33 @@ socket.on("data", function (data) {
       ctx.fillRect(0, bgLineY, 800, 1);
     }
 
-    // Draw starting positions of snakes for next game as stationary snakes
-    if (snakeGameOverState.nextGameStartPositions && snakeGameOverState.nextGamePlayerNames) {
-      const colorMap = {
-        'green': 'hsl(120, 100%, 10%)',
-        'blue': 'hsl(240, 100%, 10%)',
-        'yellow': 'hsl(60, 100%, 10%)',
-        'red': 'hsl(0, 100%, 10%)'
-      };
+    // Render the final game state (all snakes stationary)
+    if (snakeGameOverState.lastGameState) {
+      const gameData = snakeGameOverState.lastGameState;
 
-      for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
-        const playerName = snakeGameOverState.nextGamePlayerNames[i];
-        const pos = snakeGameOverState.nextGameStartPositions[playerName];
-        const color = snakeGameOverState.nextGamePlayerColors[playerName];
-        const hexColor = colorMap[color] || 'hsl(0, 0%, 10%)';
+      // Draw trails
+      for (var i = 0; i < gameData.trails.length; i++) {
+        ctx.strokeStyle = "hsl(" + gameData.trails[i].color + ", 100%, 20%)";
+        ctx.beginPath();
+        ctx.lineWidth = "3";
+        ctx.moveTo(gameData.trails[i].x, gameData.trails[i].y);
+        ctx.lineTo(gameData.trails[i].endX, gameData.trails[i].endY);
+        ctx.stroke();
+      }
 
-        if (pos && Array.isArray(pos) && pos.length >= 2) {
-          // Scale from grid coordinates (0-100) to canvas coordinates (0-800 x 0-400)
-          const canvasX = pos[0] * 8;
-          const canvasY = pos[1] * 4;
+      // Draw player heads (stationary)
+      for (var i = 0; i < gameData.players.length; i++) {
+        const player = gameData.players[i];
 
-          // Draw snake head as a filled rectangle
-          ctx.fillStyle = hexColor;
-          ctx.fillRect(canvasX - 2, canvasY - 2, 4, 4);
+        if (!player.isDead) {
+          ctx.fillStyle = "hsl(" + player.color + ", 100%, 10%)";
+          ctx.fillRect(player.x - 2, player.y - 2, 4, 4);
 
-          // Draw player name next to snake
+          // Draw player name
           ctx.fillStyle = "#000000";
-          ctx.font = "12px Arial";
-          ctx.textAlign = "left";
-          ctx.fillText(playerName, canvasX + 12, canvasY + 5);
+          ctx.font = "15px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(player.name, player.x, player.y - 10);
         }
       }
     }

@@ -2734,6 +2734,11 @@
       "action": "online",
       "timestamp": 1767749384,
       "time": "01:29"
+    },
+    {
+      "action": "offline",
+      "timestamp": 1767749436,
+      "time": "01:30"
     }
   ],
   "as": [

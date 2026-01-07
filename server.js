@@ -1959,7 +1959,8 @@ function updateSnakeGameOnServer(gid) {
   const newHeads = {}; // Track new head positions for collision detection
 
  
-    // Apply direction change (prevent 180-degree turns)
+  // Phase 1: Update directions and calculate new positionsconst now = Date.now();for (const username of playerList) {const player = gameState.playerStates[username];if (!player || !player.alive) continue;// Check if grace period has expiredif (player.graceUntil > 0 && now >= player.graceUntil) {// Grace period expired - player should have changed directionif (player.direction === player.directionAtCollision) {// Player didn't change direction, they dieplayer.alive = false;gameState.activePlayers.delete(username);continue;} else {// Player successfully changed direction, clear grace periodplayer.graceUntil = 0;player.directionAtCollision = null;}}  
+  // Apply direction change (prevent 180-degree turns)
     if (player.nextDirection && opposites[player.direction] !== player.nextDirection) {
       // If in grace period and successfully changing direction, clear grace period
       if (player.graceUntil > 0 && player.nextDirection !== player.directionAtCollision) {

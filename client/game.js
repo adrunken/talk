@@ -145,7 +145,11 @@ var snakeGameOverState = {
   countdownInterval: null,
   nextGameStartPositions: null,
   nextGamePlayerColors: null,
-  nextGamePlayerNames: null
+  nextGamePlayerNames: null,
+  lastGameState: null,  // Store final game state for rendering on game-over screen
+  frozenGameState: null,  // Frozen state of new game (captured at 1 second mark)
+  gameOverStartTime: null,  // When game ended
+  showWinnerText: false  // Whether to show winner text overlay
 };
 
 function getLoggedInUsername() {
@@ -256,8 +260,29 @@ socket.on("data", function (data) {
     firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
-  // Handle game over state
+  // Always update the game state so new games can render while winner text is displayed
+  snakeGameOverState.lastGameState = {
+    players: data.players,
+    trails: data.trails,
+    gameStarted: data.gameStarted
+  };
+
+  // Handle game over state - render with winner text overlay while new game plays
   if (snakeGameOverState.isGameOver) {
+    const elapsedTime = Date.now() - snakeGameOverState.gameOverStartTime;
+    const showFrozenPreviousGame = elapsedTime < 1000;  // First 1 second: show frozen previous game
+    const showWinnerText = elapsedTime < 4000;  // Show winner text for 4 seconds
+    const frozenStateInitiated = elapsedTime >= 1000 && elapsedTime < 4000;  // 1-4 seconds: frozen snakes
+
+    // Capture the new game state when transitioning from frozen previous to frozen new game
+    if (frozenStateInitiated && !snakeGameOverState.frozenGameState && data && data.players) {
+      snakeGameOverState.frozenGameState = {
+        players: JSON.parse(JSON.stringify(data.players)),
+        trails: JSON.parse(JSON.stringify(data.trails)),
+        gameStarted: data.gameStarted
+      };
+    }
+
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
@@ -273,61 +298,63 @@ socket.on("data", function (data) {
       ctx.fillRect(0, bgLineY, 800, 1);
     }
 
-    // Draw starting positions of snakes for next game as stationary snakes
-    if (snakeGameOverState.nextGameStartPositions && snakeGameOverState.nextGamePlayerNames) {
-      const colorMap = {
-        'green': 'hsl(120, 100%, 10%)',
-        'blue': 'hsl(240, 100%, 10%)',
-        'yellow': 'hsl(60, 100%, 10%)',
-        'red': 'hsl(0, 100%, 10%)'
-      };
+    // Choose which game state to render based on elapsed time
+    let gameDataToRender = null;
 
-      for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
-        const playerName = snakeGameOverState.nextGamePlayerNames[i];
-        const pos = snakeGameOverState.nextGameStartPositions[playerName];
-        const color = snakeGameOverState.nextGamePlayerColors[playerName];
-        const hexColor = colorMap[color] || 'hsl(0, 0%, 10%)';
+    if (showFrozenPreviousGame && snakeGameOverState.lastGameState) {
+      // First 1 second: render the frozen previous game state
+      gameDataToRender = snakeGameOverState.lastGameState;
+    } else if (frozenStateInitiated && snakeGameOverState.frozenGameState) {
+      // 1-4 seconds: render the frozen new game state (snakes stay in place)
+      gameDataToRender = snakeGameOverState.frozenGameState;
+    }
 
-        if (pos && Array.isArray(pos) && pos.length >= 2) {
-          const x = pos[0];
-          const y = pos[1];
+    if (gameDataToRender) {
+      // Draw trails
+      for (var i = 0; i < gameDataToRender.trails.length; i++) {
+        ctx.strokeStyle = "hsl(" + gameDataToRender.trails[i].color + ", 100%, 20%)";
+        ctx.beginPath();
+        ctx.lineWidth = "3";
+        ctx.moveTo(gameDataToRender.trails[i].x, gameDataToRender.trails[i].y);
+        ctx.lineTo(gameDataToRender.trails[i].endX, gameDataToRender.trails[i].endY);
+        ctx.stroke();
+      }
 
-          // Draw snake head as a filled rectangle
-          ctx.fillStyle = hexColor;
-          ctx.fillRect(x - 2, y - 2, 4, 4);
+      // Draw player heads (stationary during game-over period)
+      for (var i = 0; i < gameDataToRender.players.length; i++) {
+        const player = gameDataToRender.players[i];
 
-          // Draw player name next to snake
+        if (!player.isDead) {
+          ctx.fillStyle = "hsl(" + player.color + ", 100%, 10%)";
+          ctx.fillRect(player.x - 2, player.y - 2, 4, 4);
+
+          // Draw player name
           ctx.fillStyle = "#000000";
-          ctx.font = "12px Arial";
-          ctx.textAlign = "left";
-          ctx.fillText(playerName, x + 12, y + 5);
+          ctx.font = "15px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(player.name, player.x, player.y - 10);
         }
       }
     }
 
-    // Draw winner and countdown in center with semi-transparent background
-    ctx.fillStyle = "rgba(255, 255, 224, 0.9)";
-    ctx.fillRect(100, 80, 600, 240);
+    // Draw winner text overlay only during the first 4 seconds
+    if (showWinnerText) {
+      ctx.textAlign = "center";
 
-    // Draw winner text
-    ctx.textAlign = "center";
-    ctx.font = "bold 50px Arial";
-    ctx.fillStyle = "#000000";
+      // Draw "Winner: [name]" in cyan
+      ctx.font = "48px Arial";
+      ctx.fillStyle = "#00FFFF";
+      if (snakeGameOverState.winner) {
+        ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 180);
+      } else {
+        ctx.fillText("Game Over!", 400, 180);
+      }
 
-    if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 160);
-    } else {
-      ctx.fillText("Game Over!", 400, 160);
+      // Draw "You are Winner!" in blue
+      ctx.font = "42px Arial";
+      ctx.fillStyle = "#0000FF";
+      ctx.fillText("You are Winner!", 400, 250);
     }
-
-    // Draw countdown timer
-    ctx.font = "60px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText(Math.max(0, snakeGameOverState.countdownSeconds), 400, 260);
-
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "#000000";
-    ctx.fillText("Restarting...", 400, 300);
 
     return;
   }
@@ -430,7 +457,9 @@ socket.on("snake_game_over", function (data) {
   console.log("[snake] Game over:", data);
   snakeGameOverState.isGameOver = true;
   snakeGameOverState.winner = data.winner;
-  snakeGameOverState.countdownSeconds = 7;
+  snakeGameOverState.gameOverStartTime = Date.now();
+  snakeGameOverState.showWinnerText = true;
+  snakeGameOverState.frozenGameState = null;  // Reset frozen state for new cycle
 
   // Store next game's starting positions from the server
   if (data.nextGameStartPositions) {
@@ -449,23 +478,20 @@ socket.on("snake_game_over", function (data) {
     clearInterval(snakeGameOverState.countdownInterval);
   }
 
-  // Start countdown
-  snakeGameOverState.countdownInterval = setInterval(function() {
-    snakeGameOverState.countdownSeconds--;
-    console.log("[snake] Countdown:", snakeGameOverState.countdownSeconds);
-    if (snakeGameOverState.countdownSeconds <= 0) {
-      clearInterval(snakeGameOverState.countdownInterval);
-      console.log("[snake] Countdown ended, rejoining lobby for new game");
-      snakeGameOverState.isGameOver = false;
-      snakeGameOverState.winner = null;
-      snakeGameOverState.countdownSeconds = 7;
+  // Auto-end game over screen after 4 seconds (1s frozen + 3s with snakes frozen but new game rendering)
+  setTimeout(function() {
+    console.log("[snake] Game over screen timeout, ending game over state");
+    snakeGameOverState.isGameOver = false;
+    snakeGameOverState.winner = null;
+    snakeGameOverState.gameOverStartTime = null;
+    snakeGameOverState.showWinnerText = false;
+    snakeGameOverState.frozenGameState = null;
 
-      // Rejoin lobby to start new game - this triggers the server to check if a new game should start
-      socket.emit("snake_join", {
-        username: getLoggedInUsername()
-      });
-    }
-  }, 1000);
+    // Rejoin lobby to start new game
+    socket.emit("snake_join", {
+      username: getLoggedInUsername()
+    });
+  }, 4000);
 });
 
 socket.on("id", function (data) {

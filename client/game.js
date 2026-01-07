@@ -459,6 +459,7 @@ socket.on("snake_game_over", function (data) {
   snakeGameOverState.winner = data.winner;
   snakeGameOverState.gameOverStartTime = Date.now();
   snakeGameOverState.showWinnerText = true;
+  snakeGameOverState.frozenGameState = null;  // Reset frozen state for new cycle
 
   // Store next game's starting positions from the server
   if (data.nextGameStartPositions) {

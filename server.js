@@ -1810,6 +1810,7 @@ function startNewSnakeGame() {
     playerWsMap: playerWsMap,
     trails: [],
     gameStartTime: Date.now(),
+    gameReadyUntil: Date.now() + 3000, // 3 second get-ready phase
     activePlayers: new Set(playersArray),
     gameRunning: true
   };

@@ -570,7 +570,7 @@ socket.on("snake_lobby_update", function (data) {
 
 var gameId = null;
 var gameStartTime = null;
-var gameReadyDelay = 3000; // 3 second "Get Ready" phase in milliseconds
+var gameReadyDelay = 4000; // 4 second "Get Ready" phase in milliseconds
 
 socket.on("snake_game_start", function (data) {
   console.log("[snake] Game started:", data);

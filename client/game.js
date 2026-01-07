@@ -491,30 +491,26 @@ socket.on("snake_game_over", function (data) {
   console.log("[snake] Game over:", data);
   snakeGameOverState.isGameOver = true;
   snakeGameOverState.winner = data.winner;
-  snakeGameOverState.countdownSeconds = 7;
+  snakeGameOverState.countdownSeconds = 3;
+  snakeGameOverState.gameOverStartTime = Date.now();
 
   // Clear any existing countdown
   if (snakeGameOverState.countdownInterval) {
     clearInterval(snakeGameOverState.countdownInterval);
   }
 
-  // Start countdown
-  snakeGameOverState.countdownInterval = setInterval(function() {
-    snakeGameOverState.countdownSeconds--;
-    console.log("[snake] Countdown:", snakeGameOverState.countdownSeconds);
-    if (snakeGameOverState.countdownSeconds <= 0) {
-      clearInterval(snakeGameOverState.countdownInterval);
-      console.log("[snake] Countdown ended, rejoining lobby for new game");
-      snakeGameOverState.isGameOver = false;
-      snakeGameOverState.winner = null;
-      snakeGameOverState.countdownSeconds = 7;
+  // After 3 second restart countdown, auto-rejoin lobby
+  setTimeout(function() {
+    console.log("[snake] Game over countdown ended, rejoining lobby for new game");
+    snakeGameOverState.isGameOver = false;
+    snakeGameOverState.winner = null;
+    snakeGameOverState.gameOverStartTime = null;
 
-      // Rejoin lobby to start new game - this triggers the server to check if a new game should start
-      socket.emit("snake_join", {
-        username: getLoggedInUsername()
-      });
-    }
-  }, 1000);
+    // Rejoin lobby to start new game - this triggers the server to check if a new game should start
+    socket.emit("snake_join", {
+      username: getLoggedInUsername()
+    });
+  }, 3000);
 });
 
 socket.on("id", function (data) {

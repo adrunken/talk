@@ -359,10 +359,10 @@ socket.on("data", function (data) {
     }
   }
 
-  for (var i = 0; i < data.players.length; i++) {
-    if (data.players[i].id == id && data.players[i].isDead) {
+  for (var i = 0; i < renderData.players.length; i++) {
+    if (renderData.players[i].id == id && renderData.players[i].isDead) {
       ctx.font = "30px Arial";
-      if (data.players[i].hasJoined) {
+      if (renderData.players[i].hasJoined) {
         ctx.fillStyle = "#AA0000";
         ctx.fillText("Game Over - you lost!", 400, 230);
       } else {
@@ -380,15 +380,15 @@ socket.on("data", function (data) {
       }
     }
 
-    if (!data.players[i].isDead) {
-      ctx.fillStyle = "hsl(" + data.players[i].color + ", 100%, 10%)";
-      if (data.players[i].id == id) {
-        if (!data.gameStarted) {
+    if (!renderData.players[i].isDead) {
+      ctx.fillStyle = "hsl(" + renderData.players[i].color + ", 100%, 10%)";
+      if (renderData.players[i].id == id) {
+        if (!renderData.gameStarted) {
           ctx.strokeStyle = "lime";
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.sin(new Date().getTime() / 500) * 5,
             0,
             2 * Math.PI
@@ -396,8 +396,8 @@ socket.on("data", function (data) {
           ctx.stroke();
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.cos(new Date().getTime() / 500) * 5,
             0,
             2 * Math.PI
@@ -409,8 +409,8 @@ socket.on("data", function (data) {
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             12 + Math.sin(new Date().getTime() / 300) * 4,
             0,
             2 * Math.PI
@@ -420,8 +420,8 @@ socket.on("data", function (data) {
           ctx.strokeStyle = "green";
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.sin(new Date().getTime() / 500) * 5,
             0,
             2 * Math.PI
@@ -432,12 +432,12 @@ socket.on("data", function (data) {
       }
       ctx.font = "15px Arial";
 
-      ctx.fillRect(data.players[i].x - 2, data.players[i].y - 2, 4, 4);
+      ctx.fillRect(renderData.players[i].x - 2, renderData.players[i].y - 2, 4, 4);
       ctx.fillStyle = "#000000";
       ctx.fillText(
-        data.players[i].name,
-        data.players[i].x,
-        data.players[i].y - 10
+        renderData.players[i].name,
+        renderData.players[i].x,
+        renderData.players[i].y - 10
       );
     }
   }

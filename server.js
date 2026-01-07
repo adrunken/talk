@@ -2022,10 +2022,10 @@ function updateSnakeGameOnServer(gid) {
         gameState.activePlayers.delete(username);
         continue;
       }
-      // Start grace period - player has 250ms to change direction
-      player.graceUntil = now + 250;
+      // Start grace period - player has 63ms (1/16 second) to change direction
+      // Snake is paused during this period, allowing them to move out of the way
+      player.graceUntil = now + 63;
       player.directionAtCollision = player.direction;
-      // Player continues moving but is in danger
     }
 
     // Check collision with other player heads and bodies

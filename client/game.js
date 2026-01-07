@@ -357,7 +357,7 @@ socket.on("data", function (data) {
       }
       ctx.font = "15px Arial";
 
-      ctx.fillRect(data.players[i].x - 3, data.players[i].y - 3, 6, 6);
+      ctx.fillRect(data.players[i].x - 2, data.players[i].y - 2, 4, 4);
       ctx.fillStyle = "#000000";
       ctx.fillText(
         data.players[i].name,

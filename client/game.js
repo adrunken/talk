@@ -269,6 +269,10 @@ socket.on("data", function (data) {
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
 
+    // Calculate remaining time in restart phase
+    const timeElapsed = Date.now() - snakeGameOverState.gameOverStartTime;
+    const restartTimeRemaining = Math.max(0, Math.ceil((3000 - timeElapsed) / 1000));
+
     // Draw the final game state (snakes and trails) before winner text
     if (snakeGameOverState.lastGameData) {
       const gameData = snakeGameOverState.lastGameData;
@@ -323,7 +327,7 @@ socket.on("data", function (data) {
 
     ctx.font = "40px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 350);
+    ctx.fillText("Restarting in " + restartTimeRemaining, 400, 350);
     return;
   }
 

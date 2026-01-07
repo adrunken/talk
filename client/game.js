@@ -141,9 +141,10 @@ var uiVisible = false;
 var snakeGameOverState = {
   isGameOver: false,
   winner: null,
-  countdownSeconds: 7,
+  countdownSeconds: 3,
   countdownInterval: null,
-  lastGameData: null  // Store final game state to display snakes on game over
+  lastGameData: null,  // Store final game state to display snakes on game over
+  gameOverStartTime: null  // Track when game over started
 };
 
 function getLoggedInUsername() {

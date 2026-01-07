@@ -548,8 +548,8 @@ socket.on("snake_lobby_update", function (data) {
   ctx.font = "20px Arial";
   ctx.textAlign = "center";
 
-  // Only show "Waiting for players..." if we don't have 2+ players or no countdown is active
-  if (data.players.length < 2 || data.countdownSeconds <= 0) {
+  // Only show waiting screen if we don't have 2+ players
+  if (data.players.length < 2) {
     ctx.fillText("Waiting for players...", 200, 150);
     ctx.fillText("Players: " + data.players.length, 200, 200);
 
@@ -558,16 +558,6 @@ socket.on("snake_lobby_update", function (data) {
       ctx.fillStyle = "#000000";
       ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
     }
-  }
-
-  // Display countdown if 2+ players are waiting
-  if (data.players.length >= 2 && data.countdownSeconds > 0) {
-    ctx.font = "50px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 150);
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "#000000";
-    ctx.fillText("Players: " + data.players.length, 400, 220);
   }
 });
 

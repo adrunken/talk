@@ -1513,18 +1513,18 @@ html {
 
 <!-- Snake Game Modal -->
 <div id="snake-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-  <div id="snake-modal" style="position: relative; width: 98vw; height: 98vh; background: #000; border: 1px solid #333; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
+  <div id="snake-modal" style="position: relative; width: 98vw; height: 98vh; background: transparent; border: 1px solid #333; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
     <!-- Header -->
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.5rem; border-bottom: 1px solid #333; background: rgba(0, 0, 0, 0.8);">
-      <h2 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 600;">Snake Multiplayer Game</h2>
+      <h2 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 600;"></h2>
       <button id="snake-close" style="background: none; border: none; color: #ccc; cursor: pointer; font-size: 1.5rem; padding: 0; transition: color 0.2s ease;" title="Close">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
     <!-- Game Container -->
-    <div style="flex: 1; display: flex; overflow: hidden; background: #000;">
-      <iframe id="snake-game-frame" src="/snake.html" style="flex: 1; border: none; background: #000;"></iframe>
+    <div style="flex: 1; display: flex; overflow: hidden; background: transparent;">
+      <iframe id="snake-game-frame" src="/snake.html" style="flex: 1; border: none; background: transparent;"></iframe>
     </div>
   </div>
 </div>

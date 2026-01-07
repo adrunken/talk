@@ -1976,9 +1976,17 @@ function updateSnakeGameOnServer(gid) {
     }
 
     // Calculate new head position
-    const dir = directions[player.direction] || [1, 0];
+    // If in grace period, snake stays in place (doesn't move forward)
     const head = player.positions[player.positions.length - 1];
-    const newHead = [head[0] + dir[0], head[1] + dir[1]];
+    let newHead;
+    if (player.graceUntil > 0) {
+      // During grace period, snake pauses - head stays in same position
+      newHead = [head[0], head[1]];
+    } else {
+      // Normal movement
+      const dir = directions[player.direction] || [1, 0];
+      newHead = [head[0] + dir[0], head[1] + dir[1]];
+    }
 
     newHeads[username] = newHead;
   }
@@ -1997,11 +2005,11 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
-    // Check collision with own body (trails from this player's body)
+    // Check collision with own body (any segment in the snake's body)
     // Only collide with own trail, not other players' trails (Armegatron-style close approach)
     let hitOwnBody = false;
-    for (let i = 0; i < gameState.trails.length; i++) {
-      if (gameState.trails[i].owner === username && gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+    for (let i = 0; i < player.positions.length; i++) {
+      if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
         hitOwnBody = true;
         break;
       }
@@ -2014,35 +2022,48 @@ function updateSnakeGameOnServer(gid) {
         gameState.activePlayers.delete(username);
         continue;
       }
-      // Start grace period - player has 250ms to change direction
-      player.graceUntil = now + 250;
+      // Start grace period - player has 63ms (1/16 second) to change direction
+      // Snake is paused during this period, allowing them to move out of the way
+      player.graceUntil = now + 63;
       player.directionAtCollision = player.direction;
-      // Player continues moving but is in danger
     }
 
-    // Check head-on collision with other player heads (mutual destruction)
-    // Snakes can pass close to each other but die if they move into the same cell
-    let hitOtherHead = false;
+    // Check collision with other player heads and bodies
+    // Head-on collision with other heads = mutual destruction
+    // Collision with other body = this snake dies
+    let hitOtherSnake = false;
     for (const otherUsername of playerList) {
       if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherPlayer = gameState.playerStates[otherUsername];
       const otherNewHead = newHeads[otherUsername];
+
+      // Check if head collides with other snake's head
       if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-        hitOtherHead = true;
+        hitOtherSnake = true;
         break;
       }
+
+      // Check if head collides with other snake's body
+      for (let i = 0; i < otherPlayer.positions.length; i++) {
+        if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+          hitOtherSnake = true;
+          break;
+        }
+      }
+      if (hitOtherSnake) break;
     }
 
-    if (hitOtherHead) {
+    if (hitOtherSnake) {
       // If already in grace period, die immediately
       if (player.graceUntil > 0) {
         player.alive = false;
         gameState.activePlayers.delete(username);
         continue;
       }
-      // Start grace period - player has 250ms to change direction
-      player.graceUntil = now + 250;
+      // Start grace period - player has 63ms (1/16 second) to change direction
+      // Snake is paused during this period, allowing them to move out of the way
+      player.graceUntil = now + 63;
       player.directionAtCollision = player.direction;
-      // Player continues moving but is in danger
     }
 
     // Add current head position to trails

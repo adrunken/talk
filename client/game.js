@@ -329,6 +329,10 @@ socket.on("data", function (data) {
   ctx.textAlign = "center";
   ctx.font = "10px Arial";
 
+  // Check if we're in the "Get Ready" phase (first 3 seconds after game start)
+  var isInGetReadyPhase = gameStartTime && (Date.now() - gameStartTime) < gameReadyDelay;
+  var timeUntilStart = gameStartTime ? Math.ceil((gameReadyDelay - (Date.now() - gameStartTime)) / 1000) : 0;
+
   ctx.fillStyle = "#BBBBBB";
   for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
     ctx.fillRect(bgLineX, 0, 1, 400);
@@ -337,13 +341,16 @@ socket.on("data", function (data) {
     ctx.fillRect(0, bgLineY, 800, 1);
   }
 
-  for (var i = 0; i < data.trails.length; i++) {
-    ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
-    ctx.beginPath();
-    ctx.lineWidth = "3";
-    ctx.moveTo(data.trails[i].x, data.trails[i].y);
-    ctx.lineTo(data.trails[i].endX, data.trails[i].endY);
-    ctx.stroke();
+  // Only draw trails if not in get-ready phase
+  if (!isInGetReadyPhase) {
+    for (var i = 0; i < data.trails.length; i++) {
+      ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
+      ctx.beginPath();
+      ctx.lineWidth = "3";
+      ctx.moveTo(data.trails[i].x, data.trails[i].y);
+      ctx.lineTo(data.trails[i].endX, data.trails[i].endY);
+      ctx.stroke();
+    }
   }
 
   for (var i = 0; i < data.players.length; i++) {
@@ -390,6 +397,19 @@ socket.on("data", function (data) {
             2 * Math.PI
           );
           ctx.stroke();
+        } else if (isInGetReadyPhase) {
+          // During get-ready phase, show pulsing green circle
+          ctx.strokeStyle = "green";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(
+            data.players[i].x,
+            data.players[i].y,
+            12 + Math.sin(new Date().getTime() / 300) * 4,
+            0,
+            2 * Math.PI
+          );
+          ctx.stroke();
         } else {
           ctx.strokeStyle = "green";
           ctx.beginPath();
@@ -415,32 +435,48 @@ socket.on("data", function (data) {
       );
     }
   }
-  ctx.fillStyle = "#000000";
-  ctx.font = "25px Arial";
 
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
-    ctx.fillText("Your snake has green circular head.", 300, 290);
-  }
+  // Show "Get Ready!" message during the first 3 seconds
+  if (isInGetReadyPhase) {
+    ctx.fillStyle = "#000000";
+    ctx.font = "40px Arial";
+    ctx.fillText("GET READY!", 400, 100);
 
-  ctx.font = "50px Arial";
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText(Math.max(1, timeUntilStart), 400, 220);
 
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Wait " + data.countdown, 330, 200);
-  }
-  if (!data.gameStarted && !data.waiting && data.onlinePlayers < 2) {
     ctx.font = "25px Arial";
-    ctx.fillText("Waiting for more online players...", 200, 200);
-  }
-  if (data.waiting && !data.gameStarted && !data.inCountdown) {
-    if (data.lastWinnerID == id) {
-      ctx.font = "30px Arial";
-      ctx.fillStyle = "#0000FF";
-      ctx.fillText("You are Winner!", 360, 250);
-      ctx.font = "35px Arial";
-      ctx.fillStyle = "#33FF99";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Keys: I=up, K=down, J=left, L=right", 400, 320);
+  } else {
+    ctx.fillStyle = "#000000";
+    ctx.font = "25px Arial";
+
+    if (data.inCountdown && !data.gameStarted) {
+      ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
+      ctx.fillText("Your snake has green circular head.", 300, 290);
     }
-    ctx.fillText("Winner: " + data.lastWinner, 360, 200);
+
+    ctx.font = "50px Arial";
+
+    if (data.inCountdown && !data.gameStarted) {
+      ctx.fillText("Wait " + data.countdown, 330, 200);
+    }
+    if (!data.gameStarted && !data.waiting && data.onlinePlayers < 2) {
+      ctx.font = "25px Arial";
+      ctx.fillText("Waiting for more online players...", 200, 200);
+    }
+    if (data.waiting && !data.gameStarted && !data.inCountdown) {
+      if (data.lastWinnerID == id) {
+        ctx.font = "30px Arial";
+        ctx.fillStyle = "#0000FF";
+        ctx.fillText("You are Winner!", 360, 250);
+        ctx.font = "35px Arial";
+        ctx.fillStyle = "#33FF99";
+      }
+      ctx.fillText("Winner: " + data.lastWinner, 360, 200);
+    }
   }
 });
 

@@ -1997,11 +1997,11 @@ function updateSnakeGameOnServer(gid) {
       continue;
     }
 
-    // Check collision with own body (trails from this player's body)
+    // Check collision with own body (any segment in the snake's body)
     // Only collide with own trail, not other players' trails (Armegatron-style close approach)
     let hitOwnBody = false;
-    for (let i = 0; i < gameState.trails.length; i++) {
-      if (gameState.trails[i].owner === username && gameState.trails[i].x === newHead[0] && gameState.trails[i].y === newHead[1]) {
+    for (let i = 0; i < player.positions.length; i++) {
+      if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
         hitOwnBody = true;
         break;
       }

@@ -147,6 +147,7 @@ var snakeGameOverState = {
   nextGamePlayerColors: null,
   nextGamePlayerNames: null,
   lastGameState: null,  // Store final game state for rendering on game-over screen
+  frozenGameState: null,  // Frozen state of new game (captured at 1 second mark)
   gameOverStartTime: null,  // When game ended
   showWinnerText: false  // Whether to show winner text overlay
 };

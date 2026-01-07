@@ -142,7 +142,8 @@ var snakeGameOverState = {
   isGameOver: false,
   winner: null,
   countdownSeconds: 7,
-  countdownInterval: null
+  countdownInterval: null,
+  lastGameData: null  // Store final game state to display snakes on game over
 };
 
 function getLoggedInUsername() {

@@ -257,6 +257,13 @@ socket.on("data", function (data) {
     firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
+  // Store the latest game state for game-over screen rendering
+  snakeGameOverState.lastGameState = {
+    players: data.players,
+    trails: data.trails,
+    gameStarted: data.gameStarted
+  };
+
   // Handle game over state
   if (snakeGameOverState.isGameOver) {
     ctx.clearRect(0, 0, 800, 400);

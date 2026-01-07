@@ -1976,9 +1976,17 @@ function updateSnakeGameOnServer(gid) {
     }
 
     // Calculate new head position
-    const dir = directions[player.direction] || [1, 0];
+    // If in grace period, snake stays in place (doesn't move forward)
     const head = player.positions[player.positions.length - 1];
-    const newHead = [head[0] + dir[0], head[1] + dir[1]];
+    let newHead;
+    if (player.graceUntil > 0) {
+      // During grace period, snake pauses - head stays in same position
+      newHead = [head[0], head[1]];
+    } else {
+      // Normal movement
+      const dir = directions[player.direction] || [1, 0];
+      newHead = [head[0] + dir[0], head[1] + dir[1]];
+    }
 
     newHeads[username] = newHead;
   }

@@ -261,19 +261,59 @@ socket.on("data", function (data) {
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
+
+    // Draw background grid
+    ctx.fillStyle = "#BBBBBB";
+    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+      ctx.fillRect(bgLineX, 0, 1, 400);
+    }
+    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+      ctx.fillRect(0, bgLineY, 800, 1);
+    }
+
+    // Draw starting positions of snakes for next game in background
+    if (snakeGameOverState.nextGameStartPositions && snakeGameOverState.nextGamePlayerNames) {
+      const colorMap = {
+        'green': 'hsl(120, 100%, 30%)',
+        'blue': 'hsl(240, 100%, 30%)',
+        'yellow': 'hsl(60, 100%, 30%)',
+        'red': 'hsl(0, 100%, 30%)'
+      };
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; // Semi-transparent overlay for background snakes
+
+      for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
+        const playerName = snakeGameOverState.nextGamePlayerNames[i];
+        const pos = snakeGameOverState.nextGameStartPositions[playerName];
+        const color = snakeGameOverState.nextGamePlayerColors[playerName];
+        const hexColor = colorMap[color] || 'hsl(0, 0%, 30%)';
+
+        if (pos && Array.isArray(pos) && pos.length >= 2) {
+          // Draw the snake head at starting position
+          ctx.fillStyle = hexColor;
+          ctx.fillRect(pos[0] - 2, pos[1] - 2, 4, 4);
+        }
+      }
+    }
+
+    // Draw semi-transparent dark overlay for text readability
+    ctx.fillStyle = "rgba(255, 255, 224, 0.8)";
+    ctx.fillRect(150, 100, 500, 200);
+
+    // Draw winner text and countdown
     ctx.textAlign = "center";
     ctx.font = "50px Arial";
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 170);
     } else {
-      ctx.fillText("Game Over!", 400, 150);
+      ctx.fillText("Game Over!", 400, 170);
     }
 
     ctx.font = "40px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 250);
     return;
   }
 

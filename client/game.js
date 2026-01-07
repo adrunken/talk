@@ -280,8 +280,6 @@ socket.on("data", function (data) {
         'red': 'hsl(0, 100%, 30%)'
       };
 
-      ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; // Semi-transparent overlay for background snakes
-
       for (let i = 0; i < snakeGameOverState.nextGamePlayerNames.length; i++) {
         const playerName = snakeGameOverState.nextGamePlayerNames[i];
         const pos = snakeGameOverState.nextGameStartPositions[playerName];
@@ -289,9 +287,22 @@ socket.on("data", function (data) {
         const hexColor = colorMap[color] || 'hsl(0, 0%, 30%)';
 
         if (pos && Array.isArray(pos) && pos.length >= 2) {
-          // Draw the snake head at starting position
+          // Draw the snake head at starting position - larger and more visible
           ctx.fillStyle = hexColor;
-          ctx.fillRect(pos[0] - 2, pos[1] - 2, 4, 4);
+          ctx.fillRect(pos[0] - 5, pos[1] - 5, 10, 10);
+
+          // Draw a subtle circle around it
+          ctx.strokeStyle = hexColor;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(pos[0], pos[1], 12, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // Draw player name below the snake head
+          ctx.fillStyle = hexColor;
+          ctx.font = "12px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(playerName, pos[0], pos[1] + 25);
         }
       }
     }

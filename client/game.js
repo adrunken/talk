@@ -142,7 +142,10 @@ var snakeGameOverState = {
   isGameOver: false,
   winner: null,
   countdownSeconds: 7,
-  countdownInterval: null
+  countdownInterval: null,
+  nextGameStartPositions: null,
+  nextGamePlayerColors: null,
+  nextGamePlayerNames: null
 };
 
 function getLoggedInUsername() {

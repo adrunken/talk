@@ -409,33 +409,6 @@ socket.on("data", function (data) {
       );
     }
   }
-  ctx.fillStyle = "#000000";
-  ctx.font = "25px Arial";
-
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
-    ctx.fillText("Your snake has green circular head.", 300, 290);
-  }
-
-  ctx.font = "50px Arial";
-
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Wait " + data.countdown, 330, 200);
-  }
-  if (!data.gameStarted && !data.waiting && data.onlinePlayers < 2) {
-    ctx.font = "25px Arial";
-    ctx.fillText("Waiting for more online players...", 200, 200);
-  }
-  if (data.waiting && !data.gameStarted && !data.inCountdown) {
-    if (data.lastWinnerID == id) {
-      ctx.font = "30px Arial";
-      ctx.fillStyle = "#0000FF";
-      ctx.fillText("You are Winner!", 360, 250);
-      ctx.font = "35px Arial";
-      ctx.fillStyle = "#33FF99";
-    }
-    ctx.fillText("Winner: " + data.lastWinner, 360, 200);
-  }
 });
 
 socket.on("snake_game_over", function (data) {

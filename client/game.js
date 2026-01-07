@@ -289,18 +289,19 @@ socket.on("data", function (data) {
         const hexColor = colorMap[color] || 'hsl(0, 0%, 10%)';
 
         if (pos && Array.isArray(pos) && pos.length >= 2) {
-          const x = pos[0];
-          const y = pos[1];
+          // Scale from grid coordinates (0-100) to canvas coordinates (0-800 x 0-400)
+          const canvasX = pos[0] * 8;
+          const canvasY = pos[1] * 4;
 
           // Draw snake head as a filled rectangle
           ctx.fillStyle = hexColor;
-          ctx.fillRect(x - 2, y - 2, 4, 4);
+          ctx.fillRect(canvasX - 2, canvasY - 2, 4, 4);
 
           // Draw player name next to snake
           ctx.fillStyle = "#000000";
           ctx.font = "12px Arial";
           ctx.textAlign = "left";
-          ctx.fillText(playerName, x + 12, y + 5);
+          ctx.fillText(playerName, canvasX + 12, canvasY + 5);
         }
       }
     }

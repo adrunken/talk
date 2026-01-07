@@ -312,40 +312,22 @@ socket.on("data", function (data) {
       }
     }
 
-    // Draw winner and countdown in center with semi-transparent background
-    ctx.fillStyle = "rgba(255, 255, 224, 0.95)";
-    ctx.fillRect(75, 60, 650, 280);
-
-    // Draw border around winner box
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(75, 60, 650, 280);
-
-    // Draw winner text
+    // Draw winner text overlay on game board
     ctx.textAlign = "center";
-    ctx.font = "bold 56px Arial";
-    ctx.fillStyle = "#1a1a1a";
 
+    // Draw "Winner: [name]" in cyan
+    ctx.font = "48px Arial";
+    ctx.fillStyle = "#00FFFF";
     if (snakeGameOverState.winner) {
-      ctx.fillText("🏆 " + snakeGameOverState.winner + " Wins! 🏆", 400, 140);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 180);
     } else {
-      ctx.fillText("Game Over!", 400, 140);
+      ctx.fillText("Game Over!", 400, 180);
     }
 
-    // Draw countdown label
-    ctx.font = "24px Arial";
-    ctx.fillStyle = "#555555";
-    ctx.fillText("Next game starts in", 400, 195);
-
-    // Draw countdown timer
-    ctx.font = "bold 80px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.textAlign = "center";
-    ctx.fillText(Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
-
-    ctx.font = "18px Arial";
-    ctx.fillStyle = "#333333";
-    ctx.fillText("seconds", 400, 310);
+    // Draw "You are Winner!" in blue
+    ctx.font = "42px Arial";
+    ctx.fillStyle = "#0000FF";
+    ctx.fillText("You are Winner!", 400, 250);
 
     return;
   }

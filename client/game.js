@@ -141,8 +141,10 @@ var uiVisible = false;
 var snakeGameOverState = {
   isGameOver: false,
   winner: null,
-  countdownSeconds: 7,
-  countdownInterval: null
+  countdownSeconds: 3,
+  countdownInterval: null,
+  lastGameData: null,  // Store final game state to display snakes on game over
+  gameOverStartTime: null  // Track when game over started
 };
 
 function getLoggedInUsername() {
@@ -253,24 +255,79 @@ socket.on("data", function (data) {
     firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
+  // Check if we're in the "Get Ready" phase (first 3 seconds after game start)
+  var isInGetReadyPhase = gameStartTime && (Date.now() - gameStartTime) < gameReadyDelay;
+
+  // Don't update positions if in get-ready phase or game over - just keep the last known state
+  if (!isInGetReadyPhase && !snakeGameOverState.isGameOver) {
+    snakeGameOverState.lastGameData = data;
+  }
+
   // Handle game over state
   if (snakeGameOverState.isGameOver) {
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
+
+    // Calculate remaining time in restart phase
+    const timeElapsed = Date.now() - snakeGameOverState.gameOverStartTime;
+    const restartTimeRemaining = Math.max(0, Math.ceil((3000 - timeElapsed) / 1000));
+
+    // Draw the final game state (snakes and trails) before winner text
+    if (snakeGameOverState.lastGameData) {
+      const gameData = snakeGameOverState.lastGameData;
+      ctx.textAlign = "center";
+      ctx.font = "10px Arial";
+
+      // Draw grid
+      ctx.fillStyle = "#BBBBBB";
+      for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+        ctx.fillRect(bgLineX, 0, 1, 400);
+      }
+      for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+        ctx.fillRect(0, bgLineY, 800, 1);
+      }
+
+      // Draw trails
+      for (var i = 0; i < gameData.trails.length; i++) {
+        ctx.strokeStyle = "hsl(" + gameData.trails[i].color + ", 100%, 20%)";
+        ctx.beginPath();
+        ctx.lineWidth = "3";
+        ctx.moveTo(gameData.trails[i].x, gameData.trails[i].y);
+        ctx.lineTo(gameData.trails[i].endX, gameData.trails[i].endY);
+        ctx.stroke();
+      }
+
+      // Draw snakes
+      for (var i = 0; i < gameData.players.length; i++) {
+        if (!gameData.players[i].isDead) {
+          ctx.fillStyle = "hsl(" + gameData.players[i].color + ", 100%, 10%)";
+          ctx.fillRect(gameData.players[i].x - 2, gameData.players[i].y - 2, 4, 4);
+          ctx.fillStyle = "#000000";
+          ctx.font = "15px Arial";
+          ctx.fillText(
+            gameData.players[i].name,
+            gameData.players[i].x,
+            gameData.players[i].y - 10
+          );
+        }
+      }
+    }
+
+    // Draw winner text on top of the snakes
     ctx.textAlign = "center";
     ctx.font = "50px Arial";
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 80);
     } else {
-      ctx.fillText("Game Over!", 400, 150);
+      ctx.fillText("Game Over!", 400, 80);
     }
 
     ctx.font = "40px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    ctx.fillText("Restarting in " + restartTimeRemaining, 400, 350);
     return;
   }
 
@@ -280,6 +337,13 @@ socket.on("data", function (data) {
   ctx.textAlign = "center";
   ctx.font = "10px Arial";
 
+  // Check if we're in the "Get Ready" phase (first 3 seconds after game start)
+  var isInGetReadyPhase = gameStartTime && (Date.now() - gameStartTime) < gameReadyDelay;
+  var timeUntilStart = gameStartTime ? Math.ceil((gameReadyDelay - (Date.now() - gameStartTime)) / 1000) : 0;
+
+  // Use stored initial data during get-ready phase to prevent snakes from moving
+  var renderData = isInGetReadyPhase && snakeGameOverState.lastGameData ? snakeGameOverState.lastGameData : data;
+
   ctx.fillStyle = "#BBBBBB";
   for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
     ctx.fillRect(bgLineX, 0, 1, 400);
@@ -288,19 +352,22 @@ socket.on("data", function (data) {
     ctx.fillRect(0, bgLineY, 800, 1);
   }
 
-  for (var i = 0; i < data.trails.length; i++) {
-    ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
-    ctx.beginPath();
-    ctx.lineWidth = "3";
-    ctx.moveTo(data.trails[i].x, data.trails[i].y);
-    ctx.lineTo(data.trails[i].endX, data.trails[i].endY);
-    ctx.stroke();
+  // Don't draw trails during get-ready phase
+  if (!isInGetReadyPhase) {
+    for (var i = 0; i < renderData.trails.length; i++) {
+      ctx.strokeStyle = "hsl(" + renderData.trails[i].color + ", 100%, 20%)";
+      ctx.beginPath();
+      ctx.lineWidth = "3";
+      ctx.moveTo(renderData.trails[i].x, renderData.trails[i].y);
+      ctx.lineTo(renderData.trails[i].endX, renderData.trails[i].endY);
+      ctx.stroke();
+    }
   }
 
-  for (var i = 0; i < data.players.length; i++) {
-    if (data.players[i].id == id && data.players[i].isDead) {
+  for (var i = 0; i < renderData.players.length; i++) {
+    if (renderData.players[i].id == id && renderData.players[i].isDead) {
       ctx.font = "30px Arial";
-      if (data.players[i].hasJoined) {
+      if (renderData.players[i].hasJoined) {
         ctx.fillStyle = "#AA0000";
         ctx.fillText("Game Over - you lost!", 400, 230);
       } else {
@@ -318,15 +385,15 @@ socket.on("data", function (data) {
       }
     }
 
-    if (!data.players[i].isDead) {
-      ctx.fillStyle = "hsl(" + data.players[i].color + ", 100%, 10%)";
-      if (data.players[i].id == id) {
-        if (!data.gameStarted) {
+    if (!renderData.players[i].isDead) {
+      ctx.fillStyle = "hsl(" + renderData.players[i].color + ", 100%, 10%)";
+      if (renderData.players[i].id == id) {
+        if (!renderData.gameStarted) {
           ctx.strokeStyle = "lime";
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.sin(new Date().getTime() / 500) * 5,
             0,
             2 * Math.PI
@@ -334,9 +401,22 @@ socket.on("data", function (data) {
           ctx.stroke();
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.cos(new Date().getTime() / 500) * 5,
+            0,
+            2 * Math.PI
+          );
+          ctx.stroke();
+        } else if (isInGetReadyPhase) {
+          // During get-ready phase, show pulsing green circle
+          ctx.strokeStyle = "green";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(
+            renderData.players[i].x,
+            renderData.players[i].y,
+            12 + Math.sin(new Date().getTime() / 300) * 4,
             0,
             2 * Math.PI
           );
@@ -345,8 +425,8 @@ socket.on("data", function (data) {
           ctx.strokeStyle = "green";
           ctx.beginPath();
           ctx.arc(
-            data.players[i].x,
-            data.players[i].y,
+            renderData.players[i].x,
+            renderData.players[i].y,
             10 + Math.sin(new Date().getTime() / 500) * 5,
             0,
             2 * Math.PI
@@ -357,41 +437,57 @@ socket.on("data", function (data) {
       }
       ctx.font = "15px Arial";
 
-      ctx.fillRect(data.players[i].x - 2, data.players[i].y - 2, 4, 4);
+      ctx.fillRect(renderData.players[i].x - 2, renderData.players[i].y - 2, 4, 4);
       ctx.fillStyle = "#000000";
       ctx.fillText(
-        data.players[i].name,
-        data.players[i].x,
-        data.players[i].y - 10
+        renderData.players[i].name,
+        renderData.players[i].x,
+        renderData.players[i].y - 10
       );
     }
   }
-  ctx.fillStyle = "#000000";
-  ctx.font = "25px Arial";
 
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
-    ctx.fillText("Your snake has green circular head.", 300, 290);
-  }
+  // Show "Get Ready!" message during the first 3 seconds
+  if (isInGetReadyPhase) {
+    ctx.fillStyle = "#000000";
+    ctx.font = "40px Arial";
+    ctx.fillText("GET READY!", 400, 100);
 
-  ctx.font = "50px Arial";
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "#FF6600";
+    ctx.fillText(Math.max(1, timeUntilStart), 400, 220);
 
-  if (data.inCountdown && !data.gameStarted) {
-    ctx.fillText("Wait " + data.countdown, 330, 200);
-  }
-  if (!data.gameStarted && !data.waiting && data.onlinePlayers < 2) {
     ctx.font = "25px Arial";
-    ctx.fillText("Waiting for more online players...", 200, 200);
-  }
-  if (data.waiting && !data.gameStarted && !data.inCountdown) {
-    if (data.lastWinnerID == id) {
-      ctx.font = "30px Arial";
-      ctx.fillStyle = "#0000FF";
-      ctx.fillText("You are Winner!", 360, 250);
-      ctx.font = "35px Arial";
-      ctx.fillStyle = "#33FF99";
+    ctx.fillStyle = "#000000";
+    ctx.fillText("Keys: I=up, K=down, J=left, L=right", 400, 320);
+  } else {
+    ctx.fillStyle = "#000000";
+    ctx.font = "25px Arial";
+
+    if (renderData.inCountdown && !renderData.gameStarted) {
+      ctx.fillText("Key I=up, K=down, J=left, L=right", 300, 260);
+      ctx.fillText("Your snake has green circular head.", 300, 290);
     }
-    ctx.fillText("Winner: " + data.lastWinner, 360, 200);
+
+    ctx.font = "50px Arial";
+
+    if (renderData.inCountdown && !renderData.gameStarted) {
+      ctx.fillText("Wait " + renderData.countdown, 330, 200);
+    }
+    if (!renderData.gameStarted && !renderData.waiting && renderData.onlinePlayers < 2) {
+      ctx.font = "25px Arial";
+      ctx.fillText("Waiting for more online players...", 200, 200);
+    }
+    if (renderData.waiting && !renderData.gameStarted && !renderData.inCountdown) {
+      if (renderData.lastWinnerID == id) {
+        ctx.font = "30px Arial";
+        ctx.fillStyle = "#0000FF";
+        ctx.fillText("You are Winner!", 360, 250);
+        ctx.font = "35px Arial";
+        ctx.fillStyle = "#33FF99";
+      }
+      ctx.fillText("Winner: " + renderData.lastWinner, 360, 200);
+    }
   }
 });
 
@@ -399,30 +495,26 @@ socket.on("snake_game_over", function (data) {
   console.log("[snake] Game over:", data);
   snakeGameOverState.isGameOver = true;
   snakeGameOverState.winner = data.winner;
-  snakeGameOverState.countdownSeconds = 7;
+  snakeGameOverState.countdownSeconds = 3;
+  snakeGameOverState.gameOverStartTime = Date.now();
 
   // Clear any existing countdown
   if (snakeGameOverState.countdownInterval) {
     clearInterval(snakeGameOverState.countdownInterval);
   }
 
-  // Start countdown
-  snakeGameOverState.countdownInterval = setInterval(function() {
-    snakeGameOverState.countdownSeconds--;
-    console.log("[snake] Countdown:", snakeGameOverState.countdownSeconds);
-    if (snakeGameOverState.countdownSeconds <= 0) {
-      clearInterval(snakeGameOverState.countdownInterval);
-      console.log("[snake] Countdown ended, rejoining lobby for new game");
-      snakeGameOverState.isGameOver = false;
-      snakeGameOverState.winner = null;
-      snakeGameOverState.countdownSeconds = 7;
+  // After 3 second restart countdown, auto-rejoin lobby
+  setTimeout(function() {
+    console.log("[snake] Game over countdown ended, rejoining lobby for new game");
+    snakeGameOverState.isGameOver = false;
+    snakeGameOverState.winner = null;
+    snakeGameOverState.gameOverStartTime = null;
 
-      // Rejoin lobby to start new game - this triggers the server to check if a new game should start
-      socket.emit("snake_join", {
-        username: getLoggedInUsername()
-      });
-    }
-  }, 1000);
+    // Rejoin lobby to start new game - this triggers the server to check if a new game should start
+    socket.emit("snake_join", {
+      username: getLoggedInUsername()
+    });
+  }, 3000);
 });
 
 socket.on("id", function (data) {
@@ -462,26 +554,28 @@ socket.on("snake_lobby_update", function (data) {
   ctx.fillStyle = "#000000";
   ctx.font = "20px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Waiting for players...", 200, 150);
-  ctx.fillText("Players: " + data.players.length, 200, 200);
 
-  // Display countdown if 2+ players are waiting
-  if (data.players.length >= 2 && data.countdownSeconds > 0) {
-    ctx.font = "50px Arial";
-    ctx.fillStyle = "#FF6600";
-    ctx.fillText("Game starts in: " + data.countdownSeconds, 400, 300);
-  } else if (data.playersNeeded > 0) {
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "#000000";
-    ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+  // Only show waiting screen if we don't have 2+ players
+  if (data.players.length < 2) {
+    ctx.fillText("Waiting for players...", 200, 150);
+    ctx.fillText("Players: " + data.players.length, 200, 200);
+
+    if (data.playersNeeded > 0) {
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "#000000";
+      ctx.fillText("Need " + data.playersNeeded + " more", 200, 250);
+    }
   }
 });
 
 var gameId = null;
+var gameStartTime = null;
+var gameReadyDelay = 4000; // 4 second "Get Ready" phase in milliseconds
 
 socket.on("snake_game_start", function (data) {
   console.log("[snake] Game started:", data);
   gameId = data.game_id; // Store game ID for moves
+  gameStartTime = Date.now(); // Record when game actually started
 
   // Clear status and start rendering game
   ctx.fillStyle = "#000000";

@@ -1810,6 +1810,7 @@ function startNewSnakeGame() {
     playerWsMap: playerWsMap,
     trails: [],
     gameStartTime: Date.now(),
+    gameReadyUntil: Date.now() + 4000, // 4 second get-ready phase
     activePlayers: new Set(playersArray),
     gameRunning: true
   };
@@ -1924,6 +1925,19 @@ function updateSnakeGameOnServer(gid) {
     }
 
     return;
+  }
+
+  // Check if we're still in the get-ready phase - snakes don't move yet
+  const now = Date.now();
+  if (gameState.gameReadyUntil && now < gameState.gameReadyUntil) {
+    // Still in get-ready phase, just send current state without moving snakes
+    // Continue to the rendering section below without updating positions
+  } else {
+    // Get-ready phase is over, clear the flag
+    if (gameState.gameReadyUntil) {
+      gameState.gameReadyUntil = null;
+    }
+    // Continue with normal movement logic below
   }
 
   // Update positions based on directions

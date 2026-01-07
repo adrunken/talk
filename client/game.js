@@ -428,6 +428,18 @@ socket.on("snake_game_over", function (data) {
   snakeGameOverState.winner = data.winner;
   snakeGameOverState.countdownSeconds = 7;
 
+  // Store next game's starting positions from the server
+  if (data.nextGameStartPositions) {
+    snakeGameOverState.nextGameStartPositions = data.nextGameStartPositions;
+    snakeGameOverState.nextGamePlayerColors = data.nextGamePlayerColors;
+    snakeGameOverState.nextGamePlayerNames = data.nextGamePlayerNames;
+    console.log("[snake] Stored next game starting positions from server:", {
+      positions: snakeGameOverState.nextGameStartPositions,
+      colors: snakeGameOverState.nextGamePlayerColors,
+      names: snakeGameOverState.nextGamePlayerNames
+    });
+  }
+
   // Clear any existing countdown
   if (snakeGameOverState.countdownInterval) {
     clearInterval(snakeGameOverState.countdownInterval);

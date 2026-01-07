@@ -254,24 +254,72 @@ socket.on("data", function (data) {
     firstPlayerHead: data.players && data.players.length > 0 ? {x: data.players[0].x, y: data.players[0].y, name: data.players[0].name, isDead: data.players[0].isDead} : null
   });
 
+  // Store the latest game data (before game over) to display snakes on the game over screen
+  if (!snakeGameOverState.isGameOver) {
+    snakeGameOverState.lastGameData = data;
+  }
+
   // Handle game over state
   if (snakeGameOverState.isGameOver) {
     ctx.clearRect(0, 0, 800, 400);
     ctx.fillStyle = "#FFFFE0";
     ctx.fillRect(0, 0, 800, 400);
+
+    // Draw the final game state (snakes and trails) before winner text
+    if (snakeGameOverState.lastGameData) {
+      const gameData = snakeGameOverState.lastGameData;
+      ctx.textAlign = "center";
+      ctx.font = "10px Arial";
+
+      // Draw grid
+      ctx.fillStyle = "#BBBBBB";
+      for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+        ctx.fillRect(bgLineX, 0, 1, 400);
+      }
+      for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+        ctx.fillRect(0, bgLineY, 800, 1);
+      }
+
+      // Draw trails
+      for (var i = 0; i < gameData.trails.length; i++) {
+        ctx.strokeStyle = "hsl(" + gameData.trails[i].color + ", 100%, 20%)";
+        ctx.beginPath();
+        ctx.lineWidth = "3";
+        ctx.moveTo(gameData.trails[i].x, gameData.trails[i].y);
+        ctx.lineTo(gameData.trails[i].endX, gameData.trails[i].endY);
+        ctx.stroke();
+      }
+
+      // Draw snakes
+      for (var i = 0; i < gameData.players.length; i++) {
+        if (!gameData.players[i].isDead) {
+          ctx.fillStyle = "hsl(" + gameData.players[i].color + ", 100%, 10%)";
+          ctx.fillRect(gameData.players[i].x - 2, gameData.players[i].y - 2, 4, 4);
+          ctx.fillStyle = "#000000";
+          ctx.font = "15px Arial";
+          ctx.fillText(
+            gameData.players[i].name,
+            gameData.players[i].x,
+            gameData.players[i].y - 10
+          );
+        }
+      }
+    }
+
+    // Draw winner text on top of the snakes
     ctx.textAlign = "center";
     ctx.font = "50px Arial";
     ctx.fillStyle = "#000000";
 
     if (snakeGameOverState.winner) {
-      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 150);
+      ctx.fillText("Winner: " + snakeGameOverState.winner, 400, 80);
     } else {
-      ctx.fillText("Game Over!", 400, 150);
+      ctx.fillText("Game Over!", 400, 80);
     }
 
     ctx.font = "40px Arial";
     ctx.fillStyle = "#FF6600";
-    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 280);
+    ctx.fillText("Restarting in " + Math.max(0, snakeGameOverState.countdownSeconds), 400, 350);
     return;
   }
 

@@ -336,6 +336,9 @@ socket.on("data", function (data) {
   var isInGetReadyPhase = gameStartTime && (Date.now() - gameStartTime) < gameReadyDelay;
   var timeUntilStart = gameStartTime ? Math.ceil((gameReadyDelay - (Date.now() - gameStartTime)) / 1000) : 0;
 
+  // Use stored initial data during get-ready phase to prevent snakes from moving
+  var renderData = isInGetReadyPhase && snakeGameOverState.lastGameData ? snakeGameOverState.lastGameData : data;
+
   ctx.fillStyle = "#BBBBBB";
   for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
     ctx.fillRect(bgLineX, 0, 1, 400);
@@ -344,14 +347,14 @@ socket.on("data", function (data) {
     ctx.fillRect(0, bgLineY, 800, 1);
   }
 
-  // Only draw trails if not in get-ready phase
+  // Don't draw trails during get-ready phase
   if (!isInGetReadyPhase) {
-    for (var i = 0; i < data.trails.length; i++) {
-      ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
+    for (var i = 0; i < renderData.trails.length; i++) {
+      ctx.strokeStyle = "hsl(" + renderData.trails[i].color + ", 100%, 20%)";
       ctx.beginPath();
       ctx.lineWidth = "3";
-      ctx.moveTo(data.trails[i].x, data.trails[i].y);
-      ctx.lineTo(data.trails[i].endX, data.trails[i].endY);
+      ctx.moveTo(renderData.trails[i].x, renderData.trails[i].y);
+      ctx.lineTo(renderData.trails[i].endX, renderData.trails[i].endY);
       ctx.stroke();
     }
   }

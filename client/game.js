@@ -485,6 +485,7 @@ socket.on("snake_game_over", function (data) {
     snakeGameOverState.winner = null;
     snakeGameOverState.gameOverStartTime = null;
     snakeGameOverState.showWinnerText = false;
+    snakeGameOverState.frozenGameState = null;
 
     // Rejoin lobby to start new game
     socket.emit("snake_join", {

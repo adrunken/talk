@@ -2020,19 +2020,32 @@ function updateSnakeGameOnServer(gid) {
       // Player continues moving but is in danger
     }
 
-    // Check head-on collision with other player heads (mutual destruction)
-    // Snakes can pass close to each other but die if they move into the same cell
-    let hitOtherHead = false;
+    // Check collision with other player heads and bodies
+    // Head-on collision with other heads = mutual destruction
+    // Collision with other body = this snake dies
+    let hitOtherSnake = false;
     for (const otherUsername of playerList) {
       if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+      const otherPlayer = gameState.playerStates[otherUsername];
       const otherNewHead = newHeads[otherUsername];
+
+      // Check if head collides with other snake's head
       if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-        hitOtherHead = true;
+        hitOtherSnake = true;
         break;
       }
+
+      // Check if head collides with other snake's body
+      for (let i = 0; i < otherPlayer.positions.length; i++) {
+        if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+          hitOtherSnake = true;
+          break;
+        }
+      }
+      if (hitOtherSnake) break;
     }
 
-    if (hitOtherHead) {
+    if (hitOtherSnake) {
       // If already in grace period, die immediately
       if (player.graceUntil > 0) {
         player.alive = false;

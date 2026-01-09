@@ -538,7 +538,7 @@ socket.on("snake_game_over", function (data) {
 
     // Rejoin lobby to start new game
     var rejoginUsername = getLoggedInUsername();
-    var rejoinPayload = { type: 'snake_join' };
+    var rejoinPayload = {};
     if (rejoginUsername) {
       rejoinPayload.username = rejoginUsername;
     }
@@ -555,7 +555,7 @@ socket.on("id", function (data) {
     // The username will be taken from server's authenticated users map or from this message
     var username = getLoggedInUsername();
     console.log("[snake] Joining game as:", username);
-    var joinPayload = { type: 'snake_join' };
+    var joinPayload = {};
     if (username) {
       joinPayload.username = username;
     }

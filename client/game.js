@@ -337,19 +337,9 @@ socket.on("data", function (data) {
     }
 
     ctx.clearRect(0, 0, 800, 400);
-    ctx.fillStyle = "#FFFFE0";
-    ctx.fillRect(0, 0, 800, 400);
+    drawBackground();
     ctx.textAlign = "center";
     ctx.font = "10px Arial";
-
-    // Draw background grid
-    ctx.fillStyle = "#BBBBBB";
-    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
-      ctx.fillRect(bgLineX, 0, 1, 400);
-    }
-    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
-      ctx.fillRect(0, bgLineY, 800, 1);
-    }
 
     // Choose which game state to render based on elapsed time
     let gameDataToRender = null;

@@ -565,12 +565,9 @@ socket.on("snake_game_over", function (data) {
     snakeGameOverState.frozenGameState = null;
 
     // Rejoin lobby to start new game
-    var rejoginUsername = getLoggedInUsername();
-    var rejoinPayload = {};
-    if (rejoginUsername) {
-      rejoinPayload.username = rejoginUsername;
-    }
-    socket.emit("snake_join", rejoinPayload);
+    // Don't include username - let server use authenticated username
+    console.log('[snake] Rejoining game');
+    socket.emit("snake_join", {});
   }, 4000);
 });
 

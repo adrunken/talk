@@ -225,10 +225,11 @@ function getLoggedInUsername() {
     // Try to get username from localStorage (set by main app)
     const storedUsername = localStorage.getItem("username");
     if (storedUsername && storedUsername.trim()) {
+      console.log("[snake] Found username in localStorage:", storedUsername);
       return storedUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] localStorage not available (iframe sandbox):", e);
+    console.log("[snake] localStorage not available:", e);
   }
 
   // If in an iframe, try to get username from parent window
@@ -241,10 +242,22 @@ function getLoggedInUsername() {
       }
     }
   } catch (e) {
-    console.log("[snake] Cannot access parent localStorage (cross-origin):", e);
+    console.log("[snake] Cannot access parent localStorage:", e);
   }
 
-  // Return null if we can't find the username - let the server use authenticated username
+  // Last resort: try to get from sessionStorage
+  try {
+    const sessionUsername = sessionStorage.getItem("username");
+    if (sessionUsername && sessionUsername.trim()) {
+      console.log("[snake] Found username in sessionStorage:", sessionUsername);
+      return sessionUsername.trim();
+    }
+  } catch (e) {
+    console.log("[snake] sessionStorage not available:", e);
+  }
+
+  // Return null if we can't find the username
+  console.log("[snake] Could not find username in any storage");
   return null;
 }
 

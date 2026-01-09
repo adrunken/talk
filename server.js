@@ -1861,7 +1861,7 @@ function startNewSnakeGame() {
 
   snakeLobby.gameLoop = setInterval(() => {
     updateSnakeGameOnServer(gid);
-  }, 100); // 10 ticks per second
+  }, 33); // ~30 ticks per second (30 FPS)
 }
 
 function updateSnakeGameOnServer(gid) {
@@ -3373,18 +3373,22 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      // Use username from message or fallback to users map
-      let username = msg.username || users.get(ws);
-      if (!username) {
-        // Generate a default username if not provided
-        username = 'Worm' + Math.floor(Math.random() * 10000);
-      }
+      // IMPORTANT: Prefer the authenticated username from the users map (server source of truth)
+      let username = users.get(ws);
 
-      // Update users map if not already set
-      if (!users.has(ws) || !users.get(ws)) {
+      if (!username) {
+        // User not authenticated yet - use fallback but with priority order:
+        // 1. Username from message (if provided)
+        // 2. Generated unique ID (better than generic fallback)
+        username = msg.username || ('Guest' + Math.floor(Math.random() * 100000));
+
+        // Authenticate this user on the server
+        username = cleanUsername(username, ws);
         users.set(ws, username);
+        usernameToWs.set(username, ws);
         knownUsers.add(username);
         persistKnownUsers();
+        sendUserList();
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

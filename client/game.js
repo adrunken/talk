@@ -91,6 +91,53 @@ rawSocket.onmessage = function(event) {
 };
 
 // Connection event handlers
+// Rendering optimization: cache grid background
+var gridBackgroundCache = null;
+
+function createGridBackground() {
+  if (!gridBackgroundCache) {
+    gridBackgroundCache = document.createElement('canvas');
+    gridBackgroundCache.width = 800;
+    gridBackgroundCache.height = 400;
+    var gridCtx = gridBackgroundCache.getContext('2d');
+
+    gridCtx.fillStyle = "#FFFFE0";
+    gridCtx.fillRect(0, 0, 800, 400);
+    gridCtx.fillStyle = "#DDDDDD";
+
+    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+      gridCtx.fillRect(bgLineX, 0, 1, 400);
+    }
+    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+      gridCtx.fillRect(0, bgLineY, 800, 1);
+    }
+  }
+  return gridBackgroundCache;
+}
+
+function drawBackground() {
+  var gridBg = createGridBackground();
+  ctx.drawImage(gridBg, 0, 0);
+}
+
+// Initialize game loop state
+var gameLoopRunning = false;
+var lastInputFlushTime = 0;
+
+function gameLoop() {
+  // Flush buffered inputs ~60 times per second
+  var now = performance.now();
+  if (now - lastInputFlushTime > 16) { // ~60 FPS
+    inputBuffer.flushAndSend();
+    lastInputFlushTime = now;
+  }
+
+  // Continue loop
+  if (gameLoopRunning) {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
 rawSocket.onopen = function() {
   console.log('[snake] WebSocket connected');
   ctx.fillStyle = "#000000";
@@ -100,9 +147,30 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Send ping to initialize the game
-  console.log('[snake] Sending ping to initialize game');
-  rawSocket.send('ping');
+  // Only send username if we can retrieve it from localStorage
+  var username = getLoggedInUsername();
+  if (username) {
+    console.log('[snake] Sending username to server:', username);
+    rawSocket.send(JSON.stringify({
+      type: 'username',
+      username: username
+    }));
+    // Send ping after username message
+    setTimeout(function() {
+      console.log('[snake] Sending ping to initialize game');
+      rawSocket.send('ping');
+    }, 50);
+  } else {
+    // If no username found, just send ping and let server request username
+    console.log('[snake] No username in localStorage, sending ping to let server request it');
+    rawSocket.send('ping');
+  }
+
+  // Start game loop for smooth rendering and input buffering
+  if (!gameLoopRunning) {
+    gameLoopRunning = true;
+    requestAnimationFrame(gameLoop);
+  }
 
   if (eventHandlers['connect']) {
     eventHandlers['connect'].forEach(function(cb) { cb(); });
@@ -160,11 +228,11 @@ function getLoggedInUsername() {
       return storedUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] localStorage not available:", e);
+    console.log("[snake] localStorage not available (iframe sandbox):", e);
   }
 
-  // Fallback to a default name
-  return "Worm";
+  // Return null if we can't find the username - let the server use authenticated username
+  return null;
 }
 
 function initializeUsernameDisplay() {
@@ -284,19 +352,9 @@ socket.on("data", function (data) {
     }
 
     ctx.clearRect(0, 0, 800, 400);
-    ctx.fillStyle = "#FFFFE0";
-    ctx.fillRect(0, 0, 800, 400);
+    drawBackground();
     ctx.textAlign = "center";
     ctx.font = "10px Arial";
-
-    // Draw background grid
-    ctx.fillStyle = "#BBBBBB";
-    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
-      ctx.fillRect(bgLineX, 0, 1, 400);
-    }
-    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
-      ctx.fillRect(0, bgLineY, 800, 1);
-    }
 
     // Choose which game state to render based on elapsed time
     let gameDataToRender = null;
@@ -360,18 +418,9 @@ socket.on("data", function (data) {
   }
 
   ctx.clearRect(0, 0, 800, 400);
-  ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
+  drawBackground();
   ctx.textAlign = "center";
   ctx.font = "10px Arial";
-
-  ctx.fillStyle = "#BBBBBB";
-  for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
-    ctx.fillRect(bgLineX, 0, 1, 400);
-  }
-  for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
-    ctx.fillRect(0, bgLineY, 800, 1);
-  }
 
   for (var i = 0; i < data.trails.length; i++) {
     ctx.strokeStyle = "hsl(" + data.trails[i].color + ", 100%, 20%)";
@@ -499,7 +548,8 @@ socket.on("id", function (data) {
   id = data.id;
   setTimeout(function () {
     socket.emit("kthx");
-    // Join the snake game lobby with the authenticated username
+    // Join the snake game lobby
+    // The username will be taken from server's authenticated users map or from this message
     var username = getLoggedInUsername();
     console.log("[snake] Joining game as:", username);
     socket.emit("snake_join", {
@@ -595,50 +645,79 @@ socket.on("snake_game_start", function (data) {
 });
 
 
+// Input buffering for reduced lag and network overhead
+var inputBuffer = {
+  pressed: {},
+  released: {},
+  hasInput: false,
+
+  addKeyEvent: function(direction, isDown) {
+    if (isDown) {
+      this.pressed[direction] = true;
+      delete this.released[direction];
+    } else {
+      this.released[direction] = true;
+      delete this.pressed[direction];
+    }
+    this.hasInput = true;
+  },
+
+  flushAndSend: function() {
+    if (!this.hasInput) return;
+
+    // Send all buffered inputs in a batch
+    if (Object.keys(this.pressed).length > 0) {
+      for (const direction in this.pressed) {
+        socket.emit("keyPress", {
+          inputId: direction,
+          state: true
+        });
+      }
+    }
+
+    if (Object.keys(this.released).length > 0) {
+      for (const direction in this.released) {
+        socket.emit("keyPress", {
+          inputId: direction,
+          state: false
+        });
+      }
+    }
+
+    this.pressed = {};
+    this.released = {};
+    this.hasInput = false;
+  }
+};
+
+// Key mapping for both left and right hand control schemes
+var keyMapping = {
+  70: 'right',  // F
+  76: 'right',  // L
+  75: 'down',   // K
+  68: 'down',   // D
+  74: 'left',   // J
+  83: 'left',   // S
+  69: 'up',     // E
+  73: 'up'      // I
+};
+
 document.getElementById("ctx").onkeydown = function (event) {
-  if (event.keyCode === 70 || event.keyCode === 76)
-    socket.emit("keyPress", {
-      inputId: "right",
-      state: true,
-    });
-  else if (event.keyCode === 75 || event.keyCode === 68)
-    socket.emit("keyPress", {
-      inputId: "down",
-      state: true,
-    });
-  else if (event.keyCode === 74 || event.keyCode === 83)
-    socket.emit("keyPress", {
-      inputId: "left",
-      state: true,
-    });
-  else if (event.keyCode === 69 || event.keyCode === 73)
-    socket.emit("keyPress", {
-      inputId: "up",
-      state: true,
-    });
+  var direction = keyMapping[event.keyCode];
+  if (direction) {
+    event.preventDefault();
+    inputBuffer.addKeyEvent(direction, true);
+  }
 };
+
 document.getElementById("ctx").onkeyup = function (event) {
-  if (event.keyCode === 70 || event.keyCode === 76)
-    socket.emit("keyPress", {
-      inputId: "right",
-      state: false,
-    });
-  else if (event.keyCode === 75 || event.keyCode === 68)
-    socket.emit("keyPress", {
-      inputId: "down",
-      state: false,
-    });
-  else if (event.keyCode === 74 || event.keyCode === 83)
-    socket.emit("keyPress", {
-      inputId: "left",
-      state: false,
-    });
-  else if (event.keyCode === 69 || event.keyCode === 73)
-    socket.emit("keyPress", {
-      inputId: "up",
-      state: false,
-    });
+  var direction = keyMapping[event.keyCode];
+  if (direction) {
+    event.preventDefault();
+    inputBuffer.addKeyEvent(direction, false);
+  }
 };
+
 
 function mouseMove(e) {
   mx = Math.round((e.clientX / window.innerWidth) * 800);

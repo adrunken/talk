@@ -3374,18 +3374,21 @@ wss.on('connection', (ws, req) => {
     }
     else if (msg.type === 'snake_join') {
       // IMPORTANT: Prefer the authenticated username from the users map (server source of truth)
-      // Only use msg.username as a fallback if the user is not authenticated
-      let username = users.get(ws) || msg.username;
-      if (!username) {
-        // Generate a default username only if truly unauthenticated
-        username = 'Worm' + Math.floor(Math.random() * 10000);
-      }
+      let username = users.get(ws);
 
-      // Update users map if not already set (rare case)
-      if (!users.has(ws) || !users.get(ws)) {
+      if (!username) {
+        // User not authenticated yet - use fallback but with priority order:
+        // 1. Username from message (if provided)
+        // 2. Generated unique ID (better than generic fallback)
+        username = msg.username || ('Guest' + Math.floor(Math.random() * 100000));
+
+        // Authenticate this user on the server
+        username = cleanUsername(username, ws);
         users.set(ws, username);
+        usernameToWs.set(username, ws);
         knownUsers.add(username);
         persistKnownUsers();
+        sendUserList();
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

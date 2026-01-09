@@ -1286,8 +1286,10 @@ function connectedUsernames() {
 }
 
 function sendUserList() {
-  const connected = connectedUsernames();
-  const offline = Array.from(knownUsers).filter((u) => !connected.includes(u));
+  const allConnected = connectedUsernames();
+  // Filter out temporary game-only usernames from the public user list
+  const connected = allConnected.filter(u => !u.match(/^(user_|guest_)/i));
+  const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];
     let lastSeen = null;

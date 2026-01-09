@@ -537,9 +537,12 @@ socket.on("snake_game_over", function (data) {
     snakeGameOverState.frozenGameState = null;
 
     // Rejoin lobby to start new game
-    socket.emit("snake_join", {
-      username: getLoggedInUsername()
-    });
+    var rejoginUsername = getLoggedInUsername();
+    var rejoinPayload = { type: 'snake_join' };
+    if (rejoginUsername) {
+      rejoinPayload.username = rejoginUsername;
+    }
+    socket.emit("snake_join", rejoinPayload);
   }, 4000);
 });
 
@@ -552,9 +555,11 @@ socket.on("id", function (data) {
     // The username will be taken from server's authenticated users map or from this message
     var username = getLoggedInUsername();
     console.log("[snake] Joining game as:", username);
-    socket.emit("snake_join", {
-      username: username
-    });
+    var joinPayload = { type: 'snake_join' };
+    if (username) {
+      joinPayload.username = username;
+    }
+    socket.emit("snake_join", joinPayload);
   }, 100);
 });
 

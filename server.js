@@ -3373,27 +3373,14 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      // IMPORTANT: Prefer the authenticated username from the users map (server source of truth)
+      // IMPORTANT: Require authentication before joining snake game
       let username = users.get(ws);
 
       if (!username) {
-        // User not authenticated yet
-        // Only authenticate if a username was explicitly provided
-        if (msg.username) {
-          // Authenticate this user on the server
-          username = cleanUsername(msg.username, ws);
-          users.set(ws, username);
-          usernameToWs.set(username, ws);
-          knownUsers.add(username);
-          persistKnownUsers();
-          sendUserList();
-        } else {
-          // No username provided - don't create a global user entry or add to users list
-          // Use WebSocket reference for game-internal identification only
-          console.log('[snake] User joined game without authentication - game lobby only');
-          // Set username to a temporary game-only identifier (not added to global users)
-          username = null; // Will use ws reference in game
-        }
+        // User not authenticated yet - request authentication
+        console.log('[snake] Unauthenticated user tried to join - requesting authentication');
+        send(ws, { type: 'username', requiresAuth: true, reason: 'Must authenticate to play' });
+        return; // Don't allow game join until authenticated
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

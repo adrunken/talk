@@ -223,11 +223,11 @@ function getLoggedInUsername() {
       return storedUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] localStorage not available:", e);
+    console.log("[snake] localStorage not available (iframe sandbox):", e);
   }
 
-  // Fallback to a default name
-  return "Worm";
+  // Return null if we can't find the username - let the server use authenticated username
+  return null;
 }
 
 function initializeUsernameDisplay() {

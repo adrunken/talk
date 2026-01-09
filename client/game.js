@@ -595,49 +595,115 @@ socket.on("snake_game_start", function (data) {
 });
 
 
-document.getElementById("ctx").onkeydown = function (event) {
-  if (event.keyCode === 70 || event.keyCode === 76)
-    socket.emit("keyPress", {
-      inputId: "right",
-      state: true,
-    });
-  else if (event.keyCode === 75 || event.keyCode === 68)
-    socket.emit("keyPress", {
-      inputId: "down",
-      state: true,
-    });
-  else if (event.keyCode === 74 || event.keyCode === 83)
-    socket.emit("keyPress", {
-      inputId: "left",
-      state: true,
-    });
-  else if (event.keyCode === 69 || event.keyCode === 73)
-    socket.emit("keyPress", {
-      inputId: "up",
-      state: true,
-    });
+// Input buffering for reduced lag and network overhead
+var inputBuffer = {
+  pressed: {},
+  released: {},
+  hasInput: false,
+
+  addKeyEvent: function(direction, isDown) {
+    if (isDown) {
+      this.pressed[direction] = true;
+      delete this.released[direction];
+    } else {
+      this.released[direction] = true;
+      delete this.pressed[direction];
+    }
+    this.hasInput = true;
+  },
+
+  flushAndSend: function() {
+    if (!this.hasInput) return;
+
+    // Send all buffered inputs in a batch
+    if (Object.keys(this.pressed).length > 0) {
+      for (const direction in this.pressed) {
+        socket.emit("keyPress", {
+          inputId: direction,
+          state: true
+        });
+      }
+    }
+
+    if (Object.keys(this.released).length > 0) {
+      for (const direction in this.released) {
+        socket.emit("keyPress", {
+          inputId: direction,
+          state: false
+        });
+      }
+    }
+
+    this.pressed = {};
+    this.released = {};
+    this.hasInput = false;
+  }
 };
+
+// Key mapping for both left and right hand control schemes
+var keyMapping = {
+  70: 'right',  // F
+  76: 'right',  // L
+  75: 'down',   // K
+  68: 'down',   // D
+  74: 'left',   // J
+  83: 'left',   // S
+  69: 'up',     // E
+  73: 'up'      // I
+};
+
+document.getElementById("ctx").onkeydown = function (event) {
+  var direction = keyMapping[event.keyCode];
+  if (direction) {
+    event.preventDefault();
+    inputBuffer.addKeyEvent(direction, true);
+  }
+};
+
 document.getElementById("ctx").onkeyup = function (event) {
-  if (event.keyCode === 70 || event.keyCode === 76)
-    socket.emit("keyPress", {
-      inputId: "right",
-      state: false,
-    });
-  else if (event.keyCode === 75 || event.keyCode === 68)
-    socket.emit("keyPress", {
-      inputId: "down",
-      state: false,
-    });
-  else if (event.keyCode === 74 || event.keyCode === 83)
-    socket.emit("keyPress", {
-      inputId: "left",
-      state: false,
-    });
-  else if (event.keyCode === 69 || event.keyCode === 73)
-    socket.emit("keyPress", {
-      inputId: "up",
-      state: false,
-    });
+  var direction = keyMapping[event.keyCode];
+  if (direction) {
+    event.preventDefault();
+    inputBuffer.addKeyEvent(direction, false);
+  }
+};
+
+// Game loop for smooth 60 FPS rendering and input flushing
+var gameLoopRunning = false;
+
+function gameLoop() {
+  // Flush buffered inputs at regular intervals
+  inputBuffer.flushAndSend();
+
+  // Continue loop
+  if (gameLoopRunning) {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+// Start game loop when connected
+rawSocket.onopen = function() {
+  console.log('[snake] WebSocket connected');
+  ctx.fillStyle = "#000000";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFFFE0";
+  ctx.fillRect(0, 0, 800, 400);
+  ctx.fillStyle = "#000000";
+  ctx.fillText("Connected! Setting up game...", 200, 200);
+
+  // Send ping to initialize the game
+  console.log('[snake] Sending ping to initialize game');
+  rawSocket.send('ping');
+
+  // Start game loop
+  if (!gameLoopRunning) {
+    gameLoopRunning = true;
+    requestAnimationFrame(gameLoop);
+  }
+
+  if (eventHandlers['connect']) {
+    eventHandlers['connect'].forEach(function(cb) { cb(); });
+  }
 };
 
 function mouseMove(e) {

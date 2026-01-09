@@ -3404,13 +3404,12 @@ wss.on('connection', (ws, req) => {
             console.log('[snake] Authenticated game-only user joined:', username);
           }
         } else {
-          // No authentication - request username
-          console.log('[snake] Unauthenticated user joined game - requesting authentication');
+          // No username provided and user not authenticated
+          console.log('[snake] User joined game without username - requesting authentication');
           send(ws, { type: 'username' });
-          // Generate a temporary game-only ID (won't be added to global user list)
-          username = 'guest_' + Math.random().toString(36).substr(2, 9);
-          users.set(ws, username);
-          console.log('[snake] Using temp game-only ID:', username);
+          // Don't set username yet - wait for client to respond with real username
+          // The client should send back their real username
+          return; // Wait for username response before processing game join
         }
       }
 

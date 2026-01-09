@@ -3373,14 +3373,15 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      // Use username from message or fallback to users map
-      let username = msg.username || users.get(ws);
+      // IMPORTANT: Prefer the authenticated username from the users map (server source of truth)
+      // Only use msg.username as a fallback if the user is not authenticated
+      let username = users.get(ws) || msg.username;
       if (!username) {
-        // Generate a default username if not provided
+        // Generate a default username only if truly unauthenticated
         username = 'Worm' + Math.floor(Math.random() * 10000);
       }
 
-      // Update users map if not already set
+      // Update users map if not already set (rare case)
       if (!users.has(ws) || !users.get(ws)) {
         users.set(ws, username);
         knownUsers.add(username);

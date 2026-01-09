@@ -198,6 +198,7 @@ rawSocket.onclose = function() {
 };
 
 var id = -1;
+var isAuthenticated = false; // Track whether user has been authenticated
 
 var start = new Date();
 var lines = 16,

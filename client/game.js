@@ -147,14 +147,15 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Only send username if we can retrieve it from localStorage
+  // Try to get username from localStorage
   var username = getLoggedInUsername();
   if (username) {
-    console.log('[snake] Sending username to server:', username);
+    console.log('[snake] Found username, sending to server:', username);
     rawSocket.send(JSON.stringify({
       type: 'username',
       username: username
     }));
+    isAuthenticated = true;
     // Send ping after username message
     setTimeout(function() {
       console.log('[snake] Sending ping to initialize game');
@@ -162,7 +163,7 @@ rawSocket.onopen = function() {
     }, 50);
   } else {
     // If no username found, just send ping and let server request username
-    console.log('[snake] No username in localStorage, sending ping to let server request it');
+    console.log('[snake] No username found, sending ping to let server request it');
     rawSocket.send('ping');
   }
 

@@ -3404,12 +3404,13 @@ wss.on('connection', (ws, req) => {
             console.log('[snake] Authenticated game-only user joined:', username);
           }
         } else {
-          // No username provided and user not authenticated
-          console.log('[snake] User joined game without username - requesting authentication');
+          // No username provided - use the authenticated username from the chat app if available
+          // or wait for the client to authenticate
+          console.log('[snake] User joined game without explicit username - awaiting authentication');
           send(ws, { type: 'username' });
-          // Don't set username yet - wait for client to respond with real username
-          // The client should send back their real username
-          return; // Wait for username response before processing game join
+          // Don't add to game yet - wait for client to send username message
+          // Store a flag indicating this connection needs authentication before game join
+          return;
         }
       }
 

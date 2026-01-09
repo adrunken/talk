@@ -3377,18 +3377,22 @@ wss.on('connection', (ws, req) => {
       let username = users.get(ws);
 
       if (!username) {
-        // User not authenticated yet - use fallback but with priority order:
-        // 1. Username from message (if provided)
-        // 2. Generated unique ID (better than generic fallback)
-        username = msg.username || ('Guest' + Math.floor(Math.random() * 100000));
-
-        // Authenticate this user on the server
-        username = cleanUsername(username, ws);
-        users.set(ws, username);
-        usernameToWs.set(username, ws);
-        knownUsers.add(username);
-        persistKnownUsers();
-        sendUserList();
+        // User not authenticated yet
+        // Only authenticate if a username was explicitly provided
+        if (msg.username) {
+          // Authenticate this user on the server
+          username = cleanUsername(msg.username, ws);
+          users.set(ws, username);
+          usernameToWs.set(username, ws);
+          knownUsers.add(username);
+          persistKnownUsers();
+          sendUserList();
+        } else {
+          // No username provided - don't create a global user entry
+          // Just use a temporary identifier for the game
+          console.log('[snake] User joined game without authentication - will use temp ID');
+          return; // Don't process game join until authenticated
+        }
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

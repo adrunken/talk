@@ -3390,16 +3390,24 @@ wss.on('connection', (ws, req) => {
           username = cleanUsername(msg.username, ws);
           users.set(ws, username);
           usernameToWs.set(username, ws);
-          knownUsers.add(username);
-          persistKnownUsers();
-          sendUserList();
-          console.log('[snake] Authenticated user joined:', username);
+
+          // Only add to persistent known users if it's not a temporary username
+          const isTempUsername = username.match(/^(user_|guest_)/i);
+          if (!isTempUsername) {
+            knownUsers.add(username);
+            persistKnownUsers();
+            sendUserList();
+            console.log('[snake] Authenticated real user joined:', username);
+          } else {
+            console.log('[snake] Authenticated game-only user joined:', username);
+          }
         } else {
           // No authentication - request username
           console.log('[snake] Unauthenticated user joined game - requesting authentication');
           send(ws, { type: 'username' });
           // Generate a temporary game-only ID (won't be added to global user list)
           username = 'guest_' + Math.random().toString(36).substr(2, 9);
+          users.set(ws, username);
           console.log('[snake] Using temp game-only ID:', username);
         }
       }

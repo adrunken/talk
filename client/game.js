@@ -534,9 +534,12 @@ socket.on("id", function (data) {
   setTimeout(function () {
     socket.emit("kthx");
     // Join the snake game lobby
-    // NOTE: Don't send username - let server use the authenticated username from the users map
-    console.log("[snake] Joining game, server will use authenticated username");
-    socket.emit("snake_join", {});
+    // The username will be taken from server's authenticated users map or from this message
+    var username = getLoggedInUsername();
+    console.log("[snake] Joining game as:", username);
+    socket.emit("snake_join", {
+      username: username
+    });
   }, 100);
 });
 

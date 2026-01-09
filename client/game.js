@@ -584,12 +584,22 @@ socket.on("username", function (data) {
   console.log("[snake] Server requesting username");
   var username = getLoggedInUsername();
   console.log("[snake] Responding with username:", username);
+
+  // Always respond to username request, even if we don't have one
+  // This ensures we get properly authenticated
   if (username) {
+    console.log('[snake] Sending authenticated username:', username);
     socket.emit("username", {
       username: username
     });
   } else {
-    console.log("[snake] No username available in localStorage, server will generate a unique ID");
+    // If we still don't have a username, generate a temporary one for this session
+    // This should only happen if parent window localStorage is also inaccessible
+    var tempUsername = 'user_' + Math.floor(Math.random() * 10000);
+    console.log('[snake] No username found, using temporary:', tempUsername);
+    socket.emit("username", {
+      username: tempUsername
+    });
   }
 });
 

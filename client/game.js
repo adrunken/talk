@@ -687,43 +687,6 @@ document.getElementById("ctx").onkeyup = function (event) {
   }
 };
 
-// Game loop for smooth 60 FPS rendering and input flushing
-var gameLoopRunning = false;
-
-function gameLoop() {
-  // Flush buffered inputs at regular intervals
-  inputBuffer.flushAndSend();
-
-  // Continue loop
-  if (gameLoopRunning) {
-    requestAnimationFrame(gameLoop);
-  }
-}
-
-// Start game loop when connected
-rawSocket.onopen = function() {
-  console.log('[snake] WebSocket connected');
-  ctx.fillStyle = "#000000";
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#FFFFE0";
-  ctx.fillRect(0, 0, 800, 400);
-  ctx.fillStyle = "#000000";
-  ctx.fillText("Connected! Setting up game...", 200, 200);
-
-  // Send ping to initialize the game
-  console.log('[snake] Sending ping to initialize game');
-  rawSocket.send('ping');
-
-  // Start game loop
-  if (!gameLoopRunning) {
-    gameLoopRunning = true;
-    requestAnimationFrame(gameLoop);
-  }
-
-  if (eventHandlers['connect']) {
-    eventHandlers['connect'].forEach(function(cb) { cb(); });
-  }
-};
 
 function mouseMove(e) {
   mx = Math.round((e.clientX / window.innerWidth) * 800);

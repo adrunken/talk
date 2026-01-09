@@ -3388,10 +3388,11 @@ wss.on('connection', (ws, req) => {
           persistKnownUsers();
           sendUserList();
         } else {
-          // No username provided - don't create a global user entry
-          // Just use a temporary identifier for the game
-          console.log('[snake] User joined game without authentication - will use temp ID');
-          return; // Don't process game join until authenticated
+          // No username provided - don't create a global user entry or add to users list
+          // Use WebSocket reference for game-internal identification only
+          console.log('[snake] User joined game without authentication - game lobby only');
+          // Set username to a temporary game-only identifier (not added to global users)
+          username = null; // Will use ws reference in game
         }
       }
 

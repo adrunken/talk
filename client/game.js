@@ -576,18 +576,8 @@ socket.on("snake_game_over", function (data) {
 socket.on("id", function (data) {
   console.log("Your id is " + data.id);
   id = data.id;
-  setTimeout(function () {
-    socket.emit("kthx");
-    // Join the snake game lobby
-    // The username will be taken from server's authenticated users map or from this message
-    var username = getLoggedInUsername();
-    console.log("[snake] Joining game as:", username);
-    var joinPayload = {};
-    if (username) {
-      joinPayload.username = username;
-    }
-    socket.emit("snake_join", joinPayload);
-  }, 100);
+  // Send kthx response but DON'T join game yet - wait for authentication
+  socket.emit("kthx");
 });
 
 socket.on("afk?", function (data) {

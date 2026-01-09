@@ -3373,14 +3373,29 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      // IMPORTANT: Require authentication before joining snake game
+      // Get authenticated username if available
       let username = users.get(ws);
+      let isAuthenticated = !!username;
 
       if (!username) {
-        // User not authenticated yet - request authentication
-        console.log('[snake] Unauthenticated user tried to join - requesting authentication');
-        send(ws, { type: 'username', requiresAuth: true, reason: 'Must authenticate to play' });
-        return; // Don't allow game join until authenticated
+        // User not authenticated yet
+        if (msg.username) {
+          // They provided a username in the message - authenticate them
+          username = cleanUsername(msg.username, ws);
+          users.set(ws, username);
+          usernameToWs.set(username, ws);
+          knownUsers.add(username);
+          persistKnownUsers();
+          sendUserList();
+          console.log('[snake] Authenticated user joined:', username);
+        } else {
+          // No authentication - request username
+          console.log('[snake] Unauthenticated user joined game - requesting authentication');
+          send(ws, { type: 'username' });
+          // Generate a temporary game-only ID (won't be added to global user list)
+          username = 'guest_' + Math.random().toString(36).substr(2, 9);
+          console.log('[snake] Using temp game-only ID:', username);
+        }
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

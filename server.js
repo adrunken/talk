@@ -1861,7 +1861,7 @@ function startNewSnakeGame() {
 
   snakeLobby.gameLoop = setInterval(() => {
     updateSnakeGameOnServer(gid);
-  }, 100); // 10 ticks per second
+  }, 33); // ~30 ticks per second (30 FPS)
 }
 
 function updateSnakeGameOnServer(gid) {

@@ -596,6 +596,7 @@ socket.on("username", function (data) {
     socket.emit("username", {
       username: username
     });
+    isAuthenticated = true;
   } else {
     // If we still don't have a username, generate a temporary one for this session
     // This should only happen if parent window localStorage is also inaccessible
@@ -604,7 +605,16 @@ socket.on("username", function (data) {
     socket.emit("username", {
       username: tempUsername
     });
+    isAuthenticated = true;
   }
+
+  // After authentication, wait a bit for server to process, then join game
+  setTimeout(function() {
+    if (id !== -1) {
+      console.log('[snake] Sending snake_join after authentication');
+      socket.emit("snake_join", {});
+    }
+  }, 100);
 });
 
 // Snake game events

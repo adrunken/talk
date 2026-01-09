@@ -91,12 +91,46 @@ rawSocket.onmessage = function(event) {
 };
 
 // Connection event handlers
+// Rendering optimization: cache grid background
+var gridBackgroundCache = null;
+
+function createGridBackground() {
+  if (!gridBackgroundCache) {
+    gridBackgroundCache = document.createElement('canvas');
+    gridBackgroundCache.width = 800;
+    gridBackgroundCache.height = 400;
+    var gridCtx = gridBackgroundCache.getContext('2d');
+
+    gridCtx.fillStyle = "#FFFFE0";
+    gridCtx.fillRect(0, 0, 800, 400);
+    gridCtx.fillStyle = "#DDDDDD";
+
+    for (var bgLineX = 0; bgLineX < 800; bgLineX += 20) {
+      gridCtx.fillRect(bgLineX, 0, 1, 400);
+    }
+    for (var bgLineY = 0; bgLineY < 400; bgLineY += 20) {
+      gridCtx.fillRect(0, bgLineY, 800, 1);
+    }
+  }
+  return gridBackgroundCache;
+}
+
+function drawBackground() {
+  var gridBg = createGridBackground();
+  ctx.drawImage(gridBg, 0, 0);
+}
+
 // Initialize game loop state
 var gameLoopRunning = false;
+var lastInputFlushTime = 0;
 
 function gameLoop() {
-  // Flush buffered inputs at regular intervals
-  inputBuffer.flushAndSend();
+  // Flush buffered inputs ~60 times per second
+  var now = performance.now();
+  if (now - lastInputFlushTime > 16) { // ~60 FPS
+    inputBuffer.flushAndSend();
+    lastInputFlushTime = now;
+  }
 
   // Continue loop
   if (gameLoopRunning) {

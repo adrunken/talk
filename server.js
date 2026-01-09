@@ -2329,8 +2329,14 @@ wss.on('connection', (ws, req) => {
       if (oldName && oldName !== username) {
         renameUserEverywhere(oldName, username);
       }
-      knownUsers.add(username);
-      persistKnownUsers();
+
+      // Only add to persistent known users if it's not a temporary game-only username
+      const isTempGameUsername = username.match(/^(user_|guest_)/i);
+      if (!isTempGameUsername) {
+        knownUsers.add(username);
+        persistKnownUsers();
+      }
+
       if (isNew) {
         recordOnlineEvent(username, 'online');
         send(ws, { type: 'messages', before: 0, messages: messagesRange(Math.max(0, idx - 100), idx) });

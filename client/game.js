@@ -571,9 +571,13 @@ socket.on("username", function (data) {
   console.log("[snake] Server requesting username");
   var username = getLoggedInUsername();
   console.log("[snake] Responding with username:", username);
-  socket.emit("username", {
-    username: username
-  });
+  if (username) {
+    socket.emit("username", {
+      username: username
+    });
+  } else {
+    console.log("[snake] No username available in localStorage, server will generate a unique ID");
+  }
 });
 
 // Snake game events

@@ -91,6 +91,19 @@ rawSocket.onmessage = function(event) {
 };
 
 // Connection event handlers
+// Initialize game loop state
+var gameLoopRunning = false;
+
+function gameLoop() {
+  // Flush buffered inputs at regular intervals
+  inputBuffer.flushAndSend();
+
+  // Continue loop
+  if (gameLoopRunning) {
+    requestAnimationFrame(gameLoop);
+  }
+}
+
 rawSocket.onopen = function() {
   console.log('[snake] WebSocket connected');
   ctx.fillStyle = "#000000";
@@ -103,6 +116,12 @@ rawSocket.onopen = function() {
   // Send ping to initialize the game
   console.log('[snake] Sending ping to initialize game');
   rawSocket.send('ping');
+
+  // Start game loop for smooth rendering and input buffering
+  if (!gameLoopRunning) {
+    gameLoopRunning = true;
+    requestAnimationFrame(gameLoop);
+  }
 
   if (eventHandlers['connect']) {
     eventHandlers['connect'].forEach(function(cb) { cb(); });

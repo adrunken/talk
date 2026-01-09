@@ -147,19 +147,24 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Immediately send the username to authenticate with the server
+  // Only send username if we can retrieve it from localStorage
   var username = getLoggedInUsername();
-  console.log('[snake] Sending username to server:', username);
-  rawSocket.send(JSON.stringify({
-    type: 'username',
-    username: username
-  }));
-
-  // Send ping to initialize the game (with a small delay to ensure username is processed)
-  setTimeout(function() {
-    console.log('[snake] Sending ping to initialize game');
+  if (username) {
+    console.log('[snake] Sending username to server:', username);
+    rawSocket.send(JSON.stringify({
+      type: 'username',
+      username: username
+    }));
+    // Send ping after username message
+    setTimeout(function() {
+      console.log('[snake] Sending ping to initialize game');
+      rawSocket.send('ping');
+    }, 50);
+  } else {
+    // If no username found, just send ping and let server request username
+    console.log('[snake] No username in localStorage, sending ping to let server request it');
     rawSocket.send('ping');
-  }, 50);
+  }
 
   // Start game loop for smooth rendering and input buffering
   if (!gameLoopRunning) {

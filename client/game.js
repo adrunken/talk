@@ -234,6 +234,12 @@ var snakeGameOverState = {
 };
 
 function getLoggedInUsername() {
+  // First check if username was communicated via postMessage from parent window
+  if (communicatedUsername && communicatedUsername.trim()) {
+    console.log("[snake] Using username communicated from parent:", communicatedUsername);
+    return communicatedUsername.trim();
+  }
+
   try {
     // Try to get username from localStorage (set by main app)
     const storedUsername = localStorage.getItem("username");

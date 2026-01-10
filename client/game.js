@@ -246,8 +246,24 @@ var snakeGameOverState = {
 };
 
 function getLoggedInUsername() {
-  // If in an iframe, FIRST try to get username from parent window's localStorage
-  // This is important because iframe has its own localStorage separate from parent
+  // FIRST priority: Check if parent window sent us the username via postMessage
+  if (parentProvidedUsername && parentProvidedUsername.trim()) {
+    console.log("[snake] Using username from parent window (postMessage):", parentProvidedUsername);
+    return parentProvidedUsername.trim();
+  }
+
+  // Try to get username from this window's localStorage
+  try {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername && storedUsername.trim()) {
+      console.log("[snake] Found username in this window's localStorage:", storedUsername);
+      return storedUsername.trim();
+    }
+  } catch (e) {
+    console.log("[snake] localStorage error:", e.message);
+  }
+
+  // Try to get username from parent window's localStorage (fallback)
   if (window.parent !== window && window.parent) {
     try {
       const parentUsername = window.parent.localStorage?.getItem("username");
@@ -258,30 +274,6 @@ function getLoggedInUsername() {
     } catch (e) {
       console.log("[snake] Cannot access parent localStorage:", e.message);
     }
-
-    // Also try to get from parent window's global scope if it's available
-    try {
-      if (window.parent.getStoredUsername && typeof window.parent.getStoredUsername === 'function') {
-        const parentUsername = window.parent.getStoredUsername();
-        if (parentUsername && parentUsername.trim()) {
-          console.log("[snake] Got username from parent window function:", parentUsername);
-          return parentUsername.trim();
-        }
-      }
-    } catch (e) {
-      console.log("[snake] Cannot call parent window function:", e.message);
-    }
-  }
-
-  // Try to get username from this window's localStorage (if not in iframe or parent doesn't have it)
-  try {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername && storedUsername.trim()) {
-      console.log("[snake] Found username in this window's localStorage:", storedUsername);
-      return storedUsername.trim();
-    }
-  } catch (e) {
-    console.log("[snake] localStorage error:", e.message);
   }
 
   // Last resort: try to get from sessionStorage

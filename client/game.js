@@ -203,12 +203,24 @@ rawSocket.onclose = function() {
 var id = -1;
 var isAuthenticated = false; // Track whether user has been authenticated
 var communicatedUsername = null; // Username passed from parent window via postMessage
+var currentAuthenticatedUsername = null; // Track the currently authenticated username with the server
 
 // Listen for username from parent window (for sandboxed iframes without localStorage access)
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'snake_username') {
     communicatedUsername = event.data.username;
     console.log('[snake] Received username from parent window:', communicatedUsername);
+
+    // If we're already authenticated with a different username, update to the new one
+    if (isAuthenticated && currentAuthenticatedUsername !== communicatedUsername) {
+      console.log('[snake] Username changed from', currentAuthenticatedUsername, 'to', communicatedUsername, '- updating with server');
+      rawSocket.send(JSON.stringify({
+        type: 'username',
+        username: communicatedUsername
+      }));
+      currentAuthenticatedUsername = communicatedUsername;
+      initializeUsernameDisplay();
+    }
   }
 });
 

@@ -1791,10 +1791,10 @@ function startNewSnakeGame() {
   const colors = ['green', 'blue', 'yellow', 'red'];
   const directions = ['right', 'down', 'left', 'up'];
 
-  // Generate random spawn positions in center area
+  // Generate random spawn positions in center area (100x50 grid)
   const startPositions = playersArray.map(() => {
     const x = 30 + Math.floor(Math.random() * 40);
-    const y = 30 + Math.floor(Math.random() * 40);
+    const y = 15 + Math.floor(Math.random() * 20);  // Centered in 50-height grid
     return [[x, y]];
   });
 
@@ -1881,7 +1881,7 @@ function updateSnakeGameOnServer(gid) {
       winner = Array.from(gameState.activePlayers)[0];
     }
 
-    // Generate next game's starting positions for display on game-over screen
+    // Generate next game's starting positions for display on game-over screen (100x50 grid)
     const nextGameStartPositions = {};
     const nextGamePlayerColors = {};
     const playerInfoArray = snakeLobby.playerInfo ? Array.from(snakeLobby.playerInfo.values()) : [];
@@ -1891,7 +1891,7 @@ function updateSnakeGameOnServer(gid) {
     for (let i = 0; i < playerInfoArray.length; i++) {
       const username = playerInfoArray[i].username;
       const x = 30 + Math.floor(Math.random() * 40);
-      const y = 30 + Math.floor(Math.random() * 40);
+      const y = 15 + Math.floor(Math.random() * 20);  // Centered in 50-height grid
       nextGameStartPositions[username] = [x, y];
       nextGamePlayerColors[username] = colors[i % colors.length];
     }
@@ -2033,8 +2033,8 @@ function updateSnakeGameOnServer(gid) {
     const newHead = moveData.position;
     const shouldMove = moveData.shouldMove;
 
-    // Check boundaries (only if moving)
-    if (shouldMove && (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100)) {
+    // Check boundaries (only if moving) - 100x50 grid
+    if (shouldMove && (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 50)) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;
@@ -2129,8 +2129,8 @@ function updateSnakeGameOnServer(gid) {
     playersList.push({
       id: playerId++,
       name: displayName,
-      x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
-      y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
+      x: head[0] * 8,  // Scale to canvas coordinates (100 units -> 800 pixels)
+      y: head[1] * 8,  // Scale to canvas coordinates (50 units -> 400 pixels)
       color: colorHues[state.color] || 100,
       isDead: !state.alive,
       hasJoined: true,
@@ -2153,9 +2153,9 @@ function updateSnakeGameOnServer(gid) {
     for (let i = 0; i < positions.length - 1; i++) {
       trailsList.push({
         x: positions[i][0] * 8,
-        y: positions[i][1] * 4,
+        y: positions[i][1] * 8,
         endX: positions[i + 1][0] * 8,
-        endY: positions[i + 1][1] * 4,
+        endY: positions[i + 1][1] * 8,
         color: color
       });
     }

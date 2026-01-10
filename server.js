@@ -2366,7 +2366,8 @@ wss.on('connection', (ws, req) => {
       }
 
       // Only add to persistent known users if it's not a temporary game-only username
-      const isTempGameUsername = username.match(/^(user_|guest_)/i);
+      // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+      const isTempGameUsername = /^user_\d+$/i.test(username) || /^user\d{1,4}$/i.test(username) || /^guest_/i.test(username);
       if (!isTempGameUsername) {
         knownUsers.add(username);
         persistKnownUsers();

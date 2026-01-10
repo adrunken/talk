@@ -1947,12 +1947,12 @@ function updateSnakeGameOnServer(gid) {
     return;
   }
 
-  // Update positions based on directions
+  // Integer-only movement directions for 2/3 speed
   const directions = {
-    'up': [0, -2/3],      // 2/3 speed: vertical movement ≈ 2.67 pixels per tick
-    'down': [0, 2/3],     // 2/3 speed: vertical movement ≈ 2.67 pixels per tick
-    'left': [-1/3, 0],    // 2/3 speed: horizontal movement ≈ 2.67 pixels per tick
-    'right': [1/3, 0]     // 2/3 speed: horizontal movement ≈ 2.67 pixels per tick
+    'up': [0, -1],
+    'down': [0, 1],
+    'left': [-1, 0],
+    'right': [1, 0]
   };
 
   const opposites = {
@@ -1996,18 +1996,25 @@ function updateSnakeGameOnServer(gid) {
       player.direction = player.nextDirection;
     }
 
-    // Calculate new head position
-    // If in grace period, snake stays in place (doesn't move forward)
+    // Calculate new head position with 2/3 speed using movement counter
+    // Counter goes: 0->1->2->3->0... Only move on 0 and 1 (2 out of 3 ticks = 2/3 speed)
     const head = player.positions[player.positions.length - 1];
     let newHead;
+
     if (player.graceUntil > 0) {
       // During grace period, snake pauses - head stays in same position
       newHead = [head[0], head[1]];
-    } else {
-      // Normal movement
+    } else if (player.movementCounter < 2) {
+      // Only move on counter 0 and 1 (2 out of 3 ticks = 2/3 speed)
       const dir = directions[player.direction] || [1, 0];
       newHead = [head[0] + dir[0], head[1] + dir[1]];
+    } else {
+      // Counter is 2: don't move this tick
+      newHead = [head[0], head[1]];
     }
+
+    // Increment movement counter (cycles 0->1->2->0...)
+    player.movementCounter = (player.movementCounter + 1) % 3;
 
     newHeads[username] = newHead;
   }

@@ -2383,6 +2383,14 @@ wss.on('connection', (ws, req) => {
               gameState.activePlayers.add(username);
             }
 
+            // Update display names in the snake game
+            if (gameState.displayNames && Array.isArray(gameState.displayNames)) {
+              const playerIndex = gameState.players.indexOf(oldName);
+              if (playerIndex !== -1) {
+                gameState.displayNames[playerIndex] = username;
+              }
+            }
+
             // Update player WS map if it exists
             if (gameState.playerWsMap) {
               for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {

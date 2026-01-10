@@ -2350,6 +2350,7 @@ wss.on('connection', (ws, req) => {
       const isNew = !users.has(ws);
       users.set(ws, username);
       usernameToWs.set(username, ws);
+      console.log('[ws] Username set:', {incoming: msg.username, cleaned: username, isNew, oldName});
       if (oldName && oldName !== username) {
         renameUserEverywhere(oldName, username);
       }

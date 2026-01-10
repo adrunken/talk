@@ -1292,12 +1292,13 @@ function sendUserList() {
   const snakePlayerNames = snakeLobby.playerInfo ? Array.from(snakeLobby.playerInfo.values()).map(p => p.username) : [];
 
   // Get list of users currently in active snake games
+  // Note: displayNames contains the actual usernames, not the player IDs
   const activeSnakePlayers = [];
   for (const [gid, gameState] of snakeGames.entries()) {
-    if (gameState && gameState.players && Array.isArray(gameState.players)) {
-      for (const playerName of gameState.players) {
-        if (playerName && !activeSnakePlayers.includes(playerName)) {
-          activeSnakePlayers.push(playerName);
+    if (gameState && gameState.displayNames && Array.isArray(gameState.displayNames)) {
+      for (const displayName of gameState.displayNames) {
+        if (displayName && !activeSnakePlayers.includes(displayName)) {
+          activeSnakePlayers.push(displayName);
         }
       }
     }

@@ -156,11 +156,13 @@ rawSocket.onopen = function() {
       username: username
     }));
     isAuthenticated = true;
-    // Send ping after username message
+    // Send snake_join after username authentication
     setTimeout(function() {
-      console.log('[snake] Sending ping to initialize game');
-      rawSocket.send('ping');
-    }, 50);
+      console.log('[snake] Authenticated as ' + username + ', joining game');
+      rawSocket.send(JSON.stringify({
+        type: 'snake_join'
+      }));
+    }, 100);
   } else {
     // If no username found, just send ping and let server request username
     console.log('[snake] No username found, sending ping to let server request it');

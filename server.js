@@ -3555,7 +3555,7 @@ wss.on('connection', (ws, req) => {
         const lobbyPayload = {
           type: 'snake_lobby_update',
           players: playerNames,
-          playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size),
+          playersNeeded: Math.max(0, 1 - snakeLobby.playerInfo.size),
           countdownSeconds: snakeLobby.countdownSeconds
         };
 
@@ -3565,9 +3565,9 @@ wss.on('connection', (ws, req) => {
           }
         }
 
-        // If 2+ players and no game running and no countdown, start countdown
-        if (snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId && !snakeLobby.countdownInterval) {
-          console.log('[snake] Starting countdown - found 2+ players waiting');
+        // If 1+ players and no game running and no countdown, start countdown
+        if (snakeLobby.playerInfo.size >= 1 && !snakeLobby.gameId && !snakeLobby.countdownInterval) {
+          console.log('[snake] Starting countdown - found 1+ players waiting');
           startSnakeLobbyCountdown();
         }
       }

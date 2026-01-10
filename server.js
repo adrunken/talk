@@ -2346,6 +2346,36 @@ wss.on('connection', (ws, req) => {
       sendUserList();
       deliverQueuedInvites(username);
 
+      // Update snake game player names if this user is in a snake game
+      if (!isTempGameUsername && oldName && oldName.match(/^(user_|guest_)/i)) {
+        // User was using a temporary game username and now has a real username
+        for (const [gid, gameState] of snakeGames.entries()) {
+          if (gameState.playerStates && gameState.playerStates[oldName]) {
+            // Rename the player in the game
+            gameState.playerStates[username] = gameState.playerStates[oldName];
+            delete gameState.playerStates[oldName];
+
+            // Update active players set
+            if (gameState.activePlayers && gameState.activePlayers.has(oldName)) {
+              gameState.activePlayers.delete(oldName);
+              gameState.activePlayers.add(username);
+            }
+
+            // Update player WS map if it exists
+            if (gameState.playerWsMap) {
+              for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+                if (playerWs === ws) {
+                  gameState.playerWsMap.set(username, playerWs);
+                  // Note: we don't delete the old entry as it might still be needed for lookups
+                }
+              }
+            }
+
+            console.log(`[snake] Updated player name in game ${gid} from ${oldName} to ${username}`);
+          }
+        }
+      }
+
       // Check for ongoing 2-player games associated with this username
       const ongoingGameInfo = findOngoingGameByUsername(username);
       if (ongoingGameInfo) {

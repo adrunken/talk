@@ -1288,8 +1288,9 @@ function connectedUsernames() {
 function sendUserList() {
   const allConnected = connectedUsernames();
   // Filter out temporary game-only usernames from the public user list
-  // This includes user_XXXX (snake game) and userXXXX (auto-generated temp names)
-  const connected = allConnected.filter(u => !u.match(/^(user_|user\d+|guest_)/i));
+  // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+  // Pattern: user_digits, or user followed by 1-4 digits (max 1000), or guest_
+  const connected = allConnected.filter(u => !u.match(/^(user_\d+|user\d{1,4}$|guest_)/i));
   const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];

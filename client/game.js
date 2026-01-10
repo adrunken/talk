@@ -147,25 +147,39 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Try to get username from localStorage
-  var username = getLoggedInUsername();
-  if (username) {
-    console.log('[snake] Found username, sending to server:', username);
-    rawSocket.send(JSON.stringify({
-      type: 'username',
-      username: username
-    }));
-    isAuthenticated = true;
-    // Send ping after username message
-    setTimeout(function() {
-      console.log('[snake] Sending ping to initialize game');
+  // Try to get username from localStorage with retries
+  // This handles the case where the main app hasn't finished loading yet
+  var attempt = 0;
+  var maxAttempts = 5;
+
+  function attemptSendUsername() {
+    var username = getLoggedInUsername();
+    attempt++;
+
+    if (username) {
+      console.log('[snake] Found username on attempt', attempt, ':', username);
+      rawSocket.send(JSON.stringify({
+        type: 'username',
+        username: username
+      }));
+      isAuthenticated = true;
+      // Send ping after username message
+      setTimeout(function() {
+        console.log('[snake] Sending ping to initialize game');
+        rawSocket.send('ping');
+      }, 50);
+    } else if (attempt < maxAttempts) {
+      // Retry after a delay - the main app might still be initializing
+      console.log('[snake] Username not found on attempt', attempt, '- retrying...');
+      setTimeout(attemptSendUsername, 200);
+    } else {
+      // Give up and send ping - server will request username if needed
+      console.log('[snake] Could not find username after', maxAttempts, 'attempts');
       rawSocket.send('ping');
-    }, 50);
-  } else {
-    // If no username found, just send ping and let server request username
-    console.log('[snake] No username found, sending ping to let server request it');
-    rawSocket.send('ping');
+    }
   }
+
+  attemptSendUsername();
 
   // Start game loop for smooth rendering and input buffering
   if (!gameLoopRunning) {

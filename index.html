@@ -3121,6 +3121,7 @@ function ready() {
             if (val === '') return;
             $('#username').text(val);
             setStoredUsername(val);
+            sendUsernameToSnakeFrame(val);
             $overlay.addClass('hidden').removeClass('show');
             $('body > *:not(#first-login)').removeClass('opaque');
             loadUserSettings(val);

@@ -2368,7 +2368,7 @@ wss.on('connection', (ws, req) => {
       sendUserList();
       deliverQueuedInvites(username);
 
-      // Update snake game player names if this user is in a snake game
+      // Update snake game and lobby player names if this user is in a snake game or lobby
       if (!isTempGameUsername && oldName && oldName.match(/^(user_|guest_)/i)) {
         // User was using a temporary game username and now has a real username
         for (const [gid, gameState] of snakeGames.entries()) {
@@ -2402,6 +2402,15 @@ wss.on('connection', (ws, req) => {
             }
 
             console.log(`[snake] Updated player name in game ${gid} from ${oldName} to ${username}`);
+          }
+        }
+
+        // Also update snake lobby player info if this user is waiting for a game
+        if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+          const playerInfo = snakeLobby.playerInfo.get(ws);
+          if (playerInfo && playerInfo.username === oldName) {
+            playerInfo.username = username;
+            console.log(`[snake] Updated player info in lobby from ${oldName} to ${username}`);
           }
         }
       }

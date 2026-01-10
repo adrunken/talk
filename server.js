@@ -2368,9 +2368,9 @@ wss.on('connection', (ws, req) => {
       sendUserList();
       deliverQueuedInvites(username);
 
-      // Update snake game player names if this user is in a snake game
-      if (!isTempGameUsername && oldName && oldName.match(/^(user_|guest_)/i)) {
-        // User was using a temporary game username and now has a real username
+      // Update snake game and lobby player names if username changed and this user is in a snake game or lobby
+      if (oldName && oldName !== username) {
+        // Update any running snake games this user is in
         for (const [gid, gameState] of snakeGames.entries()) {
           if (gameState.playerStates && gameState.playerStates[oldName]) {
             // Rename the player in the game
@@ -2383,6 +2383,14 @@ wss.on('connection', (ws, req) => {
               gameState.activePlayers.add(username);
             }
 
+            // Update display names in the snake game so the snake name tag shows the new username
+            if (gameState.displayNames && Array.isArray(gameState.displayNames)) {
+              const playerIndex = gameState.players.indexOf(oldName);
+              if (playerIndex !== -1) {
+                gameState.displayNames[playerIndex] = username;
+              }
+            }
+
             // Update player WS map if it exists
             if (gameState.playerWsMap) {
               for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
@@ -2393,7 +2401,16 @@ wss.on('connection', (ws, req) => {
               }
             }
 
-            console.log(`[snake] Updated player name in game ${gid} from ${oldName} to ${username}`);
+            console.log(`[snake] Updated snake name tag in game ${gid} from ${oldName} to ${username}`);
+          }
+        }
+
+        // Also update snake lobby player info if this user is waiting for a game
+        if (snakeLobby.playerInfo && snakeLobby.playerInfo.has(ws)) {
+          const playerInfo = snakeLobby.playerInfo.get(ws);
+          if (playerInfo && playerInfo.username === oldName) {
+            playerInfo.username = username;
+            console.log(`[snake] Updated player info in lobby from ${oldName} to ${username}`);
           }
         }
       }

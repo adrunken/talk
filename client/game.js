@@ -156,11 +156,13 @@ rawSocket.onopen = function() {
       username: username
     }));
     isAuthenticated = true;
-    // Send ping after username message
+    // Send snake_join after username authentication
     setTimeout(function() {
-      console.log('[snake] Sending ping to initialize game');
-      rawSocket.send('ping');
-    }, 50);
+      console.log('[snake] Authenticated as ' + username + ', joining game');
+      rawSocket.send(JSON.stringify({
+        type: 'snake_join'
+      }));
+    }, 100);
   } else {
     // If no username found, just send ping and let server request username
     console.log('[snake] No username found, sending ping to let server request it');
@@ -200,6 +202,15 @@ rawSocket.onclose = function() {
 
 var id = -1;
 var isAuthenticated = false; // Track whether user has been authenticated
+var communicatedUsername = null; // Username passed from parent window via postMessage
+
+// Listen for username from parent window (for sandboxed iframes without localStorage access)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'snake_username') {
+    communicatedUsername = event.data.username;
+    console.log('[snake] Received username from parent window:', communicatedUsername);
+  }
+});
 
 var start = new Date();
 var lines = 16,
@@ -223,6 +234,12 @@ var snakeGameOverState = {
 };
 
 function getLoggedInUsername() {
+  // First check if username was communicated via postMessage from parent window
+  if (communicatedUsername && communicatedUsername.trim()) {
+    console.log("[snake] Using username communicated from parent:", communicatedUsername);
+    return communicatedUsername.trim();
+  }
+
   try {
     // Try to get username from localStorage (set by main app)
     const storedUsername = localStorage.getItem("username");

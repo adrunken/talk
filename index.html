@@ -2860,6 +2860,15 @@ function ready() {
     }
     function setStoredUsername(val) {
         try { localStorage.setItem("username", val); } catch (e) { window._fallbackUsername = val; }
+        // Send username to snake game iframe (for sandboxed iframes without localStorage access)
+        try {
+            var snakeFrame = document.getElementById('snake-game-frame');
+            if (snakeFrame && snakeFrame.contentWindow) {
+                snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: val }, '*');
+            }
+        } catch (e) {
+            // Silently fail if iframe is not available
+        }
     }
 
     function connectWS() {
@@ -3120,12 +3129,27 @@ function ready() {
         setTimeout(function(){ $input.focus(); updateBtn(); }, 0);
     }
 
+    // Function to send username to snake game iframe via postMessage
+    function sendUsernameToSnakeFrame(username) {
+        try {
+            var snakeFrame = document.getElementById('snake-game-frame');
+            if (snakeFrame && snakeFrame.contentWindow) {
+                snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: username }, '*');
+                console.log('[main] Sent username to snake iframe:', username);
+            }
+        } catch (e) {
+            console.log('[main] Could not send username to snake iframe:', e);
+        }
+    }
+
     var storedName = getStoredUsername();
     if (storedName === null || storedName === '') {
         showFirstLoginModal();
     } else {
         $('#username').text(storedName);
         loadUserSettings(storedName);
+        // Send username to snake game iframe
+        sendUsernameToSnakeFrame(storedName);
         connectWS();
     }
 

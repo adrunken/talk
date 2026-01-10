@@ -3404,6 +3404,7 @@ function ready() {
             usr = randomname;
         $('#username').text(usr);
         setStoredUsername(usr);
+        sendUsernameToSnakeFrame(usr);
         $('#usernameinput').hide();
         $('#username').show();
         loadUserSettings(usr);

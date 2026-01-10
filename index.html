@@ -3130,13 +3130,26 @@ function ready() {
         setTimeout(function(){ $input.focus(); updateBtn(); }, 0);
     }
 
-    // Function to send username to snake game iframe via postMessage
+    // Function to send username to snake game iframe via postMessage with retry mechanism
     function sendUsernameToSnakeFrame(username) {
         try {
             var snakeFrame = document.getElementById('snake-game-frame');
             if (snakeFrame && snakeFrame.contentWindow) {
+                // Send immediately
                 snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: username }, '*');
                 console.log('[main] Sent username to snake iframe:', username);
+
+                // Send again after a short delay to handle race conditions
+                setTimeout(function() {
+                    try {
+                        if (snakeFrame && snakeFrame.contentWindow) {
+                            snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: username }, '*');
+                            console.log('[main] Re-sent username to snake iframe:', username);
+                        }
+                    } catch (e) {
+                        console.log('[main] Could not re-send username to snake iframe:', e);
+                    }
+                }, 100);
             }
         } catch (e) {
             console.log('[main] Could not send username to snake iframe:', e);

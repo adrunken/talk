@@ -1813,7 +1813,7 @@ function startSnakeLobbyCountdown() {
 }
 
 function startNewSnakeGame() {
-  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 2 || snakeLobby.gameId) {
+  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 1 || snakeLobby.gameId) {
     return;
   }
 

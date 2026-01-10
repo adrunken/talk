@@ -202,6 +202,15 @@ rawSocket.onclose = function() {
 
 var id = -1;
 var isAuthenticated = false; // Track whether user has been authenticated
+var communicatedUsername = null; // Username passed from parent window via postMessage
+
+// Listen for username from parent window (for sandboxed iframes without localStorage access)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'snake_username') {
+    communicatedUsername = event.data.username;
+    console.log('[snake] Received username from parent window:', communicatedUsername);
+  }
+});
 
 var start = new Date();
 var lines = 16,

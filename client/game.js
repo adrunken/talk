@@ -147,25 +147,39 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Try to get username from localStorage
-  var username = getLoggedInUsername();
-  if (username) {
-    console.log('[snake] Found username, sending to server:', username);
-    rawSocket.send(JSON.stringify({
-      type: 'username',
-      username: username
-    }));
-    isAuthenticated = true;
-    // Send ping after username message
-    setTimeout(function() {
-      console.log('[snake] Sending ping to initialize game');
+  // Try to get username from localStorage with retries
+  // This handles the case where the main app hasn't finished loading yet
+  var attempt = 0;
+  var maxAttempts = 5;
+
+  function attemptSendUsername() {
+    var username = getLoggedInUsername();
+    attempt++;
+
+    if (username) {
+      console.log('[snake] Found username on attempt', attempt, ':', username);
+      rawSocket.send(JSON.stringify({
+        type: 'username',
+        username: username
+      }));
+      isAuthenticated = true;
+      // Send ping after username message
+      setTimeout(function() {
+        console.log('[snake] Sending ping to initialize game');
+        rawSocket.send('ping');
+      }, 50);
+    } else if (attempt < maxAttempts) {
+      // Retry after a delay - the main app might still be initializing
+      console.log('[snake] Username not found on attempt', attempt, '- retrying...');
+      setTimeout(attemptSendUsername, 200);
+    } else {
+      // Give up and send ping - server will request username if needed
+      console.log('[snake] Could not find username after', maxAttempts, 'attempts');
       rawSocket.send('ping');
-    }, 50);
-  } else {
-    // If no username found, just send ping and let server request username
-    console.log('[snake] No username found, sending ping to let server request it');
-    rawSocket.send('ping');
+    }
   }
+
+  attemptSendUsername();
 
   // Start game loop for smooth rendering and input buffering
   if (!gameLoopRunning) {
@@ -200,6 +214,15 @@ rawSocket.onclose = function() {
 
 var id = -1;
 var isAuthenticated = false; // Track whether user has been authenticated
+var parentProvidedUsername = null; // Username sent from parent window via postMessage
+
+// Listen for username from parent window via postMessage
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'set-username') {
+    parentProvidedUsername = event.data.username;
+    console.log('[snake] Received username from parent via postMessage:', parentProvidedUsername);
+  }
+});
 
 var start = new Date();
 var lines = 16,
@@ -223,28 +246,34 @@ var snakeGameOverState = {
 };
 
 function getLoggedInUsername() {
+  // FIRST priority: Check if parent window sent us the username via postMessage
+  if (parentProvidedUsername && parentProvidedUsername.trim()) {
+    console.log("[snake] Using username from parent window (postMessage):", parentProvidedUsername);
+    return parentProvidedUsername.trim();
+  }
+
+  // Try to get username from this window's localStorage
   try {
-    // Try to get username from localStorage (set by main app)
     const storedUsername = localStorage.getItem("username");
     if (storedUsername && storedUsername.trim()) {
-      console.log("[snake] Found username in localStorage:", storedUsername);
+      console.log("[snake] Found username in this window's localStorage:", storedUsername);
       return storedUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] localStorage not available:", e);
+    console.log("[snake] localStorage error:", e.message);
   }
 
-  // If in an iframe, try to get username from parent window
-  try {
-    if (window.parent !== window && window.parent) {
+  // Try to get username from parent window's localStorage (fallback)
+  if (window.parent !== window && window.parent) {
+    try {
       const parentUsername = window.parent.localStorage?.getItem("username");
       if (parentUsername && parentUsername.trim()) {
         console.log("[snake] Got username from parent window localStorage:", parentUsername);
         return parentUsername.trim();
       }
+    } catch (e) {
+      console.log("[snake] Cannot access parent localStorage:", e.message);
     }
-  } catch (e) {
-    console.log("[snake] Cannot access parent localStorage:", e);
   }
 
   // Last resort: try to get from sessionStorage
@@ -255,7 +284,7 @@ function getLoggedInUsername() {
       return sessionUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] sessionStorage not available:", e);
+    console.log("[snake] sessionStorage error:", e.message);
   }
 
   // Return null if we can't find the username
@@ -267,7 +296,11 @@ function initializeUsernameDisplay() {
   const username = getLoggedInUsername();
   const usernameDisplay = document.getElementById("username-display");
   if (usernameDisplay) {
-    usernameDisplay.textContent = "Playing as: " + username;
+    if (username) {
+      usernameDisplay.textContent = "Playing as: " + username;
+    } else {
+      usernameDisplay.textContent = "Loading username...";
+    }
   }
 }
 

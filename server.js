@@ -2350,6 +2350,7 @@ wss.on('connection', (ws, req) => {
       const isNew = !users.has(ws);
       users.set(ws, username);
       usernameToWs.set(username, ws);
+      console.log('[ws] Username set:', {incoming: msg.username, cleaned: username, isNew, oldName});
       if (oldName && oldName !== username) {
         renameUserEverywhere(oldName, username);
       }
@@ -2371,6 +2372,18 @@ wss.on('connection', (ws, req) => {
       // Update snake game player names if this user is in a snake game
       if (!isTempGameUsername && oldName && oldName.match(/^(user_|guest_)/i)) {
         // User was using a temporary game username and now has a real username
+
+        // Also update snakeLobby.playerInfo if this player is in the lobby
+        if (snakeLobby.playerInfo) {
+          for (const [playerWs, playerInfo] of snakeLobby.playerInfo.entries()) {
+            if (playerWs === ws && playerInfo.username === oldName) {
+              console.log(`[snake] Updated lobby player name from ${oldName} to ${username}`);
+              playerInfo.username = username;
+              break;
+            }
+          }
+        }
+
         for (const [gid, gameState] of snakeGames.entries()) {
           if (gameState.playerStates && gameState.playerStates[oldName]) {
             // Rename the player in the game
@@ -2389,6 +2402,18 @@ wss.on('connection', (ws, req) => {
                 if (playerWs === ws) {
                   gameState.playerWsMap.set(username, playerWs);
                   // Note: we don't delete the old entry as it might still be needed for lookups
+                }
+              }
+            }
+
+            // Update displayNames array if it exists
+            if (gameState.displayNames && gameState.players) {
+              for (let i = 0; i < gameState.players.length; i++) {
+                // Check if this player ID contains the old name
+                if (gameState.players[i].includes(oldName)) {
+                  // Update the display name at this index
+                  gameState.displayNames[i] = username;
+                  break;
                 }
               }
             }
@@ -3436,6 +3461,7 @@ wss.on('connection', (ws, req) => {
       // Get authenticated username if available
       let username = users.get(ws);
       let isAuthenticated = !!username;
+      console.log('[snake] Join requested:', {hasUsername: !!username, username, authenticated: isAuthenticated});
 
       if (!username) {
         // User not authenticated yet

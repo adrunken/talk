@@ -3054,6 +3054,19 @@ function ready() {
     function showSnakeModal() {
         $('#snake-overlay').removeClass('hidden');
         console.log('[snake] Modal shown');
+
+        // Send username to snake game iframe
+        var username = $('#username').text();
+        var snakeFrame = document.getElementById('snake-game-frame');
+        if (snakeFrame && snakeFrame.contentWindow) {
+            setTimeout(function() {
+                snakeFrame.contentWindow.postMessage({
+                    type: 'set-username',
+                    username: username
+                }, '*');
+                console.log('[main] Sent username to snake iframe:', username);
+            }, 100);
+        }
     }
 
     function hideSnakeModal() {

@@ -223,18 +223,8 @@ var snakeGameOverState = {
 };
 
 function getLoggedInUsername() {
-  // Try to get username from localStorage (set by main app)
-  try {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername && storedUsername.trim()) {
-      console.log("[snake] Found username in localStorage:", storedUsername);
-      return storedUsername.trim();
-    }
-  } catch (e) {
-    console.log("[snake] localStorage error:", e.message);
-  }
-
-  // If in an iframe, try to get username from parent window
+  // If in an iframe, FIRST try to get username from parent window's localStorage
+  // This is important because iframe has its own localStorage separate from parent
   if (window.parent !== window && window.parent) {
     try {
       const parentUsername = window.parent.localStorage.getItem("username");
@@ -245,6 +235,17 @@ function getLoggedInUsername() {
     } catch (e) {
       console.log("[snake] Cannot access parent localStorage:", e.message);
     }
+  }
+
+  // Try to get username from this window's localStorage (if not in iframe or parent doesn't have it)
+  try {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername && storedUsername.trim()) {
+      console.log("[snake] Found username in this window's localStorage:", storedUsername);
+      return storedUsername.trim();
+    }
+  } catch (e) {
+    console.log("[snake] localStorage error:", e.message);
   }
 
   // Last resort: try to get from sessionStorage

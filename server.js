@@ -2394,6 +2394,18 @@ wss.on('connection', (ws, req) => {
               }
             }
 
+            // Update displayNames array if it exists
+            if (gameState.displayNames && gameState.players) {
+              for (let i = 0; i < gameState.players.length; i++) {
+                // Check if this player ID contains the old name
+                if (gameState.players[i].includes(oldName)) {
+                  // Update the display name at this index
+                  gameState.displayNames[i] = username;
+                  break;
+                }
+              }
+            }
+
             console.log(`[snake] Updated player name in game ${gid} from ${oldName} to ${username}`);
           }
         }

@@ -3474,7 +3474,8 @@ wss.on('connection', (ws, req) => {
           usernameToWs.set(username, ws);
 
           // Only add to persistent known users if it's not a temporary username
-          const isTempUsername = username.match(/^(user_|guest_)/i);
+          // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+          const isTempUsername = /^user_\d+$/i.test(username) || /^user\d{1,4}$/i.test(username) || /^guest_/i.test(username);
           if (!isTempUsername) {
             knownUsers.add(username);
             persistKnownUsers();

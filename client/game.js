@@ -621,19 +621,23 @@ socket.on("username", function (data) {
   // This ensures we get properly authenticated
   if (username) {
     console.log('[snake] Sending authenticated username:', username);
+    currentAuthenticatedUsername = username;
     socket.emit("username", {
       username: username
     });
     isAuthenticated = true;
+    initializeUsernameDisplay();
   } else {
     // If we still don't have a username, generate a temporary one for this session
     // This should only happen if parent window localStorage is also inaccessible
     var tempUsername = 'user_' + Math.floor(Math.random() * 10000);
     console.log('[snake] No username found, using temporary:', tempUsername);
+    currentAuthenticatedUsername = tempUsername;
     socket.emit("username", {
       username: tempUsername
     });
     isAuthenticated = true;
+    initializeUsernameDisplay();
   }
 
   // After authentication, wait a bit for server to process, then join game

@@ -1796,8 +1796,8 @@ function startSnakeLobbyCountdown() {
       snakeLobby.countdownInterval = null;
       snakeLobby.countdownSeconds = 0;
 
-      // Start game if we still have 2+ players
-      if (snakeLobby.playerInfo && snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId) {
+      // Start game if we still have 1+ players
+      if (snakeLobby.playerInfo && snakeLobby.playerInfo.size >= 1 && !snakeLobby.gameId) {
         console.log('[snake] Countdown ended - starting game with', snakeLobby.playerInfo.size, 'players');
         // Trigger game start by simulating a join event
         const playerInfo = Array.from(snakeLobby.playerInfo.values())[0];

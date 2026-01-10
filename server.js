@@ -1758,8 +1758,8 @@ function isCheckmate4P(board, colorIndex) {
 }
 
 function startSnakeLobbyCountdown() {
-  // Only start countdown if we have 2+ players and no game is running
-  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 2 || snakeLobby.gameId) {
+  // Only start countdown if we have 1+ players and no game is running
+  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 1 || snakeLobby.gameId) {
     return;
   }
 

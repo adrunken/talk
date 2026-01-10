@@ -1288,7 +1288,11 @@ function connectedUsernames() {
 function sendUserList() {
   const allConnected = connectedUsernames();
   // Filter out temporary game-only usernames from the public user list
-  const connected = allConnected.filter(u => !u.match(/^(user_|guest_)/i));
+  // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+  const connected = allConnected.filter(u => {
+    // Check if username is temporary: user_digits, or user[0-9]+ (1-4 digits), or guest_
+    return !(/^user_\d+$/i.test(u) || /^user\d{1,4}$/i.test(u) || /^guest_/i.test(u));
+  });
   const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];
@@ -1878,7 +1882,14 @@ function updateSnakeGameOnServer(gid) {
 
     let winner = null;
     if (gameState.activePlayers.size === 1) {
-      winner = Array.from(gameState.activePlayers)[0];
+      const winnerInternalId = Array.from(gameState.activePlayers)[0];
+      // Convert internal player ID to display name
+      const winnerIndex = gameState.players.indexOf(winnerInternalId);
+      if (winnerIndex !== -1 && gameState.displayNames) {
+        winner = gameState.displayNames[winnerIndex];
+      } else {
+        winner = winnerInternalId; // Fallback to internal ID if conversion fails
+      }
     }
 
     // Generate next game's starting positions for display on game-over screen (100x50 grid)
@@ -2355,7 +2366,8 @@ wss.on('connection', (ws, req) => {
       }
 
       // Only add to persistent known users if it's not a temporary game-only username
-      const isTempGameUsername = username.match(/^(user_|guest_)/i);
+      // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+      const isTempGameUsername = /^user_\d+$/i.test(username) || /^user\d{1,4}$/i.test(username) || /^guest_/i.test(username);
       if (!isTempGameUsername) {
         knownUsers.add(username);
         persistKnownUsers();
@@ -3463,7 +3475,8 @@ wss.on('connection', (ws, req) => {
           usernameToWs.set(username, ws);
 
           // Only add to persistent known users if it's not a temporary username
-          const isTempUsername = username.match(/^(user_|guest_)/i);
+          // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
+          const isTempUsername = /^user_\d+$/i.test(username) || /^user\d{1,4}$/i.test(username) || /^guest_/i.test(username);
           if (!isTempUsername) {
             knownUsers.add(username);
             persistKnownUsers();

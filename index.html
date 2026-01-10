@@ -3135,7 +3135,22 @@ function ready() {
     } else {
         $('#username').text(storedName);
         loadUserSettings(storedName);
+        // Send username to snake game iframe
+        sendUsernameToSnakeFrame(storedName);
         connectWS();
+    }
+
+    // Function to send username to snake game iframe via postMessage
+    function sendUsernameToSnakeFrame(username) {
+        try {
+            var snakeFrame = document.getElementById('snake-game-frame');
+            if (snakeFrame && snakeFrame.contentWindow) {
+                snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: username }, '*');
+                console.log('[main] Sent username to snake iframe:', username);
+            }
+        } catch (e) {
+            console.log('[main] Could not send username to snake iframe:', e);
+        }
     }
 
     $('#previous').click(function(e) {

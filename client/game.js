@@ -268,7 +268,11 @@ function initializeUsernameDisplay() {
   const username = getLoggedInUsername();
   const usernameDisplay = document.getElementById("username-display");
   if (usernameDisplay) {
-    usernameDisplay.textContent = "Playing as: " + username;
+    if (username) {
+      usernameDisplay.textContent = "Playing as: " + username;
+    } else {
+      usernameDisplay.textContent = "Loading username...";
+    }
   }
 }
 

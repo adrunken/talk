@@ -1948,8 +1948,8 @@ function updateSnakeGameOnServer(gid) {
 
   // Update positions based on directions
   const directions = {
-    'up': [0, -1],
-    'down': [0, 1],
+    'up': [0, -2],      // Double vertical movement to match horizontal (canvas is 800x400, board is 100x100 units)
+    'down': [0, 2],     // Double vertical movement to match horizontal
     'left': [-1, 0],
     'right': [1, 0]
   };

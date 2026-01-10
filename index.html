@@ -2861,14 +2861,7 @@ function ready() {
     function setStoredUsername(val) {
         try { localStorage.setItem("username", val); } catch (e) { window._fallbackUsername = val; }
         // Send username to snake game iframe (for sandboxed iframes without localStorage access)
-        try {
-            var snakeFrame = document.getElementById('snake-game-frame');
-            if (snakeFrame && snakeFrame.contentWindow) {
-                snakeFrame.contentWindow.postMessage({ type: 'snake_username', username: val }, '*');
-            }
-        } catch (e) {
-            console.log('[snake] Could not send username to iframe:', e);
-        }
+        sendUsernameToSnakeFrame(val);
     }
 
     function connectWS() {

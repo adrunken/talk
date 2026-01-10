@@ -227,13 +227,26 @@ function getLoggedInUsername() {
   // This is important because iframe has its own localStorage separate from parent
   if (window.parent !== window && window.parent) {
     try {
-      const parentUsername = window.parent.localStorage.getItem("username");
+      const parentUsername = window.parent.localStorage?.getItem("username");
       if (parentUsername && parentUsername.trim()) {
         console.log("[snake] Got username from parent window localStorage:", parentUsername);
         return parentUsername.trim();
       }
     } catch (e) {
       console.log("[snake] Cannot access parent localStorage:", e.message);
+    }
+
+    // Also try to get from parent window's global scope if it's available
+    try {
+      if (window.parent.getStoredUsername && typeof window.parent.getStoredUsername === 'function') {
+        const parentUsername = window.parent.getStoredUsername();
+        if (parentUsername && parentUsername.trim()) {
+          console.log("[snake] Got username from parent window function:", parentUsername);
+          return parentUsername.trim();
+        }
+      }
+    } catch (e) {
+      console.log("[snake] Cannot call parent window function:", e.message);
     }
   }
 

@@ -151,6 +151,7 @@ rawSocket.onopen = function() {
   var username = getLoggedInUsername();
   if (username) {
     console.log('[snake] Found username, sending to server:', username);
+    currentAuthenticatedUsername = username;
     rawSocket.send(JSON.stringify({
       type: 'username',
       username: username

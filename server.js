@@ -1287,13 +1287,27 @@ function connectedUsernames() {
 
 function sendUserList() {
   const allConnected = connectedUsernames();
-  // Get list of users currently in snake game (lobby or playing)
+
+  // Get list of users currently in snake game (lobby)
   const snakePlayerNames = snakeLobby.playerInfo ? Array.from(snakeLobby.playerInfo.values()).map(p => p.username) : [];
-  const snakePlayerSet = new Set(snakePlayerNames);
+
+  // Get list of users currently in active snake games
+  const activeSnakePlayers = [];
+  for (const [gid, gameState] of snakeGames.entries()) {
+    if (gameState && gameState.players && Array.isArray(gameState.players)) {
+      for (const playerName of gameState.players) {
+        if (playerName && !activeSnakePlayers.includes(playerName)) {
+          activeSnakePlayers.push(playerName);
+        }
+      }
+    }
+  }
+
+  const snakePlayerSet = new Set([...snakePlayerNames, ...activeSnakePlayers]);
 
   // Filter out temporary game-only usernames from the public user list
   // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
-  // Also exclude users who are currently in the snake game
+  // Also exclude users who are currently in the snake game or in active snake games
   const connected = allConnected.filter(u => {
     // Check if username is temporary: user_digits, or user[0-9]+ (1-4 digits), or guest_
     const isTemporary = /^user_\d+$/i.test(u) || /^user\d{1,4}$/i.test(u) || /^guest_/i.test(u);

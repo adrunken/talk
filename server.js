@@ -2029,10 +2029,12 @@ function updateSnakeGameOnServer(gid) {
     const player = gameState.playerStates[username];
     if (!player || !player.alive) continue;
 
-    const newHead = newHeads[username];
+    const moveData = newHeads[username];
+    const newHead = moveData.position;
+    const shouldMove = moveData.shouldMove;
 
-    // Check boundaries
-    if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
+    // Check boundaries (only if moving)
+    if (shouldMove && (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100)) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;
@@ -2041,10 +2043,12 @@ function updateSnakeGameOnServer(gid) {
     // Check collision with own body (any segment in the snake's body)
     // Only collide with own trail, not other players' trails (Armegatron-style close approach)
     let hitOwnBody = false;
-    for (let i = 0; i < player.positions.length; i++) {
-      if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
-        hitOwnBody = true;
-        break;
+    if (shouldMove) {
+      for (let i = 0; i < player.positions.length; i++) {
+        if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
+          hitOwnBody = true;
+          break;
+        }
       }
     }
 
@@ -2065,25 +2069,28 @@ function updateSnakeGameOnServer(gid) {
     // Head-on collision with other heads = mutual destruction
     // Collision with other body = this snake dies
     let hitOtherSnake = false;
-    for (const otherUsername of playerList) {
-      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-      const otherPlayer = gameState.playerStates[otherUsername];
-      const otherNewHead = newHeads[otherUsername];
+    if (shouldMove) {
+      for (const otherUsername of playerList) {
+        if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+        const otherPlayer = gameState.playerStates[otherUsername];
+        const otherMoveData = newHeads[otherUsername];
+        const otherNewHead = otherMoveData.position;
 
-      // Check if head collides with other snake's head
-      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-        hitOtherSnake = true;
-        break;
-      }
-
-      // Check if head collides with other snake's body
-      for (let i = 0; i < otherPlayer.positions.length; i++) {
-        if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+        // Check if head collides with other snake's head
+        if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
           hitOtherSnake = true;
           break;
         }
+
+        // Check if head collides with other snake's body
+        for (let i = 0; i < otherPlayer.positions.length; i++) {
+          if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+            hitOtherSnake = true;
+            break;
+          }
+        }
+        if (hitOtherSnake) break;
       }
-      if (hitOtherSnake) break;
     }
 
     if (hitOtherSnake) {
@@ -2099,10 +2106,12 @@ function updateSnakeGameOnServer(gid) {
       player.directionAtCollision = player.direction;
     }
 
-    // Add current head position to trails
-    const head = player.positions[player.positions.length - 1];
-    gameState.trails.push({x: head[0], y: head[1], owner: username});
-    player.positions.push(newHead);
+    // Only update position if the snake actually moved this tick
+    if (shouldMove) {
+      const head = player.positions[player.positions.length - 1];
+      gameState.trails.push({x: head[0], y: head[1], owner: username});
+      player.positions.push(newHead);
+    }
   }
 
   // Convert server format to client format

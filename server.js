@@ -3437,6 +3437,7 @@ wss.on('connection', (ws, req) => {
       // Get authenticated username if available
       let username = users.get(ws);
       let isAuthenticated = !!username;
+      console.log('[snake] Join requested:', {hasUsername: !!username, username, authenticated: isAuthenticated});
 
       if (!username) {
         // User not authenticated yet

@@ -3129,17 +3129,6 @@ function ready() {
         setTimeout(function(){ $input.focus(); updateBtn(); }, 0);
     }
 
-    var storedName = getStoredUsername();
-    if (storedName === null || storedName === '') {
-        showFirstLoginModal();
-    } else {
-        $('#username').text(storedName);
-        loadUserSettings(storedName);
-        // Send username to snake game iframe
-        sendUsernameToSnakeFrame(storedName);
-        connectWS();
-    }
-
     // Function to send username to snake game iframe via postMessage
     function sendUsernameToSnakeFrame(username) {
         try {
@@ -3151,6 +3140,17 @@ function ready() {
         } catch (e) {
             console.log('[main] Could not send username to snake iframe:', e);
         }
+    }
+
+    var storedName = getStoredUsername();
+    if (storedName === null || storedName === '') {
+        showFirstLoginModal();
+    } else {
+        $('#username').text(storedName);
+        loadUserSettings(storedName);
+        // Send username to snake game iframe
+        sendUsernameToSnakeFrame(storedName);
+        connectWS();
     }
 
     $('#previous').click(function(e) {

@@ -1286,8 +1286,10 @@ function connectedUsernames() {
 }
 
 function sendUserList() {
-  const connected = connectedUsernames();
-  const offline = Array.from(knownUsers).filter((u) => !connected.includes(u));
+  const allConnected = connectedUsernames();
+  // Filter out temporary game-only usernames from the public user list
+  const connected = allConnected.filter(u => !u.match(/^(user_|guest_)/i));
+  const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];
     let lastSeen = null;
@@ -1946,10 +1948,10 @@ function updateSnakeGameOnServer(gid) {
 
   // Update positions based on directions
   const directions = {
-    'up': [0, -1],
-    'down': [0, 1],
-    'left': [-1, 0],
-    'right': [1, 0]
+    'up': [0, -1],      // Half speed: vertical unit = 4 pixels per tick
+    'down': [0, 1],     // Half speed: vertical unit = 4 pixels per tick
+    'left': [-0.5, 0],  // Half speed: horizontal unit = 4 pixels per tick
+    'right': [0.5, 0]   // Half speed: horizontal unit = 4 pixels per tick
   };
 
   const opposites = {
@@ -2329,14 +2331,50 @@ wss.on('connection', (ws, req) => {
       if (oldName && oldName !== username) {
         renameUserEverywhere(oldName, username);
       }
-      knownUsers.add(username);
-      persistKnownUsers();
+
+      // Only add to persistent known users if it's not a temporary game-only username
+      const isTempGameUsername = username.match(/^(user_|guest_)/i);
+      if (!isTempGameUsername) {
+        knownUsers.add(username);
+        persistKnownUsers();
+      }
+
       if (isNew) {
         recordOnlineEvent(username, 'online');
         send(ws, { type: 'messages', before: 0, messages: messagesRange(Math.max(0, idx - 100), idx) });
       }
       sendUserList();
       deliverQueuedInvites(username);
+
+      // Update snake game player names if this user is in a snake game
+      if (!isTempGameUsername && oldName && oldName.match(/^(user_|guest_)/i)) {
+        // User was using a temporary game username and now has a real username
+        for (const [gid, gameState] of snakeGames.entries()) {
+          if (gameState.playerStates && gameState.playerStates[oldName]) {
+            // Rename the player in the game
+            gameState.playerStates[username] = gameState.playerStates[oldName];
+            delete gameState.playerStates[oldName];
+
+            // Update active players set
+            if (gameState.activePlayers && gameState.activePlayers.has(oldName)) {
+              gameState.activePlayers.delete(oldName);
+              gameState.activePlayers.add(username);
+            }
+
+            // Update player WS map if it exists
+            if (gameState.playerWsMap) {
+              for (const [playerId, playerWs] of gameState.playerWsMap.entries()) {
+                if (playerWs === ws) {
+                  gameState.playerWsMap.set(username, playerWs);
+                  // Note: we don't delete the old entry as it might still be needed for lookups
+                }
+              }
+            }
+
+            console.log(`[snake] Updated player name in game ${gid} from ${oldName} to ${username}`);
+          }
+        }
+      }
 
       // Check for ongoing 2-player games associated with this username
       const ongoingGameInfo = findOngoingGameByUsername(username);
@@ -3373,22 +3411,37 @@ wss.on('connection', (ws, req) => {
       console.log('[4p-chess] Move recorded and broadcast:', {gid, player: username, from, to, moveCount: game.moveCount, broadcastCount, totalPlayers: game.players.length, checkmatedPlayers});
     }
     else if (msg.type === 'snake_join') {
-      // IMPORTANT: Prefer the authenticated username from the users map (server source of truth)
+      // Get authenticated username if available
       let username = users.get(ws);
+      let isAuthenticated = !!username;
 
       if (!username) {
-        // User not authenticated yet - use fallback but with priority order:
-        // 1. Username from message (if provided)
-        // 2. Generated unique ID (better than generic fallback)
-        username = msg.username || ('Guest' + Math.floor(Math.random() * 100000));
+        // User not authenticated yet
+        if (msg.username) {
+          // They provided a username in the message - authenticate them
+          username = cleanUsername(msg.username, ws);
+          users.set(ws, username);
+          usernameToWs.set(username, ws);
 
-        // Authenticate this user on the server
-        username = cleanUsername(username, ws);
-        users.set(ws, username);
-        usernameToWs.set(username, ws);
-        knownUsers.add(username);
-        persistKnownUsers();
-        sendUserList();
+          // Only add to persistent known users if it's not a temporary username
+          const isTempUsername = username.match(/^(user_|guest_)/i);
+          if (!isTempUsername) {
+            knownUsers.add(username);
+            persistKnownUsers();
+            sendUserList();
+            console.log('[snake] Authenticated real user joined:', username);
+          } else {
+            console.log('[snake] Authenticated game-only user joined:', username);
+          }
+        } else {
+          // No username provided - use the authenticated username from the chat app if available
+          // or wait for the client to authenticate
+          console.log('[snake] User joined game without explicit username - awaiting authentication');
+          send(ws, { type: 'username' });
+          // Don't add to game yet - wait for client to send username message
+          // Store a flag indicating this connection needs authentication before game join
+          return;
+        }
       }
 
       // Use WebSocket as the unique player identifier, store username alongside

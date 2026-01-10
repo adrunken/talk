@@ -147,14 +147,15 @@ rawSocket.onopen = function() {
   ctx.fillStyle = "#000000";
   ctx.fillText("Connected! Setting up game...", 200, 200);
 
-  // Only send username if we can retrieve it from localStorage
+  // Try to get username from localStorage
   var username = getLoggedInUsername();
   if (username) {
-    console.log('[snake] Sending username to server:', username);
+    console.log('[snake] Found username, sending to server:', username);
     rawSocket.send(JSON.stringify({
       type: 'username',
       username: username
     }));
+    isAuthenticated = true;
     // Send ping after username message
     setTimeout(function() {
       console.log('[snake] Sending ping to initialize game');
@@ -162,7 +163,7 @@ rawSocket.onopen = function() {
     }, 50);
   } else {
     // If no username found, just send ping and let server request username
-    console.log('[snake] No username in localStorage, sending ping to let server request it');
+    console.log('[snake] No username found, sending ping to let server request it');
     rawSocket.send('ping');
   }
 
@@ -198,6 +199,7 @@ rawSocket.onclose = function() {
 };
 
 var id = -1;
+var isAuthenticated = false; // Track whether user has been authenticated
 
 var start = new Date();
 var lines = 16,
@@ -225,13 +227,39 @@ function getLoggedInUsername() {
     // Try to get username from localStorage (set by main app)
     const storedUsername = localStorage.getItem("username");
     if (storedUsername && storedUsername.trim()) {
+      console.log("[snake] Found username in localStorage:", storedUsername);
       return storedUsername.trim();
     }
   } catch (e) {
-    console.log("[snake] localStorage not available (iframe sandbox):", e);
+    console.log("[snake] localStorage not available:", e);
   }
 
-  // Return null if we can't find the username - let the server use authenticated username
+  // If in an iframe, try to get username from parent window
+  try {
+    if (window.parent !== window && window.parent) {
+      const parentUsername = window.parent.localStorage?.getItem("username");
+      if (parentUsername && parentUsername.trim()) {
+        console.log("[snake] Got username from parent window localStorage:", parentUsername);
+        return parentUsername.trim();
+      }
+    }
+  } catch (e) {
+    console.log("[snake] Cannot access parent localStorage:", e);
+  }
+
+  // Last resort: try to get from sessionStorage
+  try {
+    const sessionUsername = sessionStorage.getItem("username");
+    if (sessionUsername && sessionUsername.trim()) {
+      console.log("[snake] Found username in sessionStorage:", sessionUsername);
+      return sessionUsername.trim();
+    }
+  } catch (e) {
+    console.log("[snake] sessionStorage not available:", e);
+  }
+
+  // Return null if we can't find the username
+  console.log("[snake] Could not find username in any storage");
   return null;
 }
 
@@ -537,25 +565,17 @@ socket.on("snake_game_over", function (data) {
     snakeGameOverState.frozenGameState = null;
 
     // Rejoin lobby to start new game
-    socket.emit("snake_join", {
-      username: getLoggedInUsername()
-    });
+    // Don't include username - let server use authenticated username
+    console.log('[snake] Rejoining game');
+    socket.emit("snake_join", {});
   }, 4000);
 });
 
 socket.on("id", function (data) {
   console.log("Your id is " + data.id);
   id = data.id;
-  setTimeout(function () {
-    socket.emit("kthx");
-    // Join the snake game lobby
-    // The username will be taken from server's authenticated users map or from this message
-    var username = getLoggedInUsername();
-    console.log("[snake] Joining game as:", username);
-    socket.emit("snake_join", {
-      username: username
-    });
-  }, 100);
+  // Send kthx response but DON'T join game yet - wait for authentication
+  socket.emit("kthx");
 });
 
 socket.on("afk?", function (data) {
@@ -566,9 +586,33 @@ socket.on("username", function (data) {
   console.log("[snake] Server requesting username");
   var username = getLoggedInUsername();
   console.log("[snake] Responding with username:", username);
-  socket.emit("username", {
-    username: username
-  });
+
+  // Always respond to username request, even if we don't have one
+  // This ensures we get properly authenticated
+  if (username) {
+    console.log('[snake] Sending authenticated username:', username);
+    socket.emit("username", {
+      username: username
+    });
+    isAuthenticated = true;
+  } else {
+    // If we still don't have a username, generate a temporary one for this session
+    // This should only happen if parent window localStorage is also inaccessible
+    var tempUsername = 'user_' + Math.floor(Math.random() * 10000);
+    console.log('[snake] No username found, using temporary:', tempUsername);
+    socket.emit("username", {
+      username: tempUsername
+    });
+    isAuthenticated = true;
+  }
+
+  // After authentication, wait a bit for server to process, then join game
+  setTimeout(function() {
+    if (id !== -1) {
+      console.log('[snake] Sending snake_join after authentication');
+      socket.emit("snake_join", {});
+    }
+  }, 100);
 });
 
 // Snake game events

@@ -1878,7 +1878,14 @@ function updateSnakeGameOnServer(gid) {
 
     let winner = null;
     if (gameState.activePlayers.size === 1) {
-      winner = Array.from(gameState.activePlayers)[0];
+      const winnerInternalId = Array.from(gameState.activePlayers)[0];
+      // Convert internal player ID to display name
+      const winnerIndex = gameState.players.indexOf(winnerInternalId);
+      if (winnerIndex !== -1 && gameState.displayNames) {
+        winner = gameState.displayNames[winnerIndex];
+      } else {
+        winner = winnerInternalId; // Fallback to internal ID if conversion fails
+      }
     }
 
     // Generate next game's starting positions for display on game-over screen (100x50 grid)

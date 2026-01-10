@@ -1948,10 +1948,10 @@ function updateSnakeGameOnServer(gid) {
 
   // Update positions based on directions
   const directions = {
-    'up': [0, -1],      // Half speed: vertical unit = 4 pixels per tick
-    'down': [0, 1],     // Half speed: vertical unit = 4 pixels per tick
-    'left': [-0.5, 0],  // Half speed: horizontal unit = 4 pixels per tick
-    'right': [0.5, 0]   // Half speed: horizontal unit = 4 pixels per tick
+    'up': [0, -2/3],      // 2/3 speed: vertical movement ≈ 2.67 pixels per tick
+    'down': [0, 2/3],     // 2/3 speed: vertical movement ≈ 2.67 pixels per tick
+    'left': [-1/3, 0],    // 2/3 speed: horizontal movement ≈ 2.67 pixels per tick
+    'right': [1/3, 0]     // 2/3 speed: horizontal movement ≈ 2.67 pixels per tick
   };
 
   const opposites = {

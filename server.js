@@ -1791,10 +1791,10 @@ function startNewSnakeGame() {
   const colors = ['green', 'blue', 'yellow', 'red'];
   const directions = ['right', 'down', 'left', 'up'];
 
-  // Generate random spawn positions in center area
+  // Generate random spawn positions in center area (100x50 grid)
   const startPositions = playersArray.map(() => {
     const x = 30 + Math.floor(Math.random() * 40);
-    const y = 30 + Math.floor(Math.random() * 40);
+    const y = 15 + Math.floor(Math.random() * 20);  // Centered in 50-height grid
     return [[x, y]];
   });
 
@@ -1824,7 +1824,8 @@ function startNewSnakeGame() {
       positions: startPositions[i % startPositions.length].slice(),
       alive: true,
       graceUntil: 0, // Timestamp when grace period expires (0 = no grace period)
-      directionAtCollision: null // Direction when collision occurred
+      directionAtCollision: null, // Direction when collision occurred
+      movementCounter: 0 // Counter for 2/3 speed: moves every 3 ticks (applies 2 moves per 3 ticks)
     };
   }
 
@@ -1880,7 +1881,7 @@ function updateSnakeGameOnServer(gid) {
       winner = Array.from(gameState.activePlayers)[0];
     }
 
-    // Generate next game's starting positions for display on game-over screen
+    // Generate next game's starting positions for display on game-over screen (100x50 grid)
     const nextGameStartPositions = {};
     const nextGamePlayerColors = {};
     const playerInfoArray = snakeLobby.playerInfo ? Array.from(snakeLobby.playerInfo.values()) : [];
@@ -1890,7 +1891,7 @@ function updateSnakeGameOnServer(gid) {
     for (let i = 0; i < playerInfoArray.length; i++) {
       const username = playerInfoArray[i].username;
       const x = 30 + Math.floor(Math.random() * 40);
-      const y = 30 + Math.floor(Math.random() * 40);
+      const y = 15 + Math.floor(Math.random() * 20);  // Centered in 50-height grid
       nextGameStartPositions[username] = [x, y];
       nextGamePlayerColors[username] = colors[i % colors.length];
     }
@@ -1946,12 +1947,12 @@ function updateSnakeGameOnServer(gid) {
     return;
   }
 
-  // Update positions based on directions
+  // Integer-only movement directions for 2/3 speed
   const directions = {
-    'up': [0, -1],      // Half speed: vertical unit = 4 pixels per tick
-    'down': [0, 1],     // Half speed: vertical unit = 4 pixels per tick
-    'left': [-0.5, 0],  // Half speed: horizontal unit = 4 pixels per tick
-    'right': [0.5, 0]   // Half speed: horizontal unit = 4 pixels per tick
+    'up': [0, -1],
+    'down': [0, 1],
+    'left': [-1, 0],
+    'right': [1, 0]
   };
 
   const opposites = {
@@ -1995,20 +1996,32 @@ function updateSnakeGameOnServer(gid) {
       player.direction = player.nextDirection;
     }
 
-    // Calculate new head position
-    // If in grace period, snake stays in place (doesn't move forward)
+    // Calculate new head position with 2/3 speed using movement counter
+    // Counter goes: 0->1->2->0... Only move on 0 and 1 (2 out of 3 ticks = 2/3 speed)
     const head = player.positions[player.positions.length - 1];
     let newHead;
+    let shouldMove = false;
+
     if (player.graceUntil > 0) {
       // During grace period, snake pauses - head stays in same position
       newHead = [head[0], head[1]];
-    } else {
-      // Normal movement
+      shouldMove = false;
+    } else if (player.movementCounter < 2) {
+      // Only move on counter 0 and 1 (2 out of 3 ticks = 2/3 speed)
       const dir = directions[player.direction] || [1, 0];
       newHead = [head[0] + dir[0], head[1] + dir[1]];
+      shouldMove = true;
+    } else {
+      // Counter is 2: don't move this tick
+      newHead = [head[0], head[1]];
+      shouldMove = false;
     }
 
-    newHeads[username] = newHead;
+    // Increment movement counter (cycles 0->1->2->0...)
+    player.movementCounter = (player.movementCounter + 1) % 3;
+
+    // Store both the new head and whether we should record this move
+    newHeads[username] = { position: newHead, shouldMove: shouldMove };
   }
 
   // Phase 2: Check collisions and apply moves
@@ -2016,10 +2029,12 @@ function updateSnakeGameOnServer(gid) {
     const player = gameState.playerStates[username];
     if (!player || !player.alive) continue;
 
-    const newHead = newHeads[username];
+    const moveData = newHeads[username];
+    const newHead = moveData.position;
+    const shouldMove = moveData.shouldMove;
 
-    // Check boundaries
-    if (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 100) {
+    // Check boundaries (only if moving) - 100x50 grid
+    if (shouldMove && (newHead[0] < 0 || newHead[0] >= 100 || newHead[1] < 0 || newHead[1] >= 50)) {
       player.alive = false;
       gameState.activePlayers.delete(username);
       continue;
@@ -2028,10 +2043,12 @@ function updateSnakeGameOnServer(gid) {
     // Check collision with own body (any segment in the snake's body)
     // Only collide with own trail, not other players' trails (Armegatron-style close approach)
     let hitOwnBody = false;
-    for (let i = 0; i < player.positions.length; i++) {
-      if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
-        hitOwnBody = true;
-        break;
+    if (shouldMove) {
+      for (let i = 0; i < player.positions.length; i++) {
+        if (player.positions[i][0] === newHead[0] && player.positions[i][1] === newHead[1]) {
+          hitOwnBody = true;
+          break;
+        }
       }
     }
 
@@ -2052,25 +2069,28 @@ function updateSnakeGameOnServer(gid) {
     // Head-on collision with other heads = mutual destruction
     // Collision with other body = this snake dies
     let hitOtherSnake = false;
-    for (const otherUsername of playerList) {
-      if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
-      const otherPlayer = gameState.playerStates[otherUsername];
-      const otherNewHead = newHeads[otherUsername];
+    if (shouldMove) {
+      for (const otherUsername of playerList) {
+        if (otherUsername === username || !gameState.playerStates[otherUsername].alive) continue;
+        const otherPlayer = gameState.playerStates[otherUsername];
+        const otherMoveData = newHeads[otherUsername];
+        const otherNewHead = otherMoveData.position;
 
-      // Check if head collides with other snake's head
-      if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
-        hitOtherSnake = true;
-        break;
-      }
-
-      // Check if head collides with other snake's body
-      for (let i = 0; i < otherPlayer.positions.length; i++) {
-        if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+        // Check if head collides with other snake's head
+        if (otherNewHead && newHead[0] === otherNewHead[0] && newHead[1] === otherNewHead[1]) {
           hitOtherSnake = true;
           break;
         }
+
+        // Check if head collides with other snake's body
+        for (let i = 0; i < otherPlayer.positions.length; i++) {
+          if (newHead[0] === otherPlayer.positions[i][0] && newHead[1] === otherPlayer.positions[i][1]) {
+            hitOtherSnake = true;
+            break;
+          }
+        }
+        if (hitOtherSnake) break;
       }
-      if (hitOtherSnake) break;
     }
 
     if (hitOtherSnake) {
@@ -2086,10 +2106,12 @@ function updateSnakeGameOnServer(gid) {
       player.directionAtCollision = player.direction;
     }
 
-    // Add current head position to trails
-    const head = player.positions[player.positions.length - 1];
-    gameState.trails.push({x: head[0], y: head[1], owner: username});
-    player.positions.push(newHead);
+    // Only update position if the snake actually moved this tick
+    if (shouldMove) {
+      const head = player.positions[player.positions.length - 1];
+      gameState.trails.push({x: head[0], y: head[1], owner: username});
+      player.positions.push(newHead);
+    }
   }
 
   // Convert server format to client format
@@ -2107,8 +2129,8 @@ function updateSnakeGameOnServer(gid) {
     playersList.push({
       id: playerId++,
       name: displayName,
-      x: head[0] * 8,  // Scale to canvas coordinates (100px grid -> 800px canvas)
-      y: head[1] * 4,  // Scale to canvas coordinates (100px grid -> 400px canvas)
+      x: head[0] * 8,  // Scale to canvas coordinates (100 units -> 800 pixels)
+      y: head[1] * 8,  // Scale to canvas coordinates (50 units -> 400 pixels)
       color: colorHues[state.color] || 100,
       isDead: !state.alive,
       hasJoined: true,
@@ -2131,9 +2153,9 @@ function updateSnakeGameOnServer(gid) {
     for (let i = 0; i < positions.length - 1; i++) {
       trailsList.push({
         x: positions[i][0] * 8,
-        y: positions[i][1] * 4,
+        y: positions[i][1] * 8,
         endX: positions[i + 1][0] * 8,
-        endY: positions[i + 1][1] * 4,
+        endY: positions[i + 1][1] * 8,
         color: color
       });
     }

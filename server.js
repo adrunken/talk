@@ -1824,7 +1824,8 @@ function startNewSnakeGame() {
       positions: startPositions[i % startPositions.length].slice(),
       alive: true,
       graceUntil: 0, // Timestamp when grace period expires (0 = no grace period)
-      directionAtCollision: null // Direction when collision occurred
+      directionAtCollision: null, // Direction when collision occurred
+      movementCounter: 0 // Counter for 2/3 speed: moves every 3 ticks (applies 2 moves per 3 ticks)
     };
   }
 

@@ -665,13 +665,13 @@ socket.on("snake_lobby_update", function (data) {
   ctx.fillRect(0, 0, 800, 400);
   ctx.textAlign = "center";
 
-  // Only show "Waiting for players" screen if less than 2 players
-  if (data.players.length < 2) {
+  // Only show "Waiting for players" screen if more players are needed
+  if (data.playersNeeded > 0) {
     ctx.fillStyle = "#000000";
     ctx.font = "30px Arial";
     ctx.fillText("Waiting for players...", 400, 150);
     ctx.font = "20px Arial";
-    ctx.fillText("Players: " + data.players.length + "/2", 400, 220);
+    ctx.fillText("Players: " + data.players.length + "/1", 400, 220);
     ctx.fillText("Need " + data.playersNeeded + " more", 400, 280);
   }
 });

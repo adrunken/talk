@@ -1997,26 +1997,31 @@ function updateSnakeGameOnServer(gid) {
     }
 
     // Calculate new head position with 2/3 speed using movement counter
-    // Counter goes: 0->1->2->3->0... Only move on 0 and 1 (2 out of 3 ticks = 2/3 speed)
+    // Counter goes: 0->1->2->0... Only move on 0 and 1 (2 out of 3 ticks = 2/3 speed)
     const head = player.positions[player.positions.length - 1];
     let newHead;
+    let shouldMove = false;
 
     if (player.graceUntil > 0) {
       // During grace period, snake pauses - head stays in same position
       newHead = [head[0], head[1]];
+      shouldMove = false;
     } else if (player.movementCounter < 2) {
       // Only move on counter 0 and 1 (2 out of 3 ticks = 2/3 speed)
       const dir = directions[player.direction] || [1, 0];
       newHead = [head[0] + dir[0], head[1] + dir[1]];
+      shouldMove = true;
     } else {
       // Counter is 2: don't move this tick
       newHead = [head[0], head[1]];
+      shouldMove = false;
     }
 
     // Increment movement counter (cycles 0->1->2->0...)
     player.movementCounter = (player.movementCounter + 1) % 3;
 
-    newHeads[username] = newHead;
+    // Store both the new head and whether we should record this move
+    newHeads[username] = { position: newHead, shouldMove: shouldMove };
   }
 
   // Phase 2: Check collisions and apply moves

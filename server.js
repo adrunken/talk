@@ -1288,7 +1288,8 @@ function connectedUsernames() {
 function sendUserList() {
   const allConnected = connectedUsernames();
   // Filter out temporary game-only usernames from the public user list
-  const connected = allConnected.filter(u => !u.match(/^(user_|guest_)/i));
+  // This includes user_XXXX (snake game) and userXXXX (auto-generated temp names)
+  const connected = allConnected.filter(u => !u.match(/^(user_|user\d+|guest_)/i));
   const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];

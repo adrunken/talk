@@ -1905,8 +1905,8 @@ function updateSnakeGameOnServer(gid) {
 
   const gameState = snakeGames.get(gid);
   if (!gameState) return;
-  if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
-    // Game over
+  if (!gameState.gameRunning || gameState.activePlayers.size === 0) {
+    // Game over (no players left alive)
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
 
     let winner = null;

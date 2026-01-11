@@ -3531,26 +3531,32 @@ wss.on('connection', (ws, req) => {
         snakeLobby.playerInfo = new Map();
       }
 
-      snakeLobby.playerInfo.set(ws, { username, ws });
+      console.log('[snake] Player join attempt:', {username, gameId: snakeLobby.gameId});
 
-      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
-
-      // Send game state to joining player
+      // Send game state to joining player if game is already running
       if (snakeLobby.gameId) {
-        // Game is already running
+        // Game is already running - send them the current game state but don't add to lobby
         const gameState = snakeGames.get(snakeLobby.gameId);
         if (gameState) {
-          const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+          // They can watch/spectate the current game
           send(ws, {
             type: 'snake_game_state',
             game_id: snakeLobby.gameId,
-            players: playerNames,
+            players: gameState.displayNames,
             board: gameState.board,
             playerStates: gameState.playerStates,
             trails: gameState.trails
           });
         }
-      } else {
+        // Don't add them to snakeLobby.playerInfo - they're just spectating
+        console.log('[snake] Player spectating active game:', {username});
+        return;
+      }
+
+      // Game is not running - add to lobby
+      snakeLobby.playerInfo.set(ws, { username, ws });
+      console.log('[snake] Player joined lobby:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
+      {
         // Broadcast lobby update
         const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
         const lobbyPayload = {

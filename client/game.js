@@ -715,50 +715,29 @@ socket.on("snake_game_start", function (data) {
 });
 
 
-// Input buffering for reduced lag and network overhead
-var inputBuffer = {
-  pressed: {},
-  released: {},
-  hasInput: false,
-
-  addKeyEvent: function(direction, isDown) {
-    if (isDown) {
-      this.pressed[direction] = true;
-      delete this.released[direction];
-    } else {
-      this.released[direction] = true;
-      delete this.pressed[direction];
-    }
-    this.hasInput = true;
-  },
-
-  flushAndSend: function() {
-    if (!this.hasInput) return;
-
-    // Send all buffered inputs in a batch
-    if (Object.keys(this.pressed).length > 0) {
-      for (const direction in this.pressed) {
-        socket.emit("keyPress", {
-          inputId: direction,
-          state: true
-        });
-      }
-    }
-
-    if (Object.keys(this.released).length > 0) {
-      for (const direction in this.released) {
-        socket.emit("keyPress", {
-          inputId: direction,
-          state: false
-        });
-      }
-    }
-
-    this.pressed = {};
-    this.released = {};
-    this.hasInput = false;
-  }
+// Track current key state for display/reference, but send inputs immediately
+var currentKeyState = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
 };
+
+function sendInputImmediately(direction, isDown) {
+  // Send input immediately with zero delay - no buffering
+  socket.emit("keyPress", {
+    inputId: direction,
+    state: isDown,
+    timestamp: Date.now() // Include timestamp for precise sequencing
+  });
+
+  // Update our local state tracking
+  if (isDown) {
+    currentKeyState[direction] = true;
+  } else {
+    currentKeyState[direction] = false;
+  }
+}
 
 // Key mapping for both left and right hand control schemes
 var keyMapping = {

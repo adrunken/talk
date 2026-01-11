@@ -2210,7 +2210,7 @@ function updateSnakeGameOnServer(gid) {
     game_id: gid,
     players: playersList,
     trails: trailsList,
-    gameStarted: gameState.activePlayers.size > 1,
+    gameStarted: gameState.activePlayers.size >= 1,
     countdown: 0,
     inCountdown: false,
     waiting: false,

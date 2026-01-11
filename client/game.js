@@ -122,17 +122,9 @@ function drawBackground() {
 
 // Initialize game loop state
 var gameLoopRunning = false;
-var lastInputFlushTime = 0;
 
 function gameLoop() {
-  // Flush buffered inputs ~60 times per second
-  var now = performance.now();
-  if (now - lastInputFlushTime > 16) { // ~60 FPS
-    inputBuffer.flushAndSend();
-    lastInputFlushTime = now;
-  }
-
-  // Continue loop
+  // Continue loop - no input buffering, inputs sent immediately on keydown/keyup
   if (gameLoopRunning) {
     requestAnimationFrame(gameLoop);
   }

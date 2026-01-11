@@ -1905,6 +1905,9 @@ function updateSnakeGameOnServer(gid) {
 
   const gameState = snakeGames.get(gid);
   if (!gameState) return;
+
+  console.log('[snake] updateSnakeGameOnServer:', { gid, gameRunning: gameState.gameRunning, activePlayers: gameState.activePlayers.size, displayNames: gameState.displayNames });
+
   if (!gameState.gameRunning || gameState.activePlayers.size === 0) {
     // Game over (no players left alive)
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);

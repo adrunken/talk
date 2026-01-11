@@ -122,17 +122,9 @@ function drawBackground() {
 
 // Initialize game loop state
 var gameLoopRunning = false;
-var lastInputFlushTime = 0;
 
 function gameLoop() {
-  // Flush buffered inputs ~60 times per second
-  var now = performance.now();
-  if (now - lastInputFlushTime > 16) { // ~60 FPS
-    inputBuffer.flushAndSend();
-    lastInputFlushTime = now;
-  }
-
-  // Continue loop
+  // Continue loop - no input buffering, inputs sent immediately on keydown/keyup
   if (gameLoopRunning) {
     requestAnimationFrame(gameLoop);
   }
@@ -665,13 +657,13 @@ socket.on("snake_lobby_update", function (data) {
   ctx.fillRect(0, 0, 800, 400);
   ctx.textAlign = "center";
 
-  // Only show "Waiting for players" screen if less than 2 players
-  if (data.players.length < 2) {
+  // Only show "Waiting for players" screen if more players are needed
+  if (data.playersNeeded > 0) {
     ctx.fillStyle = "#000000";
     ctx.font = "30px Arial";
     ctx.fillText("Waiting for players...", 400, 150);
     ctx.font = "20px Arial";
-    ctx.fillText("Players: " + data.players.length + "/2", 400, 220);
+    ctx.fillText("Players: " + data.players.length + "/1", 400, 220);
     ctx.fillText("Need " + data.playersNeeded + " more", 400, 280);
   }
 });
@@ -723,50 +715,29 @@ socket.on("snake_game_start", function (data) {
 });
 
 
-// Input buffering for reduced lag and network overhead
-var inputBuffer = {
-  pressed: {},
-  released: {},
-  hasInput: false,
-
-  addKeyEvent: function(direction, isDown) {
-    if (isDown) {
-      this.pressed[direction] = true;
-      delete this.released[direction];
-    } else {
-      this.released[direction] = true;
-      delete this.pressed[direction];
-    }
-    this.hasInput = true;
-  },
-
-  flushAndSend: function() {
-    if (!this.hasInput) return;
-
-    // Send all buffered inputs in a batch
-    if (Object.keys(this.pressed).length > 0) {
-      for (const direction in this.pressed) {
-        socket.emit("keyPress", {
-          inputId: direction,
-          state: true
-        });
-      }
-    }
-
-    if (Object.keys(this.released).length > 0) {
-      for (const direction in this.released) {
-        socket.emit("keyPress", {
-          inputId: direction,
-          state: false
-        });
-      }
-    }
-
-    this.pressed = {};
-    this.released = {};
-    this.hasInput = false;
-  }
+// Track current key state for display/reference, but send inputs immediately
+var currentKeyState = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
 };
+
+function sendInputImmediately(direction, isDown) {
+  // Send input immediately with zero delay - no buffering
+  socket.emit("keyPress", {
+    inputId: direction,
+    state: isDown,
+    timestamp: Date.now() // Include timestamp for precise sequencing
+  });
+
+  // Update our local state tracking
+  if (isDown) {
+    currentKeyState[direction] = true;
+  } else {
+    currentKeyState[direction] = false;
+  }
+}
 
 // Key mapping for both left and right hand control schemes
 var keyMapping = {
@@ -782,9 +753,10 @@ var keyMapping = {
 
 document.getElementById("ctx").onkeydown = function (event) {
   var direction = keyMapping[event.keyCode];
-  if (direction) {
+  if (direction && !currentKeyState[direction]) {
+    // Only send if key wasn't already pressed (ignore key repeat)
     event.preventDefault();
-    inputBuffer.addKeyEvent(direction, true);
+    sendInputImmediately(direction, true);
   }
 };
 
@@ -792,7 +764,7 @@ document.getElementById("ctx").onkeyup = function (event) {
   var direction = keyMapping[event.keyCode];
   if (direction) {
     event.preventDefault();
-    inputBuffer.addKeyEvent(direction, false);
+    sendInputImmediately(direction, false);
   }
 };
 

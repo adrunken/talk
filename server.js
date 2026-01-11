@@ -1287,12 +1287,41 @@ function connectedUsernames() {
 
 function sendUserList() {
   const allConnected = connectedUsernames();
-  // Filter out temporary game-only usernames from the public user list
+
+  // Get list of users currently in ACTIVE snake games only
+  // Note: displayNames contains the actual usernames, not the player IDs
+  const activeSnakePlayers = [];
+  for (const [gid, gameState] of snakeGames.entries()) {
+    if (gameState && gameState.displayNames && Array.isArray(gameState.displayNames)) {
+      for (const displayName of gameState.displayNames) {
+        if (displayName && !activeSnakePlayers.includes(displayName)) {
+          activeSnakePlayers.push(displayName);
+        }
+      }
+    }
+  }
+
+  const activeSnakeSet = new Set(activeSnakePlayers);
+
+  // Filter out temporary game-only usernames and users actively playing snake games
   // Temporary usernames: user_XXXX (snake) or userN where N is 0-1000 (auto-generated)
-  const connected = allConnected.filter(u => {
+  // Deduplicate: only keep first occurrence of each username
+  const connected = [];
+  const seen = new Set();
+
+  for (const u of allConnected) {
+    // Skip if already added (deduplication)
+    if (seen.has(u)) continue;
+
     // Check if username is temporary: user_digits, or user[0-9]+ (1-4 digits), or guest_
-    return !(/^user_\d+$/i.test(u) || /^user\d{1,4}$/i.test(u) || /^guest_/i.test(u));
-  });
+    const isTemporary = /^user_\d+$/i.test(u) || /^user\d{1,4}$/i.test(u) || /^guest_/i.test(u);
+    const inActiveSnakeGame = activeSnakeSet.has(u);
+
+    if (!isTemporary && !inActiveSnakeGame) {
+      connected.push(u);
+      seen.add(u);
+    }
+  }
   const offline = Array.from(knownUsers).filter((u) => !allConnected.includes(u));
   const offlineWithTimes = offline.map(username => {
     const history = onlineHistory[username] || [];
@@ -1729,8 +1758,8 @@ function isCheckmate4P(board, colorIndex) {
 }
 
 function startSnakeLobbyCountdown() {
-  // Only start countdown if we have 2+ players and no game is running
-  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 2 || snakeLobby.gameId) {
+  // Only start countdown if we have 1+ players and no game is running
+  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 1 || snakeLobby.gameId) {
     return;
   }
 
@@ -1767,8 +1796,8 @@ function startSnakeLobbyCountdown() {
       snakeLobby.countdownInterval = null;
       snakeLobby.countdownSeconds = 0;
 
-      // Start game if we still have 2+ players
-      if (snakeLobby.playerInfo && snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId) {
+      // Start game if we still have 1+ players
+      if (snakeLobby.playerInfo && snakeLobby.playerInfo.size >= 1 && !snakeLobby.gameId) {
         console.log('[snake] Countdown ended - starting game with', snakeLobby.playerInfo.size, 'players');
         // Trigger game start by simulating a join event
         const playerInfo = Array.from(snakeLobby.playerInfo.values())[0];
@@ -1784,7 +1813,7 @@ function startSnakeLobbyCountdown() {
 }
 
 function startNewSnakeGame() {
-  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 2 || snakeLobby.gameId) {
+  if (!snakeLobby.playerInfo || snakeLobby.playerInfo.size < 1 || snakeLobby.gameId) {
     return;
   }
 
@@ -1876,8 +1905,9 @@ function updateSnakeGameOnServer(gid) {
 
   const gameState = snakeGames.get(gid);
   if (!gameState) return;
-  if (!gameState.gameRunning || gameState.activePlayers.size <= 1) {
-    // Game over
+
+  if (!gameState.gameRunning || gameState.activePlayers.size === 0) {
+    // Game over (no players left alive)
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
 
     let winner = null;
@@ -1939,7 +1969,7 @@ function updateSnakeGameOnServer(gid) {
       const lobbyPayload = {
         type: 'snake_lobby_update',
         players: playerNames,
-        playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size),
+        playersNeeded: Math.max(0, 1 - snakeLobby.playerInfo.size),
         countdownSeconds: snakeLobby.countdownSeconds
       };
 
@@ -1949,8 +1979,8 @@ function updateSnakeGameOnServer(gid) {
         }
       }
 
-      // If 2+ players in lobby, start countdown for next game
-      if (snakeLobby.playerInfo.size >= 2) {
+      // If 1+ players in lobby, start countdown for next game
+      if (snakeLobby.playerInfo.size >= 1 && !snakeLobby.countdownInterval) {
         startSnakeLobbyCountdown();
       }
     }
@@ -2178,7 +2208,7 @@ function updateSnakeGameOnServer(gid) {
     game_id: gid,
     players: playersList,
     trails: trailsList,
-    gameStarted: gameState.activePlayers.size > 1,
+    gameStarted: gameState.activePlayers.size >= 1,
     countdown: 0,
     inCountdown: false,
     waiting: false,
@@ -3501,32 +3531,38 @@ wss.on('connection', (ws, req) => {
         snakeLobby.playerInfo = new Map();
       }
 
-      snakeLobby.playerInfo.set(ws, { username, ws });
+      console.log('[snake] Player join attempt:', {username, gameId: snakeLobby.gameId});
 
-      console.log('[snake] Player joined:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
-
-      // Send game state to joining player
+      // Send game state to joining player if game is already running
       if (snakeLobby.gameId) {
-        // Game is already running
+        // Game is already running - send them the current game state but don't add to lobby
         const gameState = snakeGames.get(snakeLobby.gameId);
         if (gameState) {
-          const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
+          // They can watch/spectate the current game
           send(ws, {
             type: 'snake_game_state',
             game_id: snakeLobby.gameId,
-            players: playerNames,
+            players: gameState.displayNames,
             board: gameState.board,
             playerStates: gameState.playerStates,
             trails: gameState.trails
           });
         }
-      } else {
+        // Don't add them to snakeLobby.playerInfo - they're just spectating
+        console.log('[snake] Player spectating active game:', {username});
+        return;
+      }
+
+      // Game is not running - add to lobby
+      snakeLobby.playerInfo.set(ws, { username, ws });
+      console.log('[snake] Player joined lobby:', {username, lobbySize: snakeLobby.playerInfo.size, gameId: snakeLobby.gameId});
+      {
         // Broadcast lobby update
         const playerNames = Array.from(snakeLobby.playerInfo.values()).map(p => p.username);
         const lobbyPayload = {
           type: 'snake_lobby_update',
           players: playerNames,
-          playersNeeded: Math.max(0, 2 - snakeLobby.playerInfo.size),
+          playersNeeded: Math.max(0, 1 - snakeLobby.playerInfo.size),
           countdownSeconds: snakeLobby.countdownSeconds
         };
 
@@ -3536,9 +3572,9 @@ wss.on('connection', (ws, req) => {
           }
         }
 
-        // If 2+ players and no game running and no countdown, start countdown
-        if (snakeLobby.playerInfo.size >= 2 && !snakeLobby.gameId && !snakeLobby.countdownInterval) {
-          console.log('[snake] Starting countdown - found 2+ players waiting');
+        // If 1+ players and no game running and no countdown, start countdown
+        if (snakeLobby.playerInfo.size >= 1 && !snakeLobby.gameId && !snakeLobby.countdownInterval) {
+          console.log('[snake] Starting countdown - found 1+ players waiting');
           startSnakeLobbyCountdown();
         }
       }

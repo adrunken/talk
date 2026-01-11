@@ -753,9 +753,10 @@ var keyMapping = {
 
 document.getElementById("ctx").onkeydown = function (event) {
   var direction = keyMapping[event.keyCode];
-  if (direction) {
+  if (direction && !currentKeyState[direction]) {
+    // Only send if key wasn't already pressed (ignore key repeat)
     event.preventDefault();
-    inputBuffer.addKeyEvent(direction, true);
+    sendInputImmediately(direction, true);
   }
 };
 
@@ -763,7 +764,7 @@ document.getElementById("ctx").onkeyup = function (event) {
   var direction = keyMapping[event.keyCode];
   if (direction) {
     event.preventDefault();
-    inputBuffer.addKeyEvent(direction, false);
+    sendInputImmediately(direction, false);
   }
 };
 

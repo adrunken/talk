@@ -1907,8 +1907,14 @@ function updateSnakeGameOnServer(gid) {
   const gameState = snakeGames.get(gid);
   if (!gameState) return;
 
-  if (!gameState.gameRunning || gameState.activePlayers.size === 0) {
-    // Game over (no players left alive)
+  // Determine game over condition based on whether game is single-player or multiplayer
+  const isMultiplayer = gameState.initialPlayerCount > 1;
+  const gameOverCondition = isMultiplayer
+    ? gameState.activePlayers.size <= 1
+    : gameState.activePlayers.size === 0;
+
+  if (!gameState.gameRunning || gameOverCondition) {
+    // Game over (multiplayer: ≤1 player left, single-player: 0 players left)
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
 
     let winner = null;

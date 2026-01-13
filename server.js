@@ -2159,6 +2159,13 @@ function updateSnakeGameOnServer(gid) {
       const head = player.positions[player.positions.length - 1];
       gameState.trails.push({x: head[0], y: head[1], owner: username});
       player.positions.push(newHead);
+
+      // Limit snake trail length to prevent lag with many players
+      // Max 300 positions keeps a reasonable visible trail while preventing memory bloat
+      const maxTrailLength = 300;
+      if (player.positions.length > maxTrailLength) {
+        player.positions.shift(); // Remove oldest segment
+      }
     }
   }
 

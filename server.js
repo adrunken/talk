@@ -2221,6 +2221,13 @@ function updateSnakeGameOnServer(gid) {
     }
   }
 
+  // Clean up old trails in gameState to prevent memory bloat
+  // Keep only the last 2000 trail points total
+  const maxTrailsInState = 2000;
+  if (gameState.trails.length > maxTrailsInState) {
+    gameState.trails = gameState.trails.slice(-maxTrailsInState);
+  }
+
   // Broadcast game state
   const updatePayload = {
     type: 'data',

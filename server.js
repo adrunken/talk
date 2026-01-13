@@ -2205,7 +2205,12 @@ function updateSnakeGameOnServer(gid) {
     const positions = ownerState.positions;
 
     // Draw line segments between consecutive body segments
-    for (let i = 0; i < positions.length - 1; i++) {
+    // Optimize: limit segments sent to avoid lag with many players
+    // Only send the last 250 segments per player to keep bandwidth reasonable
+    const maxSegmentsPerPlayer = 250;
+    const startIdx = Math.max(0, positions.length - maxSegmentsPerPlayer - 1);
+
+    for (let i = startIdx; i < positions.length - 1; i++) {
       trailsList.push({
         x: positions[i][0] * 4,
         y: positions[i][1] * 4,

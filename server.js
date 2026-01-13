@@ -1846,7 +1846,8 @@ function startNewSnakeGame() {
     trails: [],
     gameStartTime: Date.now(),
     activePlayers: new Set(playersArray),
-    gameRunning: true
+    gameRunning: true,
+    initialPlayerCount: playersArray.length
   };
 
   for (let i = 0; i < playersArray.length; i++) {
@@ -1906,8 +1907,14 @@ function updateSnakeGameOnServer(gid) {
   const gameState = snakeGames.get(gid);
   if (!gameState) return;
 
-  if (!gameState.gameRunning || gameState.activePlayers.size === 0) {
-    // Game over (no players left alive)
+  // Determine game over condition based on whether game is single-player or multiplayer
+  const isMultiplayer = gameState.initialPlayerCount > 1;
+  const gameOverCondition = isMultiplayer
+    ? gameState.activePlayers.size <= 1
+    : gameState.activePlayers.size === 0;
+
+  if (!gameState.gameRunning || gameOverCondition) {
+    // Game over (multiplayer: ≤1 player left, single-player: 0 players left)
     if (snakeLobby.gameLoop) clearInterval(snakeLobby.gameLoop);
 
     let winner = null;
@@ -2152,6 +2159,13 @@ function updateSnakeGameOnServer(gid) {
       const head = player.positions[player.positions.length - 1];
       gameState.trails.push({x: head[0], y: head[1], owner: username});
       player.positions.push(newHead);
+
+      // Limit snake trail length to prevent lag with many players
+      // Max 300 positions keeps a reasonable visible trail while preventing memory bloat
+      const maxTrailLength = 300;
+      if (player.positions.length > maxTrailLength) {
+        player.positions.shift(); // Remove oldest segment
+      }
     }
   }
 
@@ -2191,7 +2205,12 @@ function updateSnakeGameOnServer(gid) {
     const positions = ownerState.positions;
 
     // Draw line segments between consecutive body segments
-    for (let i = 0; i < positions.length - 1; i++) {
+    // Optimize: limit segments sent to avoid lag with many players
+    // Only send the last 250 segments per player to keep bandwidth reasonable
+    const maxSegmentsPerPlayer = 250;
+    const startIdx = Math.max(0, positions.length - maxSegmentsPerPlayer - 1);
+
+    for (let i = startIdx; i < positions.length - 1; i++) {
       trailsList.push({
         x: positions[i][0] * 4,
         y: positions[i][1] * 4,
@@ -2200,6 +2219,13 @@ function updateSnakeGameOnServer(gid) {
         color: color
       });
     }
+  }
+
+  // Clean up old trails in gameState to prevent memory bloat
+  // Keep only the last 2000 trail points total
+  const maxTrailsInState = 2000;
+  if (gameState.trails.length > maxTrailsInState) {
+    gameState.trails = gameState.trails.slice(-maxTrailsInState);
   }
 
   // Broadcast game state

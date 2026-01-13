@@ -1846,7 +1846,8 @@ function startNewSnakeGame() {
     trails: [],
     gameStartTime: Date.now(),
     activePlayers: new Set(playersArray),
-    gameRunning: true
+    gameRunning: true,
+    initialPlayerCount: playersArray.length
   };
 
   for (let i = 0; i < playersArray.length; i++) {

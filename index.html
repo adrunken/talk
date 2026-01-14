@@ -899,6 +899,33 @@ html[data-theme="dark"] .wordle-tile {
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
+/* Responsive Wordle */
+@media (max-width: 600px) {
+    .wordle-modal {
+        max-width: 100%;
+        max-height: 95vh;
+    }
+
+    .wordle-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .wordle-tile {
+        font-size: 1.75rem;
+    }
+
+    .wordle-key {
+        font-size: 0.6rem;
+        height: 2.5rem;
+        min-width: 1.75rem;
+    }
+
+    .wordle-title {
+        font-size: 1.25rem;
+    }
+}
+
 .wordle-keyboard {
     display: flex;
     flex-direction: column;

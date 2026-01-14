@@ -4297,14 +4297,12 @@ function ready() {
         wordleState.won = false;
         wordleState.keyStates = {};
 
-        $('#wordle-game-status').text('Guess the word in 6 tries');
+        $('#wordle-game-status').html('Guess the word in 6 tries<br><span style="font-size: 0.75rem; opacity: 0.7;">Type your answer and press ENTER</span>');
         $('#wordle-game-status').css('color', 'var(--text-secondary)');
         $('#wordle-reset-btn').hide();
         $('#wordle-board').empty();
-        $('#wordle-keyboard').empty();
 
         renderWordleBoard();
-        renderWordleKeyboard();
     }
 
     function renderWordleBoard() {

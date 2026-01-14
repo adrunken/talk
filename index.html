@@ -4407,17 +4407,19 @@ function ready() {
 
     function submitGuess() {
         if (wordleState.currentGuess.length !== 5) {
-            $('#wordle-game-status').text('Word must be 5 letters').css('color', '#ef4444');
+            shake('#wordle-board');
+            $('#wordle-game-status').text('Not enough letters').css('color', '#ef4444');
             setTimeout(() => {
-                $('#wordle-game-status').text('Guess the word in 6 tries').css('color', 'var(--text-secondary)');
+                $('#wordle-game-status').text('').css('color', 'var(--text-secondary)');
             }, 1500);
             return;
         }
 
         if (!VALID_WORDS.has(wordleState.currentGuess)) {
-            $('#wordle-game-status').text('Word not in list').css('color', '#ef4444');
+            shake('#wordle-board');
+            $('#wordle-game-status').text('Not in word list').css('color', '#ef4444');
             setTimeout(() => {
-                $('#wordle-game-status').text('Guess the word in 6 tries').css('color', 'var(--text-secondary)');
+                $('#wordle-game-status').text('').css('color', 'var(--text-secondary)');
             }, 1500);
             return;
         }
@@ -4437,17 +4439,38 @@ function ready() {
         if (wordleState.currentGuess === wordleState.word) {
             wordleState.gameOver = true;
             wordleState.won = true;
-            $('#wordle-game-status').text(`Congratulations! You won in ${wordleState.guesses.length} guess${wordleState.guesses.length !== 1 ? 'es' : ''}!`).css('color', '#22c55e');
-            $('#wordle-reset-btn').show();
+
+            // Show celebration message
+            setTimeout(() => {
+                const messages = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
+                const tries = wordleState.guesses.length;
+                const msg = messages[Math.min(tries - 1, messages.length - 1)];
+                $('#wordle-game-status').text(msg).css('color', '#6aaa64');
+                $('#wordle-reset-btn').show();
+            }, 600);
         } else if (wordleState.guesses.length >= 6) {
             wordleState.gameOver = true;
-            $('#wordle-game-status').text(`Game Over! The word was: ${wordleState.word}`).css('color', '#ef4444');
-            $('#wordle-reset-btn').show();
+            setTimeout(() => {
+                $('#wordle-game-status').text(`The word was: ${wordleState.word}`).css('color', '#787c7e');
+                $('#wordle-reset-btn').show();
+            }, 600);
         }
 
         wordleState.currentGuess = '';
         renderWordleBoard();
         renderWordleKeyboard();
+    }
+
+    function shake(selector) {
+        const $elem = $(selector);
+        $elem.css({
+            animation: 'none'
+        });
+        setTimeout(() => {
+            $elem.css({
+                animation: 'wordleShake 0.5s ease-in-out'
+            });
+        }, 10);
     }
 
     // Wordle event handlers

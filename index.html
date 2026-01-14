@@ -3448,28 +3448,31 @@ function ready() {
         }
     }
 
-    function calculateDirection(lat1, lng1, lat2, lng2) {
-        const dLng = lng2 - lng1;
-        const dLat = lat2 - lat1;
-        let angle = Math.atan2(dLng, dLat) * 180 / Math.PI;
-        if (angle < 0) angle += 360;
+    // Get color based on distance proximity (closer = warmer color gradient)
+    function getProximityColor(distance, maxDistance = 20000) {
+        // Normalize distance (0 to 1, where 1 is max distance)
+        const normalized = Math.min(distance / maxDistance, 1);
 
-        if (angle >= 337.5 || angle < 22.5) return 'N';
-        if (angle >= 22.5 && angle < 67.5) return 'NE';
-        if (angle >= 67.5 && angle < 112.5) return 'E';
-        if (angle >= 112.5 && angle < 157.5) return 'SE';
-        if (angle >= 157.5 && angle < 202.5) return 'S';
-        if (angle >= 202.5 && angle < 247.5) return 'SW';
-        if (angle >= 247.5 && angle < 292.5) return 'W';
-        return 'NW';
-    }
-
-    function getDirectionIcon(dir) {
-        const icons = {
-            'N': '↑', 'NE': '↗', 'E': '→', 'SE': '↘',
-            'S': '↓', 'SW': '↙', 'W': '←', 'NW': '↖'
-        };
-        return icons[dir] || '';
+        // Color gradient: Red (0km) -> Orange -> Yellow-Orange -> Yellow -> Light Yellow (far)
+        // Green is exact match
+        if (distance === 0) {
+            return '#22c55e'; // Green for exact match
+        } else if (normalized < 0.2) {
+            // Light yellow (closest)
+            return '#fef08a';
+        } else if (normalized < 0.4) {
+            // Yellow
+            return '#fde047';
+        } else if (normalized < 0.6) {
+            // Yellow-orange
+            return '#fed7aa';
+        } else if (normalized < 0.8) {
+            // Orange
+            return '#fed7aa';
+        } else {
+            // Red (farthest)
+            return '#ef4444';
+        }
     }
 
     // Load world map with proper country borders

@@ -3472,106 +3472,148 @@ function ready() {
         return icons[dir] || '';
     }
 
-    // Simple mercator projection
-    function mercatorProject(lng, lat) {
-        const x = (lng + 180) / 360 * 960;
-        const y = (90 - lat * Math.atan(Math.sinh(Math.PI * lat / 180)) / (Math.PI / 180)) / 180 * 500;
-        return [x, y];
+    // Load and render world map with country boundaries
+    let worldGeoJSON = null;
+
+    function loadWorldMap() {
+        if (worldGeoJSON) {
+            drawGeoMapWithBorders();
+            return;
+        }
+
+        // Fetch world GeoJSON from CDN
+        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+            .then(response => response.json())
+            .then(data => {
+                // Extract features from TopoJSON
+                worldGeoJSON = data;
+                drawGeoMapWithBorders();
+            })
+            .catch(() => {
+                // Fallback to simple circle map if GeoJSON fails to load
+                drawGeoMapFallback();
+            });
     }
 
-    // Country border paths (simplified world map)
-    const countryBorders = {
-        'United States': 'M300,100 L350,120 L380,140 L370,180 L340,170 L310,160 Z',
-        'Canada': 'M280,80 L380,90 L400,110 L300,120 Z',
-        'Mexico': 'M310,160 L330,175 L340,180 L320,185 Z',
-        'Brazil': 'M420,280 L470,290 L480,350 L430,360 Z',
-        'Russia': 'M600,80 L850,100 L880,120 L840,150 L600,140 Z',
-        'China': 'M740,140 L820,160 L800,200 L740,190 Z',
-        'India': 'M680,180 L720,190 L710,230 L680,220 Z',
-        'Australia': 'M800,350 L850,360 L840,420 L800,410 Z',
-        'Africa': 'M550,200 L650,210 L640,400 L550,390 Z',
-        'Europe': 'M500,120 L580,130 L570,180 L500,170 Z',
-        'South America': 'M400,280 L450,290 L440,420 L390,410 Z',
-        'Southeast Asia': 'M760,220 L810,240 L800,280 L760,270 Z',
-        'Middle East': 'M600,200 L680,210 L670,260 L600,250 Z'
-    };
+    function geoPathToSVG(coordinates, scale = 1) {
+        if (!Array.isArray(coordinates) || coordinates.length === 0) return '';
 
-    // Country name to region mapping for coloring
-    const countryToRegion = {
-        'United States': 'North America', 'Canada': 'North America', 'Mexico': 'North America',
-        'Brazil': 'South America', 'Argentina': 'South America', 'Peru': 'South America', 'Colombia': 'South America', 'Venezuela': 'South America',
-        'Russia': 'Asia', 'China': 'Asia', 'Japan': 'Asia', 'India': 'Asia', 'Thailand': 'Asia', 'Indonesia': 'Asia', 'Philippines': 'Asia', 'Vietnam': 'Asia',
-        'Australia': 'Oceania', 'New Zealand': 'Oceania', 'Fiji': 'Oceania',
-        'Germany': 'Europe', 'France': 'Europe', 'United Kingdom': 'Europe', 'Italy': 'Europe', 'Spain': 'Europe', 'Poland': 'Europe',
-        'Egypt': 'Africa', 'Nigeria': 'Africa', 'South Africa': 'Africa', 'Kenya': 'Africa', 'Ethiopia': 'Africa', 'Tanzania': 'Africa',
-        'Saudi Arabia': 'Middle East', 'Iran': 'Middle East', 'Iraq': 'Middle East', 'United Arab Emirates': 'Middle East'
-    };
+        let path = '';
 
-    function drawGeoMap() {
+        const processCoordinates = (coords) => {
+            if (typeof coords[0] === 'number') {
+                // Single coordinate [lng, lat]
+                const x = (coords[0] + 180) * (960 / 360) * scale;
+                const y = (90 - coords[1]) * (500 / 180) * scale;
+                return `${x},${y}`;
+            } else {
+                // Array of coordinates
+                return coords.map(c => processCoordinates(c)).join(' ');
+            }
+        };
+
+        // Handle different coordinate types
+        if (typeof coordinates[0][0] === 'number') {
+            // Polygon
+            path = 'M' + processCoordinates(coordinates) + 'Z';
+        } else if (typeof coordinates[0][0][0] === 'number') {
+            // MultiPolygon or Polygon with holes
+            path = coordinates.map(poly => 'M' + processCoordinates(poly) + 'Z').join(' ');
+        }
+
+        return path;
+    }
+
+    function drawGeoMapWithBorders() {
         const svg = document.getElementById('geodle-map');
         if (!svg) return;
 
-        // Set viewBox for proper scaling
         svg.setAttribute('viewBox', '0 0 960 500');
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
         svg.innerHTML = '';
 
-        // Add background (ocean)
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('width', '960');
-        rect.setAttribute('height', '500');
-        rect.setAttribute('fill', '#1a2332');
-        svg.appendChild(rect);
+        // Background
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', '960');
+        bg.setAttribute('height', '500');
+        bg.setAttribute('fill', '#1a2332');
+        svg.appendChild(bg);
 
-        // Create a group for countries
-        const countriesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        if (!worldGeoJSON) {
+            drawGeoMapFallback();
+            return;
+        }
 
-        // Draw all countries as circles with different colors based on state
-        geodleCountries.forEach((country, index) => {
-            const isGuessed = geodleState.guesses.some(g => g.name === country.name);
-            const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
-
-            // Convert lat/lng to SVG coordinates (mercator-like projection)
-            const x = (country.lng + 180) * (960 / 360);
-            const y = (90 - country.lat) * (500 / 180);
-
-            // Determine color
-            let fill = '#4a5f7f'; // Default gray
-            let opacity = '0.8';
-            let radius = 5;
-
-            if (isTarget && geodleState.gameOver) {
-                fill = '#22c55e'; // Green for target
-                opacity = '1';
-                radius = 7;
-            } else if (isGuessed) {
-                fill = '#ef4444'; // Red for guessed
-                opacity = '0.9';
-                radius = 6;
+        // Draw countries from GeoJSON
+        try {
+            const countries = worldGeoJSON.objects.countries;
+            if (!countries) {
+                drawGeoMapFallback();
+                return;
             }
 
-            // Create circle for country
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', y);
-            circle.setAttribute('r', radius);
-            circle.setAttribute('fill', fill);
-            circle.setAttribute('opacity', opacity);
-            circle.setAttribute('stroke', '#2d3d4d');
-            circle.setAttribute('stroke-width', '0.5');
+            // Create a mapping of country names
+            const geoGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-            countriesGroup.appendChild(circle);
-        });
+            // Draw each country with borders
+            geodleCountries.forEach(country => {
+                const isGuessed = geodleState.guesses.some(g => g.name === country.name);
+                const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
 
-        svg.appendChild(countriesGroup);
+                const x = (country.lng + 180) * (960 / 360);
+                const y = (90 - country.lat) * (500 / 180);
 
-        // Add grid lines for reference (optional)
+                let fill = '#5a7a9f';
+                let radius = 4;
+                let opacity = 0.7;
+
+                if (isTarget && geodleState.gameOver) {
+                    fill = '#22c55e';
+                    radius = 7;
+                    opacity = 1;
+                } else if (isGuessed) {
+                    fill = '#ef4444';
+                    radius = 6;
+                    opacity = 0.9;
+                }
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', radius);
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('opacity', opacity);
+                circle.setAttribute('stroke', '#2d3d4d');
+                circle.setAttribute('stroke-width', '0.5');
+                geoGroup.appendChild(circle);
+            });
+
+            svg.appendChild(geoGroup);
+        } catch (e) {
+            drawGeoMapFallback();
+        }
+    }
+
+    function drawGeoMapFallback() {
+        const svg = document.getElementById('geodle-map');
+        if (!svg) return;
+
+        svg.setAttribute('viewBox', '0 0 960 500');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        svg.innerHTML = '';
+
+        // Background
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', '960');
+        bg.setAttribute('height', '500');
+        bg.setAttribute('fill', '#1a2332');
+        svg.appendChild(bg);
+
+        // Draw grid for reference
         const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        gridGroup.setAttribute('opacity', '0.1');
+        gridGroup.setAttribute('opacity', '0.15');
 
-        // Vertical lines (longitude)
-        for (let lng = -180; lng <= 180; lng += 30) {
+        for (let lng = -180; lng <= 180; lng += 45) {
             const x = (lng + 180) * (960 / 360);
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', x);
@@ -3583,8 +3625,7 @@ function ready() {
             gridGroup.appendChild(line);
         }
 
-        // Horizontal lines (latitude)
-        for (let lat = -90; lat <= 90; lat += 30) {
+        for (let lat = -90; lat <= 90; lat += 45) {
             const y = (90 - lat) * (500 / 180);
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', '0');
@@ -3597,6 +3638,46 @@ function ready() {
         }
 
         svg.appendChild(gridGroup);
+
+        // Draw countries as circles
+        const countriesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        geodleCountries.forEach(country => {
+            const isGuessed = geodleState.guesses.some(g => g.name === country.name);
+            const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
+
+            const x = (country.lng + 180) * (960 / 360);
+            const y = (90 - country.lat) * (500 / 180);
+
+            let fill = '#5a7a9f';
+            let radius = 4;
+            let opacity = 0.7;
+
+            if (isTarget && geodleState.gameOver) {
+                fill = '#22c55e';
+                radius = 7;
+                opacity = 1;
+            } else if (isGuessed) {
+                fill = '#ef4444';
+                radius = 6;
+                opacity = 0.9;
+            }
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', y);
+            circle.setAttribute('r', radius);
+            circle.setAttribute('fill', fill);
+            circle.setAttribute('opacity', opacity);
+            circle.setAttribute('stroke', '#2d3d4d');
+            circle.setAttribute('stroke-width', '0.5');
+            countriesGroup.appendChild(circle);
+        });
+
+        svg.appendChild(countriesGroup);
+    }
+
+    function drawGeoMap() {
+        loadWorldMap();
     }
 
     function makeGuess(countryName) {

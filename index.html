@@ -4365,13 +4365,30 @@ function ready() {
     function getLetterResult(letter, position, word) {
         if (!word || word.length !== 5) return null;
 
+        // Check if correct position first
         if (word[position] === wordleState.word[position]) {
             return 'correct';
-        } else if (wordleState.word.includes(letter)) {
-            return 'present';
-        } else {
-            return 'absent';
         }
+
+        // Check if letter exists in word (handle duplicates properly)
+        const wordLetters = wordleState.word.split('');
+        const alreadyMatched = [];
+
+        // First pass: mark all correct positions
+        for (let i = 0; i < wordLetters.length; i++) {
+            if (word[i] === wordleState.word[i]) {
+                alreadyMatched.push(i);
+            }
+        }
+
+        // Second pass: check if letter exists elsewhere
+        for (let i = 0; i < wordLetters.length; i++) {
+            if (wordLetters[i] === letter && !alreadyMatched.includes(i) && i !== position) {
+                return 'present';
+            }
+        }
+
+        return 'absent';
     }
 
     function handleKeyPress(key) {

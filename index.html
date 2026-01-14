@@ -3712,7 +3712,7 @@ function ready() {
             $('#geodle-input').prop('disabled', true);
             $('#geodle-guess-btn').prop('disabled', true);
             $('#geodle-reset-btn').show();
-        } else if (geodleState.guesses.length >= 5) {
+        } else if (geodleState.guesses.length >= 7) {
             geodleState.gameOver = true;
             $('#geodle-target-info').text(geodleState.targetCountry.name);
             $('#geodle-game-message').show().css('background', '#ef4444').css('color', '#fff').text('Game Over! The answer was ' + geodleState.targetCountry.name);

@@ -720,6 +720,309 @@ html {
     pointer-events: none;
 }
 
+/* Wordle Styles - NYT Inspired */
+.wordle-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wordle-overlay.hidden {
+    display: none !important;
+}
+
+.wordle-modal {
+    position: relative;
+    width: 95vw;
+    max-width: 550px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 4px 23px 0 rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.wordle-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1rem;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+}
+
+.wordle-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--text-primary);
+}
+
+.wordle-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wordle-close-btn:hover {
+    color: var(--accent-primary);
+}
+
+.wordle-container {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.wordle-status {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    min-height: auto;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+}
+
+.wordle-board {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0;
+    justify-items: center;
+}
+
+.wordle-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.3rem;
+    width: 100%;
+}
+
+.wordle-tile {
+    width: 100%;
+    aspect-ratio: 1;
+    border: 2px solid #d3d6da;
+    border-radius: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.375rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #ffffff;
+    color: #1a1a1a;
+    transition: all 0.15s ease-out;
+    cursor: default;
+    perspective: 1000px;
+    letter-spacing: 0.05em;
+}
+
+html[data-theme="dark"] .wordle-tile {
+    background: #1e293b;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+.wordle-tile.filled {
+    border-color: #878a8c;
+    animation: popIn 0.1s ease;
+}
+
+.wordle-tile.correct {
+    background: #6aaa64;
+    border-color: #6aaa64;
+    color: white;
+    animation: flipIn 0.6s ease-in-out;
+    box-shadow: 0 0 0 0 rgba(106, 170, 100, 0.3);
+}
+
+.wordle-tile.present {
+    background: #c9b458;
+    border-color: #c9b458;
+    color: white;
+    animation: flipIn 0.6s ease-in-out;
+    animation-delay: 0.1s;
+    box-shadow: 0 0 0 0 rgba(201, 180, 88, 0.3);
+}
+
+.wordle-tile.absent {
+    background: #787c7e;
+    border-color: #787c7e;
+    color: white;
+    animation: flipIn 0.6s ease-in-out;
+    animation-delay: 0.2s;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes flipIn {
+    0% {
+        transform: rotateX(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: rotateX(90deg);
+    }
+    100% {
+        transform: rotateX(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes wordleShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Responsive Wordle */
+@media (max-width: 600px) {
+    .wordle-modal {
+        max-width: 100%;
+        max-height: 95vh;
+        width: 100%;
+    }
+
+    .wordle-container {
+        padding: 0.75rem 1rem;
+        gap: 0.75rem;
+    }
+
+    .wordle-tile {
+        font-size: 1.5rem;
+    }
+
+    .wordle-key {
+        font-size: 0.6rem;
+        height: 2.25rem;
+        min-width: 1.5rem;
+        padding: 0.4rem 0.4rem;
+    }
+
+    .wordle-title {
+        font-size: 1.25rem;
+    }
+}
+
+.wordle-keyboard {
+    display: none;
+}
+
+.wordle-keyboard-row {
+    display: none;
+}
+
+.wordle-key {
+    padding: 0.5rem 0.5rem;
+    background: #d3d6da;
+    border: none;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    color: #1a1a1a;
+    min-width: 1.75rem;
+    text-align: center;
+    font-family: inherit;
+    flex: 0 1 auto;
+    height: 2.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+html[data-theme="dark"] .wordle-key {
+    background: #3a3f45;
+    color: #f1f5f9;
+}
+
+.wordle-key:hover:not(:disabled) {
+    background: #b0b3b8;
+    transform: scale(1.05);
+}
+
+html[data-theme="dark"] .wordle-key:hover:not(:disabled) {
+    background: #565d66;
+}
+
+.wordle-key:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.wordle-key.correct {
+    background: #6aaa64;
+    color: white;
+}
+
+.wordle-key.present {
+    background: #c9b458;
+    color: white;
+}
+
+.wordle-key.absent {
+    background: #787c7e;
+    color: white;
+    opacity: 1;
+}
+
+.wordle-key:disabled {
+    cursor: not-allowed;
+}
+
+.wordle-reset-btn {
+    padding: 0.5rem 1rem;
+    background: #6aaa64;
+    color: white;
+    border: none;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+    display: none;
+    width: 100%;
+    font-family: inherit;
+}
+
+.wordle-reset-btn:hover {
+    background: #5a9b55;
+    transform: translateY(-2px);
+}
+
+.wordle-reset-btn:active {
+    transform: translateY(0);
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {
@@ -1269,6 +1572,9 @@ html {
             <button id="geodle-setup-btn" class="games-menu-item" title="Play Geodle">
               <i class="fas fa-globe"></i> Geodle
             </button>
+            <button id="wordle-setup-btn" class="games-menu-item" title="Play Wordle">
+              <i class="fas fa-spell-check"></i> Wordle
+            </button>
           </div>
         </div>
         <h3>Users</h3>
@@ -1589,6 +1895,40 @@ html {
           New Game
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wordle Game Modal -->
+<div id="wordle-overlay" class="hidden wordle-overlay">
+  <div class="wordle-modal">
+    <!-- Header -->
+    <div class="wordle-header">
+      <h2 class="wordle-title">WORDLE</h2>
+      <button id="wordle-close" class="wordle-close-btn" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Game Container -->
+    <div class="wordle-container">
+      <!-- Game Status -->
+      <div id="wordle-game-status" class="wordle-status">Guess the word in 6 tries</div>
+
+      <!-- Game Board (6 rows x 5 columns) -->
+      <div id="wordle-board" class="wordle-board">
+        <!-- Tiles will be added here -->
+      </div>
+
+      <!-- Keyboard -->
+      <div id="wordle-keyboard" class="wordle-keyboard">
+        <!-- Keyboard rows will be added here -->
+      </div>
+
+      <!-- Reset Button -->
+      <button id="wordle-reset-btn" class="wordle-reset-btn">
+        Play Again
+      </button>
     </div>
   </div>
 </div>
@@ -3801,6 +4141,400 @@ function ready() {
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#geodle-input, #geodle-autocomplete').length) {
             $('#geodle-autocomplete').hide();
+        }
+    });
+
+    // ============= WORDLE GAME =============
+
+    const WORD_LIST = [
+        'ABOUT', 'ABOVE', 'ABUSE', 'ACTOR', 'ACUTE', 'ADMIT', 'ADOPT', 'ADULT', 'AFTER', 'AGAIN',
+        'AGENT', 'AGREE', 'AHEAD', 'ALARM', 'ALBUM', 'ALERT', 'ALIEN', 'ALIKE', 'ALIVE', 'ALLOW',
+        'ALLOY', 'ALONE', 'ALONG', 'ALTER', 'ANGEL', 'ANGER', 'ANGLE', 'ANGRY', 'APART', 'APPLE',
+        'APPLY', 'ARENA', 'ARGUE', 'ARISE', 'ARRAY', 'ARROW', 'ASIDE', 'ASSET', 'ATLAS', 'AUDIO',
+        'AUDIT', 'AUNTY', 'AVOID', 'AWAKE', 'AWARD', 'AWARE', 'BADLY', 'BAGEL', 'BAKER', 'BANKS',
+        'BARON', 'BASED', 'BASIC', 'BASIN', 'BATCH', 'BEACH', 'BEARD', 'BEAST', 'BEGAN', 'BEGIN',
+        'BEGUN', 'BEING', 'BELCH', 'BELOW', 'BENCH', 'BERRY', 'BIKES', 'BIRTH', 'BLACK', 'BLADE',
+        'BLAME', 'BLANK', 'BLAST', 'BLEAK', 'BLEED', 'BLESS', 'BLIND', 'BLINK', 'BLISS', 'BLOCK',
+        'BLOOD', 'BLOOM', 'BLOWN', 'BLUES', 'BOARD', 'BOATS', 'BOBBY', 'BOGUS', 'BOILS', 'BOMBS',
+        'BONDS', 'BONES', 'BOOKS', 'BOOST', 'BOOTH', 'BOOTS', 'BOUND', 'BOXES', 'BRAIN', 'BRAND',
+        'BRAVO', 'BREAD', 'BREAK', 'BREED', 'BRICK', 'BRIDE', 'BRIEF', 'BRING', 'BRINK', 'BRISK',
+        'BROAD', 'BROKE', 'BROOD', 'BROOK', 'BROOM', 'BROWN', 'BRUCE', 'BUDDY', 'BUILD', 'BUILT',
+        'BUNCH', 'BUNNY', 'BURST', 'BUSES', 'BUYER', 'CABBAGE', 'CABIN', 'CABLE', 'CACHE', 'CADET',
+        'CAGES', 'CAKES', 'CALIF', 'CALLS', 'CALMS', 'CAMEL', 'CAMPS', 'CANAL', 'CANDY', 'CANES',
+        'CANNY', 'CANON', 'CANST', 'CANTO', 'CAPED', 'CAPER', 'CARDS', 'CARED', 'CARES', 'CARGO',
+        'CAROL', 'CARPS', 'CARRY', 'CARTE', 'CARTS', 'CARVE', 'CASTE', 'CATCH', 'CATER', 'CAUSE',
+        'CAVES', 'CEASE', 'CEDAR', 'CHAIN', 'CHAIR', 'CHALK', 'CHAMP', 'CHANT', 'CHAOS', 'CHAPS',
+        'CHARD', 'CHARM', 'CHARS', 'CHART', 'CHASE', 'CHEAP', 'CHEAT', 'CHECK', 'CHEEK', 'CHEER',
+        'CHESS', 'CHEST', 'CHICK', 'CHIEF', 'CHILD', 'CHILL', 'CHIMP', 'CHINA', 'CHIPS', 'CHOKE',
+        'CHORD', 'CHORE', 'CHOSE', 'CHUNK', 'CIDER', 'CIGAR', 'CIRCA', 'CIVIC', 'CIVIL', 'CLAIM',
+        'CLAMP', 'CLAMS', 'CLANG', 'CLANK', 'CLAPS', 'CLASH', 'CLASP', 'CLASS', 'CLAWS', 'CLAYS',
+        'CLEAN', 'CLEAR', 'CLEAT', 'CLERK', 'CLICK', 'CLIFF', 'CLIMB', 'CLING', 'CLOAK', 'CLOCK',
+        'CLONE', 'CLOSE', 'CLOTH', 'CLOUD', 'CLOUT', 'CLOVE', 'CLOWN', 'CLUBS', 'CLUCK', 'CLUES',
+        'COACH', 'COAST', 'COATS', 'COATS', 'COBRA', 'COCOA', 'CODED', 'CODER', 'CODES', 'COINS',
+        'COKED', 'COKES', 'CORAL', 'CORDS', 'CORES', 'CORGI', 'CORNS', 'COUCH', 'COUGH', 'COULD',
+        'COUNT', 'COUPE', 'COURT', 'COVES', 'COWED', 'COYLY', 'CRACK', 'CRAFT', 'CRAMP', 'CRANE',
+        'CRANK', 'CRASH', 'CRASS', 'CRATE', 'CRAVE', 'CRAWL', 'CRAZE', 'CRAZY', 'CREAK', 'CREAM',
+        'CREED', 'CREEK', 'CREEP', 'CREPE', 'CREST', 'CREWS', 'CRIBS', 'CRIED', 'CRIER', 'CRIES',
+        'CRIME', 'CRIMP', 'CROAK', 'CRONE', 'CROOK', 'CROPS', 'CROSS', 'CROUP', 'CROWD', 'CROWN',
+        'CRUDE', 'CRUEL', 'CRUISE', 'CRUMB', 'CRUSH', 'CRUST', 'CRYPT', 'CUBIC', 'CUBED', 'CUBES',
+        'CUFFS', 'CULLS', 'CURBS', 'CURDS', 'CURED', 'CURES', 'CURLS', 'CURRY', 'CURSE', 'CURVE',
+        'CUSPS', 'CYCLE', 'DAILY', 'DAIRY', 'DAISY', 'DALES', 'DAMPS', 'DANCE', 'DANDY', 'DARED',
+        'DARES', 'DARKS', 'DARTS', 'DATED', 'DATES', 'DATUM', 'DAUNT', 'DAVEN', 'DAZED', 'DEALS',
+        'DEALT', 'DEANS', 'DEFER', 'DEBUT', 'DECAF', 'DECAY', 'DECOY', 'DECRY', 'DEEDS', 'DEEMS',
+        'DELAY', 'DELTA', 'DELVE', 'DENSE', 'DENTS', 'DEPTH', 'DERBY', 'DESKS', 'DETER', 'DEUCE',
+        'DIALS', 'DIARY', 'DICED', 'DICES', 'DIETS', 'DIGIT', 'DILLS', 'DIMES', 'DINED', 'DINER',
+        'DINES', 'DINGY', 'DIODE', 'DINTS', 'DIODE', 'DIPS', 'DIRGE', 'DIRTY', 'DISCO', 'DITCH',
+        'DITTO', 'DIVAN', 'DIVED', 'DIVES', 'DOCKS', 'DODGE', 'DOGS', 'DOILY', 'DOING', 'DOLES',
+        'DOLLS', 'DOLOR', 'DOMED', 'DOMES', 'DONOR', 'DONUT', 'DOORS', 'DOPED', 'DOPES', 'DOPEY',
+        'DORMY', 'DOSED', 'DOSES', 'DOTED', 'DOTES', 'DOUBT', 'DOUGH', 'DOUSE', 'DOVES', 'DOWEL',
+        'DOWER', 'DOWNS', 'DOWRY', 'DOZED', 'DOZEN', 'DOZES', 'DRAFT', 'DRAGS', 'DRAIN', 'DRAKE',
+        'DRAMA', 'DRAMS', 'DRANK', 'DRAPE', 'DRATS', 'DRAVE', 'DRAWL', 'DRAWN', 'DRAWS', 'DRAYS',
+        'DREAD', 'DREAM', 'DREAR', 'DREGS', 'DRESS', 'DRIED', 'DRIER', 'DRIES', 'DRIFT', 'DRILL',
+        'DRINK', 'DRIPS', 'DRIVE', 'DROIT', 'DROLL', 'DRONE', 'DROOL', 'DROOP', 'DROPS', 'DROSS',
+        'DROVE', 'DROWN', 'DRUGS', 'DRUMS', 'DRUNK', 'DRYER', 'DUALS', 'DUCKS', 'DUCKY', 'DUELS',
+        'DUETS', 'DUFFS', 'DUNES', 'DUNKS', 'DUSKY', 'DUSTS', 'DUSTY', 'DUTIES', 'DWARF', 'DWEEB',
+        'DWELL', 'DWELT', 'DYING', 'DYKES', 'EAGER', 'EAGLE', 'EARED', 'EARLS', 'EARLY', 'EARNS',
+        'EARTH', 'EASED', 'EASEL', 'EASES', 'EASTS', 'EATEN', 'EATER', 'EAVES', 'EBBED', 'EBONY',
+        'ECLAT', 'EDGED', 'EDGER', 'EDGES', 'EDIFY', 'EDITS', 'EDUCT', 'EERIE', 'EGADS', 'EGGER',
+        'EGRET', 'EIDER', 'EIGHT', 'EJECT', 'EKING', 'ELAND', 'ELAPSE', 'ELBOWS', 'ELDER', 'ELECT',
+        'ELEGY', 'ELFIN', 'ELITE', 'ELOPE', 'ELUDE', 'EMACS', 'EMAIL', 'EMBED', 'EMBER', 'EMCEE',
+        'EMEND', 'EMERGES', 'EMERY', 'EMITS', 'EMOTE', 'EMPTY', 'ENACT', 'ENDED', 'ENDOW', 'ENDUE',
+        'ENDURE', 'ENEMY', 'ENERGY', 'ENFIX', 'ENGULF', 'ENJOY', 'ENOKI', 'ENNUI', 'ENROL', 'ENSUE',
+        'ENTER', 'ENTRY', 'ENVOY', 'EPICS', 'EPOCH', 'EPOXY', 'EQUAL', 'EQUIP', 'ERASE', 'ERECT',
+        'ERGO', 'ERMINE', 'ERODE', 'ERROR', 'ERUPT', 'ESSAY', 'ESTER', 'ETHIC', 'ETHOS', 'ETHYL',
+        'EVADE', 'EVENS', 'EVENT', 'EVERY', 'EVICT', 'EVOKE', 'EXACT', 'EXALT', 'EXAMS', 'EXCEL',
+        'EXERT', 'EXILE', 'EXIST', 'EXITS', 'EXPEL', 'EXTRA', 'EXUDE', 'EXULT', 'EYING', 'EYRIE',
+        'FACED', 'FACER', 'FACES', 'FACET', 'FACTS', 'FADED', 'FADER', 'FADES', 'FAERY', 'FAILS',
+        'FAINT', 'FAIRS', 'FAIRY', 'FAITH', 'FAKED', 'FAKER', 'FAKES', 'FALLS', 'FALSE', 'FAMED',
+        'FANCY', 'FANGS', 'FARCE', 'FARES', 'FARMS', 'FATAL', 'FATED', 'FATES', 'FATTY', 'FAULT',
+        'FAUNA', 'FAVORS', 'FAWNS', 'FAZED', 'FEALTY', 'FEARS', 'FEAST', 'FEATS', 'FEEDS', 'FEELS',
+        'FEIGN', 'FEINT', 'FELINE', 'FELLA', 'FELON', 'FELTS', 'FEMUR', 'FENCE', 'FENDS', 'FENNY',
+        'FERNS', 'FERRY', 'FETAL', 'FETCH', 'FETED', 'FETID', 'FETTER', 'FETTLE', 'FETUS', 'FEVER',
+        'FEWER', 'FIATS', 'FIBER', 'FIBRE', 'FICUS', 'FIELD', 'FIEND', 'FIERY', 'FIFED', 'FIFER',
+        'FIFES', 'FIFTH', 'FIFTY', 'FIGHT', 'FILED', 'FILER', 'FILES', 'FILET', 'FILLS', 'FILLY',
+        'FILMS', 'FILMY', 'FILTH', 'FINAL', 'FINCH', 'FINDS', 'FINED', 'FINER', 'FINES', 'FINKS',
+        'FINNY', 'FIORD', 'FIRED', 'FIRER', 'FIRES', 'FIRMS', 'FIRST', 'FISHY', 'FISTS', 'FITS',
+        'FITLY', 'FIXER', 'FIXES', 'FIZZY', 'FJORD', 'FLABS', 'FLACK', 'FLAGS', 'FLAIL', 'FLAIR',
+        'FLAKE', 'FLAKY', 'FLAME', 'FLANK', 'FLAPS', 'FLARE', 'FLASH', 'FLASK', 'FLATS', 'FLAWS',
+        'FLAYS', 'FLEAS', 'FLECK', 'FLEES', 'FLEET', 'FLESH', 'FLICK', 'FLIED', 'FLIER', 'FLIES',
+        'FLIGHTY', 'FLING', 'FLINT', 'FLIPS', 'FLIRT', 'FLITS', 'FLOAT', 'FLOCK', 'FLOES', 'FLOGS',
+        'FLOOD', 'FLOOR', 'FLOPS', 'FLORA', 'FLOSS', 'FLOUR', 'FLOUT', 'FLOWS', 'FLUBS', 'FLUFF',
+        'FLUID', 'FLUKE', 'FLUKY', 'FLUNG', 'FLUNK', 'FLUSH', 'FLUTE', 'FLYBY', 'FOALS', 'FOAMS',
+        'FOAMY', 'FOBAR', 'FOCAL', 'FOCUS', 'FOGEY', 'FOGGY', 'FOILS', 'FOLDS', 'FOLEY', 'FOLIO',
+        'FOLKS', 'FOLLY', 'FONTS', 'FOODS', 'FOOLS', 'FOOTS', 'FORAY', 'FORCE', 'FORDS', 'FORGE',
+        'FORGO', 'FORKS', 'FORMS', 'FORTE', 'FORTH', 'FORTY', 'FORUM', 'FOSSE', 'FOULS', 'FOUND',
+        'FOUNT', 'FOURS', 'FOWLS', 'FOXES', 'FOYER', 'FRAIL', 'FRAME', 'FRANC', 'FRANK', 'FRAUD',
+        'FRAYS', 'FREAK', 'FREED', 'FREER', 'FREES', 'FRESH', 'FRETS', 'FRIAR', 'FRIED', 'FRIER',
+        'FRIES', 'FRILL', 'FRISK', 'FRIZZ', 'FROCK', 'FROGS', 'FROND', 'FRONT', 'FROST', 'FROTH',
+        'FROWN', 'FROZE', 'FRUIT', 'FRUMP', 'FLUSH', 'FRYER', 'FUBAR', 'FUDGE', 'FUELS', 'FUGAL',
+        'FUGUE', 'FULLY', 'FUMES', 'FUNDS', 'FUNKS', 'FUNKY', 'FUNNY', 'FURAL', 'FUROR', 'FURRY',
+        'FUSED', 'FUSES', 'FUSSY', 'FUSTY', 'FUZZY', 'GABLE', 'GADDI', 'GAFFE', 'GAFFS', 'GAGES',
+        'GAIGS', 'GAINS', 'GAILY', 'GALES', 'GALLS', 'GAMIN', 'GAMMA', 'GAMMY', 'GAMUT', 'GANGS',
+        'GANKY', 'GAPED', 'GAPES', 'GARBS', 'GARDE', 'GASSY', 'GATED', 'GATES', 'GATOR', 'GAUDY',
+        'GAUGE', 'GAUNT', 'GAUSS', 'GAUZE', 'GAUZY', 'GAVEL', 'GAWKS', 'GAWKY', 'GAWPS', 'GAYER',
+        'GAYLY', 'GAZED', 'GAZER', 'GAZES', 'GEARS', 'GEEKS', 'GEESE', 'GENES', 'GENIE', 'GENRE',
+        'GENRO', 'GENUS', 'GERMY', 'GESSO', 'GESTS', 'GETUP', 'GIANT', 'GIBED', 'GIBER', 'GIBES',
+        'GIDDY', 'GIFTS', 'GILLS', 'GILTS', 'GIMPY', 'GIRDS', 'GIRLS', 'GIRLY', 'GIROS', 'GIRTH',
+        'GISMO', 'GISTS', 'GIVEN', 'GIVER', 'GIVES', 'GIZMO', 'GLADE', 'GLADS', 'GLARE', 'GLASS',
+        'GLAZE', 'GLEAM', 'GLEAN', 'GLEBE', 'GLEED', 'GLEEK', 'GLEES', 'GLEET', 'GELID', 'GELTS',
+        'GESSO', 'GLENS', 'GLEAM', 'GLANS', 'GLAZE', 'GLAZE', 'GLEAM', 'GLEDE', 'GLIBS', 'GLIDE',
+        'GLIFF', 'GLINT', 'GLISK', 'GLITZ', 'GLOAM', 'GLOAT', 'GLOBE', 'GLOBS', 'GLOOM', 'GLOPS',
+        'GLORY', 'GLOSS', 'GLOST', 'GLOUT', 'GLOVE', 'GLOWS', 'GLUED', 'GLUER', 'GLUES', 'GLUEY',
+        'GLUGS', 'GLUME', 'GLUMS', 'GLUTS', 'GLUVY', 'GNARL', 'GNARS', 'GNASH', 'GNATS', 'GNAWS',
+        'GNOME', 'GOADS', 'GOALS', 'GOATS', 'GOBAS', 'GOBET', 'GOBOS', 'GODLY', 'GOERS', 'GOFER',
+        'GOFRE', 'GOING', 'GOLDS', 'GOLFS', 'GOLLY', 'GONAD', 'GONER', 'GONES', 'GONIA', 'GONIA',
+        'GONNA', 'GONOF', 'GONOS', 'GOOBY', 'GOODS', 'GOODY', 'GOOEY', 'GOOFS', 'GOOFY', 'GOOKS',
+        'GOOLS', 'GOONA', 'GOONY', 'GOOPS', 'GOOPY', 'GOOSE', 'GORAL', 'GORAS', 'GORES', 'GORGE',
+        'GORGI', 'GORMS', 'GORMY', 'GORPS', 'GORSE', 'GORSY', 'GOTTA', 'GOUGE', 'GOUKS', 'GOURD',
+        'GOURS', 'GOUSE', 'GOUTS', 'GOWAN', 'GOWDS', 'GOWKS', 'GOWNS', 'GOXES', 'GOYIM', 'GOYLS',
+        'GRABS', 'GRACE', 'GRADE', 'GRAFT', 'GRAIL', 'GRAIN', 'GRAMS', 'GRAND', 'GRANE', 'GRANS',
+        'GRANT', 'GRANS', 'GRAPE', 'GRAPH', 'GRAPY', 'GRASE', 'GRASP', 'GRASS', 'GRATE', 'GRATS',
+        'GRAVE', 'GRAVY', 'GRAYS', 'GRAZE', 'GREAT', 'GREBE', 'GREED', 'GREEK', 'GREEN', 'GREET',
+        'GREFS', 'GREGO', 'GREGO', 'GREIN', 'GREYS', 'GRIDE', 'GRIDS', 'GRIEF', 'GRIFF', 'GRIFT',
+        'GRILL', 'GRIME', 'GRIMY', 'GRIND', 'GRINS', 'GRIOT', 'GRIPE', 'GRIPS', 'GRIST', 'GRITS',
+        'GRIVY', 'GROAT', 'GROBS', 'GROGS', 'GROIN', 'GROKE', 'GROMA', 'GROMS', 'GROND', 'GRONE',
+        'GROOF', 'GROOM', 'GROOS', 'GROPE', 'GROSS', 'GROTS', 'GROUP', 'GROUT', 'GROVE', 'GROVY',
+        'GROWS', 'GROWT', 'GRUBS', 'GRUEL', 'GRUFF', 'GRUME', 'GRUMP', 'GRUNT', 'GRYDE', 'GRYLE',
+        'GRYSE', 'GUACO', 'GUANS', 'GUARS', 'GUARD', 'GUARS', 'GUASH', 'GUASS', 'GUATE', 'GUATS',
+        'GUAVA', 'GUBBE', 'GUDES', 'GUDGY', 'GUELD', 'GUESS', 'GUEST', 'GUETS', 'GUFFS', 'GUGGA',
+        'GUIDE', 'GUIDS', 'GUILD', 'GUILE', 'GUILT', 'GUIRO', 'GUISE', 'GULAG', 'GULAR', 'GULCH',
+        'GULFS', 'GULFY', 'GULKS', 'GULLS', 'GULLY', 'GULPS', 'GUMBO', 'GUMMA', 'GUMMY', 'GUMPS',
+        'GUNAS', 'GUNCH', 'GUNDA', 'GUNKS', 'GUNKY', 'GUNNY', 'GURDS', 'GURUS', 'GURSH', 'GURTH',
+        'GURUS', 'GUSAN', 'GUSHY', 'GUSKS', 'GUSTO', 'GUSTS', 'GUTSY', 'GUTTI', 'GUVNA', 'GUVVY',
+        'GUVVY', 'GUYED', 'GUYER', 'GUYES', 'GUYOT', 'GUZZT', 'GYALS', 'GYBED', 'GYBES', 'GYDAN',
+        'GYDON', 'GYELD', 'GYELF', 'GYING', 'GYMEL', 'GYMKS', 'GYNOS', 'GYOZA', 'GYRAL', 'GYRED',
+        'GYRER', 'GYRES', 'GYRIC', 'GYRON', 'GYROS', 'GYRUS', 'GYSIS', 'HABIT', 'HADAD', 'HADED',
+        'HADES', 'HADJI', 'HADNA', 'HAEMS', 'HAETS', 'HAFFS', 'HAFIS', 'HAFTS', 'HAGGS', 'HAGGY',
+        'HAGIN', 'HAGOS', 'HAHAS', 'HAIKU', 'HAILS', 'HAILS', 'HAINS', 'HAINT', 'HAIRS', 'HAIRY',
+        'HAITI', 'HAKIM', 'HAKIS', 'HALAL', 'HALED', 'HALER', 'HALES', 'HALFS', 'HALLO', 'HALLS',
+        'HALMS', 'HALOS', 'HALTS', 'HALUS', 'HALVA', 'HALVE', 'HALWA', 'HALWY', 'HAMAL', 'HAMAS',
+        'HAMAZ', 'HAMBA', 'HAMBO', 'HAMBY', 'HAMDY', 'HAMES', 'HAMIS', 'HAMMY', 'HAMZA', 'HAMZY',
+        'HANAP', 'HANDS', 'HANDY', 'HANDI', 'HANKS', 'HANKY', 'HANNE', 'HANNO', 'HANOI', 'HANON',
+        'HAOLE', 'HAOMA', 'HAPAS', 'HAPLY', 'HAPPA', 'HAPPY', 'HAPLY', 'HAPPI', 'HAPPU', 'HARDOS'
+    ];
+
+    const VALID_WORDS = new Set(WORD_LIST.map(w => w.toUpperCase()));
+
+    let wordleState = {
+        word: '',
+        guesses: [],
+        currentGuess: '',
+        gameOver: false,
+        won: false,
+        keyStates: {}
+    };
+
+    const KEYBOARD_LAYOUT = [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
+    ];
+
+    function initWordleGame() {
+        wordleState.word = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+        wordleState.guesses = [];
+        wordleState.currentGuess = '';
+        wordleState.gameOver = false;
+        wordleState.won = false;
+        wordleState.keyStates = {};
+
+        $('#wordle-game-status').html('Guess the word in 6 tries<br><span style="font-size: 0.75rem; opacity: 0.7;">Type your answer and press ENTER</span>');
+        $('#wordle-game-status').css('color', 'var(--text-secondary)');
+        $('#wordle-reset-btn').hide();
+        $('#wordle-board').empty();
+
+        renderWordleBoard();
+    }
+
+    function renderWordleBoard() {
+        const $board = $('#wordle-board');
+        $board.empty();
+
+        for (let i = 0; i < 6; i++) {
+            const guess = wordleState.guesses[i] || '';
+            const $row = $('<div>').addClass('wordle-row');
+            const isRevealing = i < wordleState.guesses.length;
+
+            for (let j = 0; j < 5; j++) {
+                const letter = guess[j] || '';
+                const $tile = $('<div>')
+                    .addClass('wordle-tile')
+                    .text(letter)
+                    .attr('data-index', `${i}-${j}`);
+
+                if (letter) {
+                    $tile.addClass('filled');
+                    if (isRevealing) {
+                        const result = getLetterResult(letter, j, guess);
+                        if (result) {
+                            $tile.addClass(result);
+                        }
+                    }
+                }
+
+                $row.append($tile);
+            }
+
+            // Add tiles for current guess if this is the active row
+            if (i === wordleState.guesses.length && !wordleState.gameOver) {
+                for (let j = 0; j < 5; j++) {
+                    const letter = wordleState.currentGuess[j] || '';
+                    const $tile = $('<div>')
+                        .addClass('wordle-tile')
+                        .text(letter);
+
+                    if (letter) {
+                        $tile.addClass('filled');
+                    }
+
+                    $row.append($tile);
+                }
+            }
+
+            $board.append($row);
+        }
+    }
+
+    function renderWordleKeyboard() {
+        const $keyboard = $('#wordle-keyboard');
+        $keyboard.empty();
+
+        KEYBOARD_LAYOUT.forEach((row, rowIndex) => {
+            const $row = $('<div>').addClass('wordle-keyboard-row');
+
+            row.forEach(key => {
+                let text = key;
+                let classes = 'wordle-key';
+
+                if (key === 'Enter') {
+                    text = 'ENTER';
+                } else if (key === 'Backspace') {
+                    text = 'BACK';
+                }
+
+                const state = wordleState.keyStates[key];
+                if (state) {
+                    classes += ' ' + state;
+                }
+
+                const $button = $('<button>')
+                    .addClass(classes)
+                    .text(text)
+                    .attr('data-key', key)
+                    .on('click', function(e) {
+                        e.preventDefault();
+                        handleKeyPress(key);
+                    });
+
+                $row.append($button);
+            });
+
+            $keyboard.append($row);
+        });
+    }
+
+    function getLetterResult(letter, position, word) {
+        if (!word || word.length !== 5) return null;
+
+        // Check if correct position first
+        if (word[position] === wordleState.word[position]) {
+            return 'correct';
+        }
+
+        // Check if letter exists in word (handle duplicates properly)
+        const wordLetters = wordleState.word.split('');
+        const alreadyMatched = [];
+
+        // First pass: mark all correct positions
+        for (let i = 0; i < wordLetters.length; i++) {
+            if (word[i] === wordleState.word[i]) {
+                alreadyMatched.push(i);
+            }
+        }
+
+        // Second pass: check if letter exists elsewhere
+        for (let i = 0; i < wordLetters.length; i++) {
+            if (wordLetters[i] === letter && !alreadyMatched.includes(i) && i !== position) {
+                return 'present';
+            }
+        }
+
+        return 'absent';
+    }
+
+    function handleKeyPress(key) {
+        if (wordleState.gameOver) return;
+
+        if (key === 'Enter') {
+            submitGuess();
+        } else if (key === 'Backspace') {
+            wordleState.currentGuess = wordleState.currentGuess.slice(0, -1);
+            renderWordleBoard();
+        } else if (wordleState.currentGuess.length < 5) {
+            wordleState.currentGuess += key;
+            renderWordleBoard();
+        }
+    }
+
+    function submitGuess() {
+        if (wordleState.currentGuess.length !== 5) {
+            shake('#wordle-board');
+            $('#wordle-game-status').text('Not enough letters').css('color', '#ef4444');
+            setTimeout(() => {
+                $('#wordle-game-status').text('').css('color', 'var(--text-secondary)');
+            }, 1500);
+            return;
+        }
+
+        if (!VALID_WORDS.has(wordleState.currentGuess)) {
+            shake('#wordle-board');
+            $('#wordle-game-status').text('Not in word list').css('color', '#ef4444');
+            setTimeout(() => {
+                $('#wordle-game-status').text('').css('color', 'var(--text-secondary)');
+            }, 1500);
+            return;
+        }
+
+        wordleState.guesses.push(wordleState.currentGuess);
+
+        // Update key states
+        for (let i = 0; i < 5; i++) {
+            const letter = wordleState.currentGuess[i];
+            const result = getLetterResult(letter, i, wordleState.currentGuess);
+
+            if (result && (!wordleState.keyStates[letter] || result === 'correct')) {
+                wordleState.keyStates[letter] = result;
+            }
+        }
+
+        if (wordleState.currentGuess === wordleState.word) {
+            wordleState.gameOver = true;
+            wordleState.won = true;
+
+            // Show celebration message
+            setTimeout(() => {
+                const messages = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
+                const tries = wordleState.guesses.length;
+                const msg = messages[Math.min(tries - 1, messages.length - 1)];
+                $('#wordle-game-status').text(msg).css('color', '#6aaa64');
+                $('#wordle-reset-btn').show();
+            }, 600);
+        } else if (wordleState.guesses.length >= 6) {
+            wordleState.gameOver = true;
+            setTimeout(() => {
+                $('#wordle-game-status').text(`The word was: ${wordleState.word}`).css('color', '#787c7e');
+                $('#wordle-reset-btn').show();
+            }, 600);
+        }
+
+        wordleState.currentGuess = '';
+        renderWordleBoard();
+    }
+
+    function shake(selector) {
+        const $elem = $(selector);
+        $elem.css({
+            animation: 'none'
+        });
+        setTimeout(() => {
+            $elem.css({
+                animation: 'wordleShake 0.5s ease-in-out'
+            });
+        }, 10);
+    }
+
+    // Wordle event handlers
+    $('#wordle-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').addClass('hidden');
+        $('#wordle-overlay').removeClass('hidden');
+        initWordleGame();
+    });
+
+    $('#wordle-close').on('click', function(e) {
+        e.preventDefault();
+        $('#wordle-overlay').addClass('hidden');
+    });
+
+    $('#wordle-reset-btn').on('click', function(e) {
+        e.preventDefault();
+        initWordleGame();
+    });
+
+    // Keyboard support
+    $(document).on('keydown', function(e) {
+        if ($('#wordle-overlay').hasClass('hidden')) return;
+
+        const key = e.key.toUpperCase();
+        if (['Q','W','E','R','T','Y','U','I','O','P','A','S','D','F','G','H','J','K','L','Z','X','C','V','B','N','M'].includes(key)) {
+            e.preventDefault();
+            handleKeyPress(key);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            handleKeyPress('Enter');
+        } else if (e.key === 'Backspace') {
+            e.preventDefault();
+            handleKeyPress('Backspace');
         }
     });
 

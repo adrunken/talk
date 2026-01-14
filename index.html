@@ -3472,6 +3472,41 @@ function ready() {
         return icons[dir] || '';
     }
 
+    // Simple mercator projection
+    function mercatorProject(lng, lat) {
+        const x = (lng + 180) / 360 * 960;
+        const y = (90 - lat * Math.atan(Math.sinh(Math.PI * lat / 180)) / (Math.PI / 180)) / 180 * 500;
+        return [x, y];
+    }
+
+    // Country border paths (simplified world map)
+    const countryBorders = {
+        'United States': 'M300,100 L350,120 L380,140 L370,180 L340,170 L310,160 Z',
+        'Canada': 'M280,80 L380,90 L400,110 L300,120 Z',
+        'Mexico': 'M310,160 L330,175 L340,180 L320,185 Z',
+        'Brazil': 'M420,280 L470,290 L480,350 L430,360 Z',
+        'Russia': 'M600,80 L850,100 L880,120 L840,150 L600,140 Z',
+        'China': 'M740,140 L820,160 L800,200 L740,190 Z',
+        'India': 'M680,180 L720,190 L710,230 L680,220 Z',
+        'Australia': 'M800,350 L850,360 L840,420 L800,410 Z',
+        'Africa': 'M550,200 L650,210 L640,400 L550,390 Z',
+        'Europe': 'M500,120 L580,130 L570,180 L500,170 Z',
+        'South America': 'M400,280 L450,290 L440,420 L390,410 Z',
+        'Southeast Asia': 'M760,220 L810,240 L800,280 L760,270 Z',
+        'Middle East': 'M600,200 L680,210 L670,260 L600,250 Z'
+    };
+
+    // Country name to region mapping for coloring
+    const countryToRegion = {
+        'United States': 'North America', 'Canada': 'North America', 'Mexico': 'North America',
+        'Brazil': 'South America', 'Argentina': 'South America', 'Peru': 'South America', 'Colombia': 'South America', 'Venezuela': 'South America',
+        'Russia': 'Asia', 'China': 'Asia', 'Japan': 'Asia', 'India': 'Asia', 'Thailand': 'Asia', 'Indonesia': 'Asia', 'Philippines': 'Asia', 'Vietnam': 'Asia',
+        'Australia': 'Oceania', 'New Zealand': 'Oceania', 'Fiji': 'Oceania',
+        'Germany': 'Europe', 'France': 'Europe', 'United Kingdom': 'Europe', 'Italy': 'Europe', 'Spain': 'Europe', 'Poland': 'Europe',
+        'Egypt': 'Africa', 'Nigeria': 'Africa', 'South Africa': 'Africa', 'Kenya': 'Africa', 'Ethiopia': 'Africa', 'Tanzania': 'Africa',
+        'Saudi Arabia': 'Middle East', 'Iran': 'Middle East', 'Iraq': 'Middle East', 'United Arab Emirates': 'Middle East'
+    };
+
     function drawGeoMap() {
         const svg = document.getElementById('geodle-map');
         if (!svg) return;
@@ -3480,38 +3515,88 @@ function ready() {
         svg.setAttribute('viewBox', '0 0 960 500');
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-        // Simple world map visualization with country circles
         svg.innerHTML = '';
 
-        // Add background
+        // Add background (ocean)
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('width', '960');
         rect.setAttribute('height', '500');
-        rect.setAttribute('fill', '#2d3d4d');
+        rect.setAttribute('fill', '#1a2332');
         svg.appendChild(rect);
 
-        // Draw all countries as circles
-        geodleCountries.forEach(country => {
+        // Create a group for countries
+        const countriesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+        // Draw all countries as circles with different colors based on state
+        geodleCountries.forEach((country, index) => {
             const isGuessed = geodleState.guesses.some(g => g.name === country.name);
             const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
 
-            // Convert lat/lng to SVG coordinates (simple projection)
+            // Convert lat/lng to SVG coordinates (mercator-like projection)
             const x = (country.lng + 180) * (960 / 360);
             const y = (90 - country.lat) * (500 / 180);
 
-            const color = isTarget && geodleState.gameOver ? '#22c55e' :
-                         isGuessed ? '#ef4444' : '#64748b';
-            const radius = isGuessed ? 6 : 4;
+            // Determine color
+            let fill = '#4a5f7f'; // Default gray
+            let opacity = '0.8';
+            let radius = 5;
 
+            if (isTarget && geodleState.gameOver) {
+                fill = '#22c55e'; // Green for target
+                opacity = '1';
+                radius = 7;
+            } else if (isGuessed) {
+                fill = '#ef4444'; // Red for guessed
+                opacity = '0.9';
+                radius = 6;
+            }
+
+            // Create circle for country
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', x);
             circle.setAttribute('cy', y);
             circle.setAttribute('r', radius);
-            circle.setAttribute('fill', color);
-            circle.setAttribute('opacity', '0.7');
+            circle.setAttribute('fill', fill);
+            circle.setAttribute('opacity', opacity);
+            circle.setAttribute('stroke', '#2d3d4d');
+            circle.setAttribute('stroke-width', '0.5');
 
-            svg.appendChild(circle);
+            countriesGroup.appendChild(circle);
         });
+
+        svg.appendChild(countriesGroup);
+
+        // Add grid lines for reference (optional)
+        const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        gridGroup.setAttribute('opacity', '0.1');
+
+        // Vertical lines (longitude)
+        for (let lng = -180; lng <= 180; lng += 30) {
+            const x = (lng + 180) * (960 / 360);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x);
+            line.setAttribute('y1', '0');
+            line.setAttribute('x2', x);
+            line.setAttribute('y2', '500');
+            line.setAttribute('stroke', '#64748b');
+            line.setAttribute('stroke-width', '0.5');
+            gridGroup.appendChild(line);
+        }
+
+        // Horizontal lines (latitude)
+        for (let lat = -90; lat <= 90; lat += 30) {
+            const y = (90 - lat) * (500 / 180);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '0');
+            line.setAttribute('y1', y);
+            line.setAttribute('x2', '960');
+            line.setAttribute('y2', y);
+            line.setAttribute('stroke', '#64748b');
+            line.setAttribute('stroke-width', '0.5');
+            gridGroup.appendChild(line);
+        }
+
+        svg.appendChild(gridGroup);
     }
 
     function makeGuess(countryName) {

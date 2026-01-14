@@ -4282,6 +4282,7 @@ function ready() {
         for (let i = 0; i < 6; i++) {
             const guess = wordleState.guesses[i] || '';
             const $row = $('<div>').addClass('wordle-row');
+            const isRevealing = i < wordleState.guesses.length;
 
             for (let j = 0; j < 5; j++) {
                 const letter = guess[j] || '';
@@ -4292,9 +4293,11 @@ function ready() {
 
                 if (letter) {
                     $tile.addClass('filled');
-                    const result = getLetterResult(letter, j, guess);
-                    if (result) {
-                        $tile.addClass(result);
+                    if (isRevealing) {
+                        const result = getLetterResult(letter, j, guess);
+                        if (result) {
+                            $tile.addClass(result);
+                        }
                     }
                 }
 

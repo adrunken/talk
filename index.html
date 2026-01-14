@@ -3472,56 +3472,59 @@ function ready() {
         return icons[dir] || '';
     }
 
-    // Load and render world map with country boundaries
-    let worldGeoJSON = null;
+    // World map data - country polygons with their geographic shapes
+    let worldMapData = null;
+
+    // Simple function to convert geographic coordinates to SVG path
+    function coordsToPath(coords) {
+        const processCoord = (c) => {
+            const x = (c[0] + 180) * (960 / 360);
+            const y = (90 - c[1]) * (500 / 180);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        };
+
+        let pathData = [];
+
+        const processRing = (ring) => {
+            return ring.map(processCoord).join(' L ');
+        };
+
+        if (coords.length > 0 && typeof coords[0][0] === 'number') {
+            // Single ring (Polygon)
+            pathData.push('M ' + processRing(coords) + ' Z');
+        } else {
+            // Multiple rings or MultiPolygon
+            coords.forEach(ring => {
+                if (ring.length > 0 && typeof ring[0][0] === 'number') {
+                    pathData.push('M ' + processRing(ring) + ' Z');
+                } else if (ring.length > 0 && typeof ring[0][0][0] === 'number') {
+                    ring.forEach(subRing => {
+                        pathData.push('M ' + processRing(subRing) + ' Z');
+                    });
+                }
+            });
+        }
+
+        return pathData.join(' ');
+    }
 
     function loadWorldMap() {
-        if (worldGeoJSON) {
+        if (worldMapData) {
             drawGeoMapWithBorders();
             return;
         }
 
         // Fetch world GeoJSON from CDN
-        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+        fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
             .then(response => response.json())
             .then(data => {
-                // Extract features from TopoJSON
-                worldGeoJSON = data;
+                worldMapData = data;
                 drawGeoMapWithBorders();
             })
             .catch(() => {
-                // Fallback to simple circle map if GeoJSON fails to load
+                // Fallback if fetch fails
                 drawGeoMapFallback();
             });
-    }
-
-    function geoPathToSVG(coordinates, scale = 1) {
-        if (!Array.isArray(coordinates) || coordinates.length === 0) return '';
-
-        let path = '';
-
-        const processCoordinates = (coords) => {
-            if (typeof coords[0] === 'number') {
-                // Single coordinate [lng, lat]
-                const x = (coords[0] + 180) * (960 / 360) * scale;
-                const y = (90 - coords[1]) * (500 / 180) * scale;
-                return `${x},${y}`;
-            } else {
-                // Array of coordinates
-                return coords.map(c => processCoordinates(c)).join(' ');
-            }
-        };
-
-        // Handle different coordinate types
-        if (typeof coordinates[0][0] === 'number') {
-            // Polygon
-            path = 'M' + processCoordinates(coordinates) + 'Z';
-        } else if (typeof coordinates[0][0][0] === 'number') {
-            // MultiPolygon or Polygon with holes
-            path = coordinates.map(poly => 'M' + processCoordinates(poly) + 'Z').join(' ');
-        }
-
-        return path;
     }
 
     function drawGeoMapWithBorders() {
@@ -3536,60 +3539,84 @@ function ready() {
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', '960');
         bg.setAttribute('height', '500');
-        bg.setAttribute('fill', '#e8eef7');
+        bg.setAttribute('fill', '#d9dfe9');
         svg.appendChild(bg);
 
-        if (!worldGeoJSON) {
+        if (!worldMapData || !worldMapData.objects) {
             drawGeoMapFallback();
             return;
         }
 
-        // Draw countries from GeoJSON
         try {
-            const countries = worldGeoJSON.objects.countries;
-            if (!countries) {
+            // Create country group
+            const countriesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            // Get the countries geometry
+            const countriesGeom = worldMapData.objects.countries;
+            if (!countriesGeom || !countriesGeom.geometries) {
                 drawGeoMapFallback();
                 return;
             }
 
-            // Create a mapping of country names
-            const geoGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            // Create a simple mapping of country names to geometries
+            // For now, draw all countries in gray and overlay with guessed/target
+            countriesGeom.geometries.forEach((geom, idx) => {
+                if (!geom.coordinates) return;
 
-            // Draw each country with borders
+                let pathData = '';
+                if (geom.type === 'Polygon') {
+                    pathData = coordsToPath(geom.coordinates);
+                } else if (geom.type === 'MultiPolygon') {
+                    pathData = geom.coordinates.map(poly => coordsToPath(poly)).join(' ');
+                }
+
+                if (pathData) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', pathData);
+                    path.setAttribute('fill', '#b4bcc8');
+                    path.setAttribute('stroke', '#8b95a7');
+                    path.setAttribute('stroke-width', '0.5');
+                    path.setAttribute('opacity', '0.9');
+                    countriesGroup.appendChild(path);
+                }
+            });
+
+            svg.appendChild(countriesGroup);
+
+            // Overlay guessed countries and target
+            const overlayGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
             geodleCountries.forEach(country => {
                 const isGuessed = geodleState.guesses.some(g => g.name === country.name);
                 const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
 
-                const x = (country.lng + 180) * (960 / 360);
-                const y = (90 - country.lat) * (500 / 180);
+                if (isGuessed || (isTarget && geodleState.gameOver)) {
+                    const x = (country.lng + 180) * (960 / 360);
+                    const y = (90 - country.lat) * (500 / 180);
 
-                let fill = '#9ca3af';
-                let radius = 4;
-                let opacity = 0.8;
+                    let fill = '#ef4444';
+                    let radius = 5;
 
-                if (isTarget && geodleState.gameOver) {
-                    fill = '#22c55e';
-                    radius = 7;
-                    opacity = 1;
-                } else if (isGuessed) {
-                    fill = '#ef4444';
-                    radius = 6;
-                    opacity = 0.9;
+                    if (isTarget && geodleState.gameOver) {
+                        fill = '#22c55e';
+                        radius = 6;
+                    }
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', radius);
+                    circle.setAttribute('fill', fill);
+                    circle.setAttribute('opacity', '1');
+                    circle.setAttribute('stroke', 'white');
+                    circle.setAttribute('stroke-width', '1');
+                    overlayGroup.appendChild(circle);
                 }
-
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', x);
-                circle.setAttribute('cy', y);
-                circle.setAttribute('r', radius);
-                circle.setAttribute('fill', fill);
-                circle.setAttribute('opacity', opacity);
-                circle.setAttribute('stroke', '#6b7280');
-                circle.setAttribute('stroke-width', '1');
-                geoGroup.appendChild(circle);
             });
 
-            svg.appendChild(geoGroup);
+            svg.appendChild(overlayGroup);
         } catch (e) {
+            console.error('Error rendering world map:', e);
             drawGeoMapFallback();
         }
     }
@@ -3602,16 +3629,16 @@ function ready() {
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.innerHTML = '';
 
-        // Background (light gray ocean)
+        // Background
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', '960');
         bg.setAttribute('height', '500');
-        bg.setAttribute('fill', '#e8eef7');
+        bg.setAttribute('fill', '#d9dfe9');
         svg.appendChild(bg);
 
-        // Draw grid for reference (subtle)
+        // Draw subtle grid
         const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        gridGroup.setAttribute('opacity', '0.1');
+        gridGroup.setAttribute('opacity', '0.15');
 
         for (let lng = -180; lng <= 180; lng += 45) {
             const x = (lng + 180) * (960 / 360);
@@ -3620,7 +3647,7 @@ function ready() {
             line.setAttribute('y1', '0');
             line.setAttribute('x2', x);
             line.setAttribute('y2', '500');
-            line.setAttribute('stroke', '#d1d5db');
+            line.setAttribute('stroke', '#8b95a7');
             line.setAttribute('stroke-width', '0.5');
             gridGroup.appendChild(line);
         }
@@ -3632,48 +3659,45 @@ function ready() {
             line.setAttribute('y1', y);
             line.setAttribute('x2', '960');
             line.setAttribute('y2', y);
-            line.setAttribute('stroke', '#d1d5db');
+            line.setAttribute('stroke', '#8b95a7');
             line.setAttribute('stroke-width', '0.5');
             gridGroup.appendChild(line);
         }
 
         svg.appendChild(gridGroup);
 
-        // Draw countries as circles
-        const countriesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        // Draw guesses and target as markers
+        const markersGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
         geodleCountries.forEach(country => {
             const isGuessed = geodleState.guesses.some(g => g.name === country.name);
             const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
 
-            const x = (country.lng + 180) * (960 / 360);
-            const y = (90 - country.lat) * (500 / 180);
+            if (isGuessed || (isTarget && geodleState.gameOver)) {
+                const x = (country.lng + 180) * (960 / 360);
+                const y = (90 - country.lat) * (500 / 180);
 
-            let fill = '#9ca3af';
-            let radius = 4;
-            let opacity = 0.8;
+                let fill = '#ef4444';
+                let radius = 5;
 
-            if (isTarget && geodleState.gameOver) {
-                fill = '#22c55e';
-                radius = 7;
-                opacity = 1;
-            } else if (isGuessed) {
-                fill = '#ef4444';
-                radius = 6;
-                opacity = 0.9;
+                if (isTarget && geodleState.gameOver) {
+                    fill = '#22c55e';
+                    radius = 6;
+                }
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', x);
+                circle.setAttribute('cy', y);
+                circle.setAttribute('r', radius);
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('opacity', '1');
+                circle.setAttribute('stroke', 'white');
+                circle.setAttribute('stroke-width', '1');
+                markersGroup.appendChild(circle);
             }
-
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', y);
-            circle.setAttribute('r', radius);
-            circle.setAttribute('fill', fill);
-            circle.setAttribute('opacity', opacity);
-            circle.setAttribute('stroke', '#6b7280');
-            circle.setAttribute('stroke-width', '1');
-            countriesGroup.appendChild(circle);
         });
 
-        svg.appendChild(countriesGroup);
+        svg.appendChild(markersGroup);
     }
 
     function drawGeoMap() {

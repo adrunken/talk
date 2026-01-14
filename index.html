@@ -1596,6 +1596,57 @@ html {
   </div>
 </div>
 
+<!-- Wordle Game Modal -->
+<div id="wordle-overlay" class="hidden" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+  <div id="wordle-modal" style="position: relative; width: 95vw; max-width: 500px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden;">
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border-bottom: 1px solid var(--border-light); background: var(--bg-secondary);">
+      <h2 style="margin: 0; font-size: 1.5rem; color: var(--text-primary); font-weight: 600;">Wordle</h2>
+      <button id="wordle-close" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem; padding: 0; transition: color 0.2s ease;" title="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Game Container -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; gap: 1.5rem; overflow-y: auto;">
+      <!-- Game Board -->
+      <div id="wordle-board" style="display: grid; grid-template-columns: repeat(5, 60px); gap: 0.5rem; justify-content: center;">
+        <!-- Guesses will be added here -->
+      </div>
+
+      <!-- Keyboard -->
+      <div id="wordle-keyboard" style="width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 0.5rem; padding: 0 1rem;">
+        <!-- Keyboard rows will be added here -->
+      </div>
+
+      <!-- Game Status -->
+      <div id="wordle-status" style="padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-lg); border: 1px solid var(--border-light); color: var(--text-secondary); text-align: center; font-size: 0.875rem; width: 100%; display: none;">
+        Game message
+      </div>
+
+      <!-- Stats -->
+      <div id="wordle-stats" style="padding: 1rem; background: var(--bg-tertiary); border-radius: var(--radius-lg); border: 1px solid var(--border-light); text-align: center; width: 100%; display: none;">
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">Stats</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-primary);" id="wordle-win-count">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Wins</div>
+          </div>
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 600; color: var(--accent-primary);" id="wordle-streak">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Streak</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Game Button -->
+      <button id="wordle-new-game-btn" style="padding: 0.75rem 1.5rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-lg); cursor: pointer; font-weight: 500; transition: all 0.2s ease; display: none; width: 100%; max-width: 300px;">
+        New Game
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Chess Game Setup Modal -->
 <div id="chess-setup-overlay" class="chess-setup-overlay">
   <div class="chess-setup-modal">

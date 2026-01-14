@@ -4358,6 +4358,42 @@ function ready() {
         }
     });
 
+    // Wordle event handlers
+    $('#wordle-setup-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#games-dropdown-menu').addClass('hidden');
+        showWordleModal();
+    });
+
+    $('#wordle-close').on('click', function(e) {
+        e.preventDefault();
+        hideWordleModal();
+    });
+
+    $('#wordle-new-game-btn').on('click', function(e) {
+        e.preventDefault();
+        initWordleGame();
+    });
+
+    // Wordle keyboard physical keyboard support
+    $(document).on('keydown', function(e) {
+        if ($('#wordle-overlay').hasClass('hidden') || wordleState.gameOver) return;
+
+        const letter = e.key.toUpperCase();
+        const validLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        if (validLetters.includes(letter) && wordleState.currentGuess.length < 5) {
+            guessLetter(letter);
+            e.preventDefault();
+        } else if (e.key === 'Backspace' && wordleState.currentGuess.length > 0) {
+            removeLetter();
+            e.preventDefault();
+        } else if (e.key === 'Enter' && wordleState.currentGuess.length === 5) {
+            submitGuess();
+            e.preventDefault();
+        }
+    });
+
     function showFirstLoginModal() {
         var $overlay = $('#first-login');
         var $input = $('#first-username-input');

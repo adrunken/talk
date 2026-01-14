@@ -920,16 +920,19 @@ html[data-theme="dark"] .wordle-tile {
     border-radius: 0.4rem;
     cursor: pointer;
     font-weight: 500;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     transition: all 0.15s ease;
     color: #1a1a1a;
-    min-width: 2.5rem;
+    min-width: 2rem;
     text-align: center;
     font-family: inherit;
-    flex: 1;
-    max-width: 3.5rem;
+    flex: 0 1 calc(20% - 0.35rem);
     height: 3rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 html[data-theme="dark"] .wordle-key {

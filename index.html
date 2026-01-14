@@ -3476,8 +3476,19 @@ function ready() {
         const svg = document.getElementById('geodle-map');
         if (!svg) return;
 
+        // Set viewBox for proper scaling
+        svg.setAttribute('viewBox', '0 0 960 500');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
         // Simple world map visualization with country circles
         svg.innerHTML = '';
+
+        // Add background
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', '960');
+        rect.setAttribute('height', '500');
+        rect.setAttribute('fill', '#2d3d4d');
+        svg.appendChild(rect);
 
         // Draw all countries as circles
         geodleCountries.forEach(country => {
@@ -3485,8 +3496,8 @@ function ready() {
             const isTarget = geodleState.targetCountry && country.name === geodleState.targetCountry.name;
 
             // Convert lat/lng to SVG coordinates (simple projection)
-            const x = (country.lng + 180) * (960 / 360); // width 960
-            const y = (90 - country.lat) * (500 / 180); // height 500
+            const x = (country.lng + 180) * (960 / 360);
+            const y = (90 - country.lat) * (500 / 180);
 
             const color = isTarget && geodleState.gameOver ? '#22c55e' :
                          isGuessed ? '#ef4444' : '#64748b';
@@ -3501,13 +3512,6 @@ function ready() {
 
             svg.appendChild(circle);
         });
-
-        // Add a simple grid background
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('width', '100%');
-        rect.setAttribute('height', '100%');
-        rect.setAttribute('fill', '#2d3d4d');
-        svg.insertBefore(rect, svg.firstChild);
     }
 
     function makeGuess(countryName) {

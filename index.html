@@ -3602,16 +3602,16 @@ function ready() {
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.innerHTML = '';
 
-        // Background
+        // Background (light gray ocean)
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', '960');
         bg.setAttribute('height', '500');
-        bg.setAttribute('fill', '#1a2332');
+        bg.setAttribute('fill', '#e8eef7');
         svg.appendChild(bg);
 
-        // Draw grid for reference
+        // Draw grid for reference (subtle)
         const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        gridGroup.setAttribute('opacity', '0.15');
+        gridGroup.setAttribute('opacity', '0.1');
 
         for (let lng = -180; lng <= 180; lng += 45) {
             const x = (lng + 180) * (960 / 360);
@@ -3620,7 +3620,7 @@ function ready() {
             line.setAttribute('y1', '0');
             line.setAttribute('x2', x);
             line.setAttribute('y2', '500');
-            line.setAttribute('stroke', '#64748b');
+            line.setAttribute('stroke', '#d1d5db');
             line.setAttribute('stroke-width', '0.5');
             gridGroup.appendChild(line);
         }
@@ -3632,7 +3632,7 @@ function ready() {
             line.setAttribute('y1', y);
             line.setAttribute('x2', '960');
             line.setAttribute('y2', y);
-            line.setAttribute('stroke', '#64748b');
+            line.setAttribute('stroke', '#d1d5db');
             line.setAttribute('stroke-width', '0.5');
             gridGroup.appendChild(line);
         }
@@ -3648,9 +3648,9 @@ function ready() {
             const x = (country.lng + 180) * (960 / 360);
             const y = (90 - country.lat) * (500 / 180);
 
-            let fill = '#5a7a9f';
+            let fill = '#9ca3af';
             let radius = 4;
-            let opacity = 0.7;
+            let opacity = 0.8;
 
             if (isTarget && geodleState.gameOver) {
                 fill = '#22c55e';
@@ -3668,8 +3668,8 @@ function ready() {
             circle.setAttribute('r', radius);
             circle.setAttribute('fill', fill);
             circle.setAttribute('opacity', opacity);
-            circle.setAttribute('stroke', '#2d3d4d');
-            circle.setAttribute('stroke-width', '0.5');
+            circle.setAttribute('stroke', '#6b7280');
+            circle.setAttribute('stroke-width', '1');
             countriesGroup.appendChild(circle);
         });
 

@@ -3404,7 +3404,7 @@ function ready() {
         const $guesses = $('#geodle-guesses');
         $guesses.empty();
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 7; i++) {
             const guess = geodleState.guesses[i];
             const $guessRow = $('<div>').css({
                 display: 'flex',
@@ -3424,21 +3424,13 @@ function ready() {
                     guess.lat,
                     guess.lng
                 );
-                const direction = calculateDirection(
-                    geodleState.targetCountry.lat,
-                    geodleState.targetCountry.lng,
-                    guess.lat,
-                    guess.lng
-                );
 
-                const color = distance === 0 ? '#22c55e' : '#ef4444';
-                const dirIcon = getDirectionIcon(direction);
+                const color = getProximityColor(distance);
 
                 $guessRow.html(`
                     <span style="color: var(--accent-primary); font-weight: 600;">${guess.name}</span>
                     <span style="color: var(--text-muted);">|</span>
                     <span style="color: ${color}; font-weight: 600;">${distance} km</span>
-                    <span style="color: var(--text-muted);">${dirIcon}</span>
                 `);
             } else {
                 $guessRow.css('opacity', '0.5').text(`Guess ${i + 1}`);

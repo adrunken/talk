@@ -3532,11 +3532,11 @@ function ready() {
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.innerHTML = '';
 
-        // Background
+        // Background (light gray ocean)
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', '960');
         bg.setAttribute('height', '500');
-        bg.setAttribute('fill', '#1a2332');
+        bg.setAttribute('fill', '#e8eef7');
         svg.appendChild(bg);
 
         if (!worldGeoJSON) {
